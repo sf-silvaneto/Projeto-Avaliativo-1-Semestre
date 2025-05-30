@@ -1,0 +1,40 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+log/
+*.log.*
+
+# Sistemas Operacionais
+.DS_Store
+Thumbs.db
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.swp
+
+# IntelliJ específico (se quiser manter apenas arquivos úteis)
+# .idea/*
+# !.idea/modules.xml
+# !.idea/*.iml
+
+# Testes e coberturas
+coverage/
+.nyc_output/
+
+# Outros
+package-lock.json
