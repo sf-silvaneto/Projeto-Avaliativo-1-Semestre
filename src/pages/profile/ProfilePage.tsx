@@ -7,18 +7,16 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert, Loader2, ArrowLeft } from 'lucide-react';
 import * as authService from '../../services/authService';
-import { VerifiedProfileUpdateRequest, User } from '../../types/auth'; // User importado
+import { VerifiedProfileUpdateRequest, User } from '../../types/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// Schema para o formulário de verificação da palavra-chave atual
 const verifyKeywordSchema = z.object({
   palavraChaveAtual: z.string().min(1, "Palavra-chave atual é obrigatória."),
 });
 type VerifyKeywordFormData = z.infer<typeof verifyKeywordSchema>;
 
-// Schema para o formulário de atualização de detalhes (após verificação)
 const updateDetailsSchema = z.object({
   nome: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres.'),
   email: z.string().email('O email fornecido é inválido.'),
@@ -26,6 +24,7 @@ const updateDetailsSchema = z.object({
   confirmarNovaPalavraChave: z.string().optional(),
 }).superRefine((data, ctx) => {
   const temNovaPalavraChave = data.novaPalavraChave && data.novaPalavraChave.trim() !== '';
+  const temConfirmarNovaPalavraChave = data.confirmarNovaPalavraChave && data.confirmarNovaPalavraChave.trim() !== '';
 
   if (temNovaPalavraChave) {
     if (data.novaPalavraChave.length < 4) {
@@ -42,29 +41,27 @@ const updateDetailsSchema = z.object({
         path: ['confirmarNovaPalavraChave'],
       });
     }
-  } else if (data.confirmarNovaPalavraChave && !data.novaPalavraChave) {
+  } else if (temConfirmarNovaPalavraChave && !temNovaPalavraChave) {
     ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Nova palavra-chave é obrigatória se a confirmação for preenchida.',
         path: ['novaPalavraChave'],
       });
   }
-  // A validação de que "pelo menos um campo mudou" será feita no handler do submit
 });
 type UpdateDetailsFormData = z.infer<typeof updateDetailsSchema>;
 
 
 const ProfilePage: React.FC = () => {
-  const { user, isLoading: authContextLoading, error: authContextError, clearError, updateUserInContext } = useAuth();
+  const { user, isLoading: authContextLoading, error: authContextError, clearError, setAuthUserData } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [isKeywordVerified, setIsKeywordVerified] = useState(false);
   const [isVerifyingKeyword, setIsVerifyingKeyword] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
-  
+
   const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
-  const [detailsUpdateSuccess, setDetailsUpdateSuccess] = useState(false);
   const [detailsUpdateError, setDetailsUpdateError] = useState<string | null>(null);
 
   const [showPalavraChaveAtual, setShowPalavraChaveAtual] = useState(false);
@@ -86,11 +83,9 @@ const ProfilePage: React.FC = () => {
     },
   });
 
-  // Efeito para lidar com a aba padrão vinda do estado da rota (se houver)
-  // e para resetar o formulário de detalhes quando o usuário ou o estado de verificação mudar.
   useEffect(() => {
-    const routeState = location.state as { defaultTab?: string }; // Embora não tenhamos mais abas, mantido por segurança
-    if (routeState?.defaultTab) { // Limpa o estado da rota para não afetar navegações futuras
+    const routeState = location.state as { defaultTab?: string };
+    if (routeState?.defaultTab) {
       navigate(location.pathname, { replace: true, state: {} });
     }
 
@@ -111,16 +106,21 @@ const ProfilePage: React.FC = () => {
     }
     setIsVerifyingKeyword(true);
     setVerificationError(null);
-    clearError(); 
+    clearError();
     try {
       await authService.verifyEmailAndKeyword({ email: user.email, palavraChave: data.palavraChaveAtual });
       setIsKeywordVerified(true);
-      setDetailsUpdateError(null); 
-      setDetailsUpdateSuccess(false);
-      // O useEffect acima já irá resetar o updateDetailsForm com os dados do usuário
+      setDetailsUpdateError(null);
     } catch (err: any) {
       console.error("Erro na verificação da palavra-chave (Perfil):", err.response?.data || err.message);
-      setVerificationError(err.response?.data?.mensagem || err.response?.data?.message || "Palavra-chave atual incorreta ou erro na verificação.");
+      // >>> INÍCIO DA MODIFICAÇÃO DA MENSAGEM DE ERRO <<<
+      const backendMessage = err.response?.data?.mensagem || err.response?.data?.message;
+      if (backendMessage === "Email ou palavra-chave incorretos") {
+        setVerificationError("A palavra-chave atual fornecida está incorreta. Verifique e tente novamente.");
+      } else {
+        setVerificationError(backendMessage || "Ocorreu um erro ao verificar a palavra-chave. Tente novamente.");
+      }
+      // >>> FIM DA MODIFICAÇÃO DA MENSAGEM DE ERRO <<<
       setIsKeywordVerified(false);
     } finally {
       setIsVerifyingKeyword(false);
@@ -135,7 +135,6 @@ const ProfilePage: React.FC = () => {
 
     setIsUpdatingDetails(true);
     setDetailsUpdateError(null);
-    setDetailsUpdateSuccess(false);
     clearError();
 
     const payload: VerifiedProfileUpdateRequest = {};
@@ -161,22 +160,30 @@ const ProfilePage: React.FC = () => {
     }
 
     try {
-      const updatedUser = await authService.updateVerifiedProfileDetails(payload);
-      updateUserInContext(updatedUser);
-      setDetailsUpdateSuccess(true);
-      setTimeout(() => setDetailsUpdateSuccess(false), 3000);
-      
-      setIsKeywordVerified(false);
-      verificationForm.reset({palavraChaveAtual: ''}); ar
-      
+      const response = await authService.updateVerifiedProfileDetails(payload);
+
+      if (response && response.adminData) {
+        setAuthUserData(response.adminData);
+        navigate('/painel-de-controle', {
+          state: {
+            profileUpdateSuccess: true,
+            message: 'Seus dados foram atualizados com sucesso!'
+          },
+          replace: true
+        });
+      } else {
+         console.error("handleDetailsUpdate: Resposta da API não continha adminData:", response);
+        setDetailsUpdateError("Resposta inesperada do servidor ao atualizar.");
+      }
+
     } catch (err: any) {
-      console.error("ERRO em handleDetailsUpdate:", err.response?.data || err.message || err);
+      console.error("ERRO em handleDetailsUpdate (ProfilePage):", err.response?.data || err.message || err);
       setDetailsUpdateError(err.response?.data?.mensagem || err.response?.data?.message || 'Erro ao atualizar os dados.');
     } finally {
       setIsUpdatingDetails(false);
     }
   };
-  
+
   const toggleShow = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
     setter(prev => !prev);
   };
@@ -185,7 +192,7 @@ const ProfilePage: React.FC = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-neutral-50">
             <div className="text-center">
-                {/* Você pode usar seu componente Loader2 aqui se preferir */}
+                <Loader2 className="h-10 w-10 text-primary-600 animate-spin mx-auto" />
                 <p className="mt-4 text-neutral-600">Carregando dados do perfil...</p>
             </div>
         </div>
@@ -223,9 +230,24 @@ const ProfilePage: React.FC = () => {
               {...verificationForm.register('palavraChaveAtual')}
               error={verificationForm.formState.errors.palavraChaveAtual?.message}
             />
-            <div className="mt-6">
-              <Button type="submit" variant="primary" isLoading={isVerifyingKeyword || authContextLoading} leftIcon={<ShieldCheck className="h-4 w-4" />}>
+            <div className="mt-6 flex flex-col sm:flex-row-reverse sm:justify-start gap-3">
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isVerifyingKeyword || authContextLoading}
+                leftIcon={<ShieldCheck className="h-4 w-4" />}
+                className="sm:ml-3 w-full sm:w-auto"
+              >
                 Verificar Palavra-Chave
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(-1)}
+                leftIcon={<ArrowLeft className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+              >
+                Voltar
               </Button>
             </div>
           </form>
@@ -238,10 +260,9 @@ const ProfilePage: React.FC = () => {
                 setIsKeywordVerified(false);
                 verificationForm.reset({palavraChaveAtual: ''});
                 setVerificationError(null);
-                setDetailsUpdateError(null); 
-                setDetailsUpdateSuccess(false);
+                setDetailsUpdateError(null);
             }}>
-                Bloquear / Reverificar
+                Voltar / Reverificar
             </Button>
           </div>
            <div className="p-3 mb-4 bg-success-50 border border-success-200 rounded-md text-success-700 text-sm flex items-center">
@@ -249,9 +270,6 @@ const ProfilePage: React.FC = () => {
             Identidade verificada. Você pode alterar seus dados abaixo.
           </div>
 
-          {detailsUpdateSuccess && (
-            <Alert type="success" title="Sucesso!" message="Seus dados foram atualizados." className="mb-4" onClose={() => setDetailsUpdateSuccess(false)} />
-          )}
           {detailsUpdateError && (
             <Alert type="error" message={detailsUpdateError} className="mb-4" onClose={() => setDetailsUpdateError(null)} />
           )}
@@ -275,10 +293,10 @@ const ProfilePage: React.FC = () => {
                 {...updateDetailsForm.register('email')}
                 error={updateDetailsForm.formState.errors.email?.message}
               />
-              
+
               <h3 className="text-md font-medium text-neutral-700 border-t pt-4 mt-6">Alterar Palavra-Chave (Opcional)</h3>
               <p className="text-xs text-neutral-500 -mt-3 mb-2">Deixe os campos abaixo em branco se não desejar alterar sua palavra-chave de recuperação.</p>
-              
+
               <Input
                 label="Nova Palavra-Chave"
                 type={showNovaPalavraChave ? "text" : "password"}

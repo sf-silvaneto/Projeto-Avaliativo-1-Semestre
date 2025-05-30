@@ -38,7 +38,6 @@ const ResetPasswordPage: React.FC = () => {
   const [verifiedEmail, setVerifiedEmail] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Este successMessage agora é apenas para o sucesso da primeira etapa (verificação)
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [showPalavraChave, setShowPalavraChave] = useState(false);
@@ -71,7 +70,7 @@ const ResetPasswordPage: React.FC = () => {
       await authService.verifyEmailAndKeyword(data);
       setVerifiedEmail(data.email);
       setStage('reset');
-      setSuccessMessage('Verificação bem-sucedida! Agora defina sua nova senha.'); // Mensagem para esta etapa
+      setSuccessMessage('Verificação bem-sucedida! Agora defina sua nova senha.');
       verifyForm.reset();
     } catch (err: any) {
       setError(err.response?.data?.mensagem || err.response?.data?.message || 'Email ou Palavra Chave incorretos.');
@@ -88,7 +87,7 @@ const ResetPasswordPage: React.FC = () => {
     }
     setIsLoading(true);
     setError(null);
-    setSuccessMessage(null); // Limpa a mensagem de sucesso do estágio anterior
+    setSuccessMessage(null);
     try {
       const payload: FinalResetPasswordCredentials = {
         email: verifiedEmail,
@@ -98,10 +97,9 @@ const ResetPasswordPage: React.FC = () => {
       await authService.resetPasswordAfterVerification(payload);
       
       resetForm.reset();
-      // NAVEGA IMEDIATAMENTE para /login e passa o estado para exibir a mensagem lá
       navigate('/login', { 
         state: { 
-          passwordResetSuccess: true, // Flag para LoginPage identificar
+          passwordResetSuccess: true,
           message: 'Senha redefinida com sucesso! Por favor, faça o login com sua nova senha.' 
         } 
       });
@@ -131,7 +129,6 @@ const ResetPasswordPage: React.FC = () => {
 
       <Card>
         {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
-        {/* Este successMessage agora é para a primeira etapa, se desejar */}
         {successMessage && stage === 'verify' && <Alert type="success" message={successMessage} className="mb-4" onClose={() => setSuccessMessage(null)} />} 
         
         {stage === 'verify' && (

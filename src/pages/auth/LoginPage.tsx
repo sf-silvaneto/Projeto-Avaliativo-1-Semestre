@@ -85,7 +85,6 @@ const LoginPage: React.FC = () => {
         />
       )}
 
-      {/* NOVO ALERT para mensagem de sucesso na redefinição de senha */}
       {passwordResetSuccessMessage && (
         <Alert
           type="success"

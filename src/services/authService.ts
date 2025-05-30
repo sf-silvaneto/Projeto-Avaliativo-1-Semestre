@@ -1,24 +1,23 @@
 import api, { setAuthToken, removeAuthToken } from './api';
-import { 
-  LoginCredentials, 
-  RegisterCredentials, 
+import {
+  LoginCredentials,
+  RegisterCredentials,
   // UpdatePasswordRequest, // Removida se não for mais usada pelo novo fluxo
-  UpdateProfileRequest, 
+  UpdateProfileRequest, // Mantida para referência, mas o fluxo principal usa VerifiedProfileUpdateRequest
   User,
   VerifyKeywordCredentials,      // Importando o tipo para verificação
-  FinalResetPasswordCredentials  // Importando o tipo para redefinição final
+  FinalResetPasswordCredentials,  // Importando o tipo para redefinição final
+  VerifiedProfileUpdateRequest   // <<< ADICIONADO SE NÃO ESTIVER PRESENTE, MAS JÁ ESTAVA EM SEUS ARQUIVOS
 } from '../types/auth';
 
 export const login = async (credentials: LoginCredentials) => {
   try {
     const response = await api.post('/administradores/login', credentials);
-    
-    // A lógica de chamar setAuthToken aqui ou no AuthContext pode ser discutida.
-    // Se o AuthContext chama getCurrentUser após o login, o token precisa ser setado antes.
+
     if (response.data.token) {
       setAuthToken(response.data.token);
     }
-    
+
     return response.data; // Retorna { token, nome, email, mensagem }
   } catch (error) {
     throw error;
@@ -36,7 +35,7 @@ export const register = async (userData: RegisterCredentials) => {
 
 export const logout = () => {
   try {
-    removeAuthToken(); // Remove o token do cookie
+    removeAuthToken();
     return true;
   } catch (error) {
     console.error('Erro ao fazer logout:', error);
@@ -46,20 +45,19 @@ export const logout = () => {
 
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    // Garanta que o backend tenha um endpoint GET /api/administradores/me
-    // que retorne um objeto compatível com a interface User.
     const response = await api.get('/administradores/me');
-    // Se o backend retorna { ..., adminData: { id, nome, ... } }, use response.data.adminData
-    // Se retorna o objeto User diretamente, use response.data
-    return response.data.adminData || response.data; 
+    return response.data.adminData || response.data;
   } catch (error) {
     throw error;
   }
 };
 
+// Esta função updateProfile usa o endpoint PUT /api/administradores/profile
+// que parece ter sido substituído no backend pelo endpoint /profile/verified-update.
+// Se este endpoint antigo não existir mais no backend, esta função não funcionará como esperado.
 export const updateProfile = async (data: UpdateProfileRequest) => {
   try {
-    // Garanta que o backend tenha um endpoint PUT /api/administradores/profile
+    console.warn("authService.updateProfile está usando o endpoint PUT /api/administradores/profile que pode estar desatualizado. Considere usar updateVerifiedProfileDetails.");
     const response = await api.put('/administradores/profile', data);
     return response.data;
   } catch (error) {
@@ -67,20 +65,41 @@ export const updateProfile = async (data: UpdateProfileRequest) => {
   }
 };
 
-export const updateKeyword = async (data: UpdateKeywordRequest): Promise<void> => { // Pode retornar User se o backend o fizer
+// >>> INÍCIO DA MODIFICAÇÃO/ADIÇÃO <<<
+// Nova função para o fluxo de atualização de perfil verificado
+export const updateVerifiedProfileDetails = async (data: VerifiedProfileUpdateRequest): Promise<{ mensagem: string, adminData: User }> => {
   try {
-    // Você precisará criar este endpoint no backend:
+    const response = await api.put<{ mensagem: string, adminData: User }>('/administradores/profile/verified-update', data);
+    return response.data;
+  } catch (error) {
+    console.error("Erro em authService.updateVerifiedProfileDetails:", error);
+    throw error;
+  }
+};
+// >>> FIM DA MODIFICAÇÃO/ADIÇÃO <<<
+
+
+// A função updateKeyword parece redundante se updateVerifiedProfileDetails
+// já lida com a atualização da palavra-chave. Considere remover se não for usada.
+/*
+interface UpdateKeywordRequest { // Este tipo não estava definido nos arquivos originais, adicionando para referência se for manter a função
+  palavraChaveAtual: string;
+  novaPalavraChave: string;
+}
+export const updateKeyword = async (data: UpdateKeywordRequest): Promise<void> => {
+  try {
     const response = await api.put('/administradores/profile/keyword', data);
-    return response.data; // Ou apenas retornar void se o backend não devolver dados do usuário
+    return response.data;
   } catch (error) {
     throw error;
   }
 };
+*/
 
 export const verifyEmailAndKeyword = async (credentials: VerifyKeywordCredentials) => {
   try {
     const response = await api.post('/administradores/verificar-palavra-chave', credentials);
-    return response.data; 
+    return response.data;
   } catch (error) {
     throw error;
   }
@@ -96,9 +115,11 @@ export const resetPasswordAfterVerification = async (data: FinalResetPasswordCre
   }
 };
 
+// Esta função parece ser para um endpoint genérico /user/change-password que não existe no AdministradorController.
+// Pode ser de uma funcionalidade diferente ou desatualizada.
 export const changePassword = async (currentPassword: string, newPassword: string) => {
   try {
-    const response = await api.post('/user/change-password', {
+    const response = await api.post('/user/change-password', { // Este endpoint não parece corresponder ao controller do admin.
       senhaAtual: currentPassword,
       novaSenha: newPassword,
     });

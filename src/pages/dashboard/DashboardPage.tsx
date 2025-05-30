@@ -1,13 +1,23 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Button from '../../components/ui/Button'; // Se for usar Button em algum lugar
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card';
+import Alert from '../../components/ui/Alert';
 import { useAuth } from '../../context/AuthContext';
-import { FileText, Users, Stethoscope, LogOut, UserCog } from 'lucide-react'; // Adicionado UserCog
+import { FileText, Users, Stethoscope, LogOut, UserCog } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, user } = useAuth();
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (location.state?.profileUpdateSuccess && location.state?.message) {
+      setSuccessMessage(location.state.message);
+      navigate(location.pathname, { state: {}, replace: true });
+    }
+  }, [location, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -16,6 +26,16 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="container-medium py-8">
+      {successMessage && (
+        <Alert
+          type="success"
+          title="Operação Realizada!"
+          message={successMessage}
+          className="mb-6"
+          onClose={() => setSuccessMessage(null)}
+        />
+      )}
+
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-neutral-900">Painel de Controle</h1>
         {user && <p className="text-lg text-neutral-600">Bem-vindo(a), {user.nome}!</p>}
@@ -32,13 +52,12 @@ const DashboardPage: React.FC = () => {
           </Card>
         </Link>
 
-        {/* Link para Atualizar Cadastro - direciona para /perfil com estado */}
-        <Link to="/perfil" state={{ defaultTab: "atualizarCadastro" }} className="no-underline">
+        <Link to="/perfil" className="no-underline">
           <Card className="hover:shadow-medium transition-shadow duration-200 cursor-pointer">
             <div className="flex flex-col items-center text-center p-4">
               <UserCog className="h-12 w-12 text-primary-600 mb-3" />
-              <h2 className="text-xl font-semibold text-neutral-800">Atualizar Cadastro</h2>
-              <p className="text-neutral-600 text-sm">Altere seu nome ou palavra-chave.</p>
+              <h2 className="text-xl font-semibold text-neutral-800">Meu Perfil</h2>
+              <p className="text-neutral-600 text-sm">Altere seus dados e palavra-chave.</p>
             </div>
           </Card>
         </Link>
@@ -63,7 +82,7 @@ const DashboardPage: React.FC = () => {
           </Card>
         </Link>
         
-        <div onClick={handleLogout} className="cursor-pointer md:col-span-2"> {/* Opcional: Fazer o Sair ocupar duas colunas em telas médias */}
+        <div onClick={handleLogout} className="cursor-pointer md:col-span-2">
            <Card className="hover:shadow-medium transition-shadow duration-200 bg-error-50 hover:bg-error-100">
             <div className="flex flex-col items-center text-center p-4">
               <LogOut className="h-12 w-12 text-error-600 mb-3" />
