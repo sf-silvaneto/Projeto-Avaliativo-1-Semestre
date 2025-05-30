@@ -25,7 +25,7 @@ const Header: React.FC = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <FileText className="h-8 w-8 text-primary-600" />
-              <span className="ml-2 text-xl font-semibold text-neutral-900">HM Psicoterapia</span>
+              <span className="ml-2 text-xl font-semibold text-neutral-900">Clínica HM</span>
             </Link>
           </div>
 
@@ -33,9 +33,6 @@ const Header: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-6">
             {isAuthenticated ? (
               <>
-                <Link to="/prontuarios" className="text-neutral-700 hover:text-primary-600">
-                  Prontuários
-                </Link>
                 <div className="relative group">
                   <button className="flex items-center text-neutral-700 hover:text-primary-600">
                     <span className="mr-1">{user?.nome}</span>
@@ -86,13 +83,6 @@ const Header: React.FC = () => {
           <nav className="md:hidden mt-4 py-3 border-t border-neutral-200 animate-slide-down">
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/prontuarios"
-                  className="block py-2 text-neutral-700 hover:text-primary-600"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Prontuários
-                </Link>
                 <Link
                   to="/perfil"
                   className="block py-2 text-neutral-700 hover:text-primary-600"

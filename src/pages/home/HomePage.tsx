@@ -14,19 +14,18 @@ const HomePage: React.FC = () => {
         <div className="container-wide">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-6">
-              Sistema de Prontuários Eletrônicos HM Psicoterapia
+              Sistema de Prontuários Eletrônicos
             </h1>
             <p className="text-xl mb-8">
               Gerencie prontuários de pacientes com eficiência, segurança e conformidade com a LGPD.
             </p>
             {isAuthenticated ? (
-              <Link to="/prontuarios">
+              <Link to="/painel-de-controle">
                 <Button
                   variant="secondary"
                   size="lg"
-                  rightIcon={<ArrowRight className="h-5 w-5" />}
                 >
-                  Acessar Prontuários
+                  Painel de Controle
                 </Button>
               </Link>
             ) : (
@@ -90,38 +89,6 @@ const HomePage: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
-      </section>
-      
-      {/* CTA Section */}
-      <section className="py-16 bg-neutral-100">
-        <div className="container-medium text-center">
-          <h2 className="text-3xl font-bold mb-4">Comece a usar agora</h2>
-          <p className="text-lg text-neutral-600 mb-8">
-            Simplifique a gestão de prontuários e concentre-se no que realmente importa: seus pacientes.
-          </p>
-          
-          {isAuthenticated ? (
-            <Link to="/prontuarios">
-              <Button
-                variant="primary"
-                size="lg"
-                rightIcon={<ArrowRight className="h-5 w-5" />}
-              >
-                Acessar Prontuários
-              </Button>
-            </Link>
-          ) : (
-            <Link to="/cadastro">
-              <Button
-                variant="primary"
-                size="lg"
-                rightIcon={<ArrowRight className="h-5 w-5" />}
-              >
-                Criar Conta Gratuita
-              </Button>
-            </Link>
-          )}
         </div>
       </section>
     </div>

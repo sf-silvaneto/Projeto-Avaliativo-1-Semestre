@@ -1,18 +1,18 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // Importar useNavigate
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileSearch } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { useAuth } from '../../context/AuthContext'; // Importar o hook useAuth
+import { useAuth } from '../../context/AuthContext';
 
 const NotFoundPage: React.FC = () => {
-  const navigate = useNavigate(); // Hook para navegação
-  const { logout, isAuthenticated } = useAuth(); // Obter a função logout e o estado de autenticação
+  const navigate = useNavigate();
+  const { logout, isAuthenticated } = useAuth();
 
   const handleVoltarParaLogin = () => {
-    if (isAuthenticated) { // Se o usuário estiver logado, deslogue
+    if (isAuthenticated) {
       logout(); 
     }
-    navigate('/login'); // Redirecione para a página de login
+    navigate('/login');
   };
 
   return (
@@ -23,13 +23,12 @@ const NotFoundPage: React.FC = () => {
         <p className="text-lg text-neutral-600 mb-8">
           Desculpe, a página que você está procurando não existe ou foi movida.
         </p>
-        {/* O Link foi removido. O Button agora usa onClick. */}
         <Button
           variant="primary"
           leftIcon={<ArrowLeft className="h-4 w-4" />}
-          onClick={handleVoltarParaLogin} // Adicionado onClick para chamar a função
+          onClick={handleVoltarParaLogin} 
         >
-          Ir para Login {/* Texto do botão atualizado */}
+          Ir para Login
         </Button>
       </div>
     </div>

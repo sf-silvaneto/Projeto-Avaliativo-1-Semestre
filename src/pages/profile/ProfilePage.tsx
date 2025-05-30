@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,289 +7,308 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { User, Mail, Key, CheckCircle } from 'lucide-react';
+import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react';
 import * as authService from '../../services/authService';
+import { VerifiedProfileUpdateRequest, User } from '../../types/auth'; // User importado
+import { useLocation, useNavigate } from 'react-router-dom';
 
-// Validador de CPF
-const validarCPF = (cpf: string) => {
-  // Remove caracteres não numéricos
-  cpf = cpf.replace(/[^\d]/g, '');
-
-  // Verifica se tem 11 dígitos
-  if (cpf.length !== 11) return false;
-
-  // Verifica se todos os dígitos são iguais
-  if (/^(\d)\1+$/.test(cpf)) return false;
-
-  // Cálculo de validação
-  let soma = 0;
-  let resto;
-
-  for (let i = 1; i <= 9; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-  }
-
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(9, 10))) return false;
-
-  soma = 0;
-  for (let i = 1; i <= 10; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-  }
-
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(10, 11))) return false;
-
-  return true;
-};
-
-// Schema de validação de dados do perfil
-const profileSchema = z.object({
-  nome: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres'),
-  email: z.string().email('Email inválido'),
-  cpf: z.string().refine(validarCPF, { message: 'CPF inválido' }),
+// Schema para o formulário de verificação da palavra-chave atual
+const verifyKeywordSchema = z.object({
+  palavraChaveAtual: z.string().min(1, "Palavra-chave atual é obrigatória."),
 });
+type VerifyKeywordFormData = z.infer<typeof verifyKeywordSchema>;
 
-// Schema de validação para alteração de senha
-const passwordSchema = z.object({
-  senhaAtual: z.string().min(1, 'A senha atual é obrigatória'),
-  novaSenha: z.string().min(6, 'A nova senha deve ter pelo menos 6 caracteres'),
-  confirmarSenha: z.string().min(6, 'A confirmação de senha deve ter pelo menos 6 caracteres'),
-}).refine((data) => data.novaSenha === data.confirmarSenha, {
-  message: 'As senhas não coincidem',
-  path: ['confirmarSenha'],
+// Schema para o formulário de atualização de detalhes (após verificação)
+const updateDetailsSchema = z.object({
+  nome: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres.'),
+  email: z.string().email('O email fornecido é inválido.'),
+  novaPalavraChave: z.string().optional(),
+  confirmarNovaPalavraChave: z.string().optional(),
+}).superRefine((data, ctx) => {
+  const temNovaPalavraChave = data.novaPalavraChave && data.novaPalavraChave.trim() !== '';
+
+  if (temNovaPalavraChave) {
+    if (data.novaPalavraChave.length < 4) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Nova palavra-chave deve ter no mínimo 4 caracteres.',
+        path: ['novaPalavraChave'],
+      });
+    }
+    if (data.novaPalavraChave !== data.confirmarNovaPalavraChave) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'As novas palavras-chave não coincidem.',
+        path: ['confirmarNovaPalavraChave'],
+      });
+    }
+  } else if (data.confirmarNovaPalavraChave && !data.novaPalavraChave) {
+    ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Nova palavra-chave é obrigatória se a confirmação for preenchida.',
+        path: ['novaPalavraChave'],
+      });
+  }
+  // A validação de que "pelo menos um campo mudou" será feita no handler do submit
 });
+type UpdateDetailsFormData = z.infer<typeof updateDetailsSchema>;
 
-type ProfileFormData = z.infer<typeof profileSchema>;
-type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const ProfilePage: React.FC = () => {
-  const { user, updateProfile, isLoading, error, clearError } = useAuth();
+  const { user, isLoading: authContextLoading, error: authContextError, clearError, updateUserInContext } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [isKeywordVerified, setIsKeywordVerified] = useState(false);
+  const [isVerifyingKeyword, setIsVerifyingKeyword] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   
-  const [activeTab, setActiveTab] = useState<'perfil' | 'senha'>('perfil');
-  const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
-  const [passwordUpdateError, setPasswordUpdateError] = useState<string | null>(null);
-  const [profileUpdateSuccess, setProfileUpdateSuccess] = useState(false);
-  
-  // Form para dados do perfil
-  const profileForm = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
+  const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
+  const [detailsUpdateSuccess, setDetailsUpdateSuccess] = useState(false);
+  const [detailsUpdateError, setDetailsUpdateError] = useState<string | null>(null);
+
+  const [showPalavraChaveAtual, setShowPalavraChaveAtual] = useState(false);
+  const [showNovaPalavraChave, setShowNovaPalavraChave] = useState(false);
+  const [showConfirmarNovaPalavraChave, setShowConfirmarNovaPalavraChave] = useState(false);
+
+  const verificationForm = useForm<VerifyKeywordFormData>({
+    resolver: zodResolver(verifyKeywordSchema),
+    defaultValues: { palavraChaveAtual: '' },
+  });
+
+  const updateDetailsForm = useForm<UpdateDetailsFormData>({
+    resolver: zodResolver(updateDetailsSchema),
     defaultValues: {
       nome: user?.nome || '',
       email: user?.email || '',
-      cpf: user?.cpf || '',
+      novaPalavraChave: '',
+      confirmarNovaPalavraChave: '',
     },
   });
-  
-  // Form para alteração de senha
-  const passwordForm = useForm<PasswordFormData>({
-    resolver: zodResolver(passwordSchema),
-    defaultValues: {
-      senhaAtual: '',
-      novaSenha: '',
-      confirmarSenha: '',
-    },
-  });
-  
-  // Atualiza o form quando o usuário é carregado
-  React.useEffect(() => {
+
+  // Efeito para lidar com a aba padrão vinda do estado da rota (se houver)
+  // e para resetar o formulário de detalhes quando o usuário ou o estado de verificação mudar.
+  useEffect(() => {
+    const routeState = location.state as { defaultTab?: string }; // Embora não tenhamos mais abas, mantido por segurança
+    if (routeState?.defaultTab) { // Limpa o estado da rota para não afetar navegações futuras
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+
     if (user) {
-      profileForm.reset({
+      updateDetailsForm.reset({
         nome: user.nome,
         email: user.email,
-        cpf: user.cpf,
+        novaPalavraChave: '',
+        confirmarNovaPalavraChave: '',
       });
     }
-  }, [user, profileForm]);
-  
-  // Handle profile update
-  const handleUpdateProfile = async (data: ProfileFormData) => {
+  }, [user, isKeywordVerified, updateDetailsForm, location.state, location.pathname, navigate]);
+
+  const handleKeywordVerification = async (data: VerifyKeywordFormData) => {
+    if (!user?.email) {
+      setVerificationError("Email do usuário não encontrado. Por favor, recarregue a página.");
+      return;
+    }
+    setIsVerifyingKeyword(true);
+    setVerificationError(null);
+    clearError(); 
     try {
-      await updateProfile(data);
-      setProfileUpdateSuccess(true);
+      await authService.verifyEmailAndKeyword({ email: user.email, palavraChave: data.palavraChaveAtual });
+      setIsKeywordVerified(true);
+      setDetailsUpdateError(null); 
+      setDetailsUpdateSuccess(false);
+      // O useEffect acima já irá resetar o updateDetailsForm com os dados do usuário
+    } catch (err: any) {
+      console.error("Erro na verificação da palavra-chave (Perfil):", err.response?.data || err.message);
+      setVerificationError(err.response?.data?.mensagem || err.response?.data?.message || "Palavra-chave atual incorreta ou erro na verificação.");
+      setIsKeywordVerified(false);
+    } finally {
+      setIsVerifyingKeyword(false);
+    }
+  };
+
+  const handleDetailsUpdate = async (data: UpdateDetailsFormData) => {
+    if (!user) {
+      setDetailsUpdateError("Usuário não autenticado. Por favor, faça login novamente.");
+      return;
+    }
+
+    setIsUpdatingDetails(true);
+    setDetailsUpdateError(null);
+    setDetailsUpdateSuccess(false);
+    clearError();
+
+    const payload: VerifiedProfileUpdateRequest = {};
+    let hasChanges = false;
+
+    if (data.nome.trim() !== user.nome) {
+      payload.nome = data.nome.trim();
+      hasChanges = true;
+    }
+    if (data.email.trim().toLowerCase() !== user.email.toLowerCase()) {
+      payload.email = data.email.trim();
+      hasChanges = true;
+    }
+    if (data.novaPalavraChave && data.novaPalavraChave.trim() !== '') {
+      payload.novaPalavraChave = data.novaPalavraChave.trim();
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
+      setDetailsUpdateError("Nenhuma alteração detectada. Modifique o nome, email ou forneça uma nova palavra-chave.");
+      setIsUpdatingDetails(false);
+      return;
+    }
+
+    try {
+      const updatedUser = await authService.updateVerifiedProfileDetails(payload);
+      updateUserInContext(updatedUser);
+      setDetailsUpdateSuccess(true);
+      setTimeout(() => setDetailsUpdateSuccess(false), 3000);
       
-      // Reset success message after 3 seconds
-      setTimeout(() => {
-        setProfileUpdateSuccess(false);
-      }, 3000);
-    } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
+      setIsKeywordVerified(false);
+      verificationForm.reset({palavraChaveAtual: ''}); ar
+      
+    } catch (err: any) {
+      console.error("ERRO em handleDetailsUpdate:", err.response?.data || err.message || err);
+      setDetailsUpdateError(err.response?.data?.mensagem || err.response?.data?.message || 'Erro ao atualizar os dados.');
+    } finally {
+      setIsUpdatingDetails(false);
     }
   };
   
-  // Handle password change
-  const handleChangePassword = async (data: PasswordFormData) => {
-    try {
-      await authService.changePassword(data.senhaAtual, data.novaSenha);
-      setPasswordUpdateSuccess(true);
-      setPasswordUpdateError(null);
-      passwordForm.reset();
-      
-      // Reset success message after 3 seconds
-      setTimeout(() => {
-        setPasswordUpdateSuccess(false);
-      }, 3000);
-    } catch (error: any) {
-      setPasswordUpdateError(
-        error.response?.data?.message || 'Erro ao alterar senha'
-      );
-    }
+  const toggleShow = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setter(prev => !prev);
   };
-  
-  return (
-    <div className="container-medium">
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Meu Perfil</h1>
-      
-      <div className="mb-6">
-        <div className="border-b border-neutral-200">
-          <nav className="-mb-px flex space-x-6">
-            <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'perfil'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-              onClick={() => setActiveTab('perfil')}
-            >
-              Dados Pessoais
-            </button>
-            <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'senha'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-              onClick={() => setActiveTab('senha')}
-            >
-              Alterar Senha
-            </button>
-          </nav>
-        </div>
-      </div>
-      
-      {activeTab === 'perfil' && (
-        <Card>
-          {profileUpdateSuccess && (
-            <Alert
-              type="success"
-              title="Perfil atualizado!"
-              message="Seus dados foram atualizados com sucesso."
-              className="mb-4"
-            />
-          )}
-          
-          {error && (
-            <Alert
-              type="error"
-              message={error}
-              className="mb-4"
-              onClose={clearError}
-            />
-          )}
-          
-          <form onSubmit={profileForm.handleSubmit(handleUpdateProfile)}>
-            <div className="grid grid-cols-1 gap-4">
-              <Input
-                label="Nome Completo"
-                placeholder="Nome completo"
-                leftAddon={<User className="h-5 w-5" />}
-                {...profileForm.register('nome')}
-                error={profileForm.formState.errors.nome?.message}
-              />
-              
-              <Input
-                label="Email"
-                type="email"
-                placeholder="email@exemplo.com"
-                leftAddon={<Mail className="h-5 w-5" />}
-                {...profileForm.register('email')}
-                error={profileForm.formState.errors.email?.message}
-              />
-              
-              <Input
-                label="CPF"
-                placeholder="000.000.000-00"
-                helperText="Digite apenas os números"
-                {...profileForm.register('cpf')}
-                error={profileForm.formState.errors.cpf?.message}
-              />
+
+  if (authContextLoading && !user) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+            <div className="text-center">
+                {/* Você pode usar seu componente Loader2 aqui se preferir */}
+                <p className="mt-4 text-neutral-600">Carregando dados do perfil...</p>
             </div>
-            
+        </div>
+    );
+  }
+
+  return (
+    <div className="container-medium py-8">
+      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Meu Perfil e Configurações</h1>
+
+      {!isKeywordVerified ? (
+        <Card>
+          <div className="text-center mb-4">
+            <ShieldAlert className="h-12 w-12 text-primary-500 mx-auto mb-2" />
+            <h2 className="text-lg font-semibold text-neutral-800">Verificar Identidade</h2>
+            <p className="text-neutral-600 text-sm">Para alterar seus dados (nome, email ou palavra-chave), por favor, insira sua palavra-chave atual.</p>
+          </div>
+          {verificationError && (
+            <Alert type="error" message={verificationError} className="mb-4" onClose={() => setVerificationError(null)} />
+          )}
+          {authContextError && !verificationError && (
+             <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
+          )}
+          <form onSubmit={verificationForm.handleSubmit(handleKeywordVerification)}>
+            <Input
+              label="Palavra-Chave Atual"
+              type={showPalavraChaveAtual ? "text" : "password"}
+              placeholder="Sua palavra-chave atual"
+              leftAddon={<Key className="h-5 w-5" />}
+              rightAddon={
+                <button type="button" onClick={() => toggleShow(setShowPalavraChaveAtual)} className="focus:outline-none p-1">
+                  {showPalavraChaveAtual ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
+                </button>
+              }
+              {...verificationForm.register('palavraChaveAtual')}
+              error={verificationForm.formState.errors.palavraChaveAtual?.message}
+            />
             <div className="mt-6">
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isLoading}
-                leftIcon={<CheckCircle className="h-4 w-4" />}
-              >
-                Salvar Alterações
+              <Button type="submit" variant="primary" isLoading={isVerifyingKeyword || authContextLoading} leftIcon={<ShieldCheck className="h-4 w-4" />}>
+                Verificar Palavra-Chave
               </Button>
             </div>
           </form>
         </Card>
-      )}
-      
-      {activeTab === 'senha' && (
+      ) : (
         <Card>
-          {passwordUpdateSuccess && (
-            <Alert
-              type="success"
-              title="Senha alterada!"
-              message="Sua senha foi alterada com sucesso."
-              className="mb-4"
-            />
+          <div className="flex justify-between items-center mb-1">
+            <h2 className="text-lg font-semibold text-neutral-800">Atualizar Dados Pessoais e Palavra-Chave</h2>
+            <Button variant="link" size="sm" onClick={() => {
+                setIsKeywordVerified(false);
+                verificationForm.reset({palavraChaveAtual: ''});
+                setVerificationError(null);
+                setDetailsUpdateError(null); 
+                setDetailsUpdateSuccess(false);
+            }}>
+                Bloquear / Reverificar
+            </Button>
+          </div>
+           <div className="p-3 mb-4 bg-success-50 border border-success-200 rounded-md text-success-700 text-sm flex items-center">
+            <ShieldCheck className="h-5 w-5 inline mr-2 flex-shrink-0" />
+            Identidade verificada. Você pode alterar seus dados abaixo.
+          </div>
+
+          {detailsUpdateSuccess && (
+            <Alert type="success" title="Sucesso!" message="Seus dados foram atualizados." className="mb-4" onClose={() => setDetailsUpdateSuccess(false)} />
           )}
-          
-          {passwordUpdateError && (
-            <Alert
-              type="error"
-              message={passwordUpdateError}
-              className="mb-4"
-              onClose={() => setPasswordUpdateError(null)}
-            />
+          {detailsUpdateError && (
+            <Alert type="error" message={detailsUpdateError} className="mb-4" onClose={() => setDetailsUpdateError(null)} />
           )}
-          
-          <form onSubmit={passwordForm.handleSubmit(handleChangePassword)}>
-            <div className="grid grid-cols-1 gap-4">
+           {authContextError && !detailsUpdateError && (
+             <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
+           )}
+
+          <form onSubmit={updateDetailsForm.handleSubmit(handleDetailsUpdate)}>
+            <div className="space-y-4">
+              <h3 className="text-md font-medium text-neutral-700 pt-2">Dados Pessoais</h3>
               <Input
-                label="Senha Atual"
-                type="password"
-                placeholder="Digite sua senha atual"
-                leftAddon={<Key className="h-5 w-5" />}
-                {...passwordForm.register('senhaAtual')}
-                error={passwordForm.formState.errors.senhaAtual?.message}
+                label="Nome Completo"
+                leftAddon={<UserIcon className="h-5 w-5" />}
+                {...updateDetailsForm.register('nome')}
+                error={updateDetailsForm.formState.errors.nome?.message}
+              />
+              <Input
+                label="Email"
+                type="email"
+                leftAddon={<Mail className="h-5 w-5" />}
+                {...updateDetailsForm.register('email')}
+                error={updateDetailsForm.formState.errors.email?.message}
               />
               
-              <Input
-                label="Nova Senha"
-                type="password"
-                placeholder="Digite sua nova senha"
-                leftAddon={<Key className="h-5 w-5" />}
-                helperText="Mínimo de 6 caracteres"
-                {...passwordForm.register('novaSenha')}
-                error={passwordForm.formState.errors.novaSenha?.message}
-              />
+              <h3 className="text-md font-medium text-neutral-700 border-t pt-4 mt-6">Alterar Palavra-Chave (Opcional)</h3>
+              <p className="text-xs text-neutral-500 -mt-3 mb-2">Deixe os campos abaixo em branco se não desejar alterar sua palavra-chave de recuperação.</p>
               
               <Input
-                label="Confirmar Nova Senha"
-                type="password"
-                placeholder="Confirme sua nova senha"
+                label="Nova Palavra-Chave"
+                type={showNovaPalavraChave ? "text" : "password"}
+                placeholder="Nova palavra-chave (mín. 4 caracteres)"
                 leftAddon={<Key className="h-5 w-5" />}
-                {...passwordForm.register('confirmarSenha')}
-                error={passwordForm.formState.errors.confirmarSenha?.message}
+                rightAddon={
+                  <button type="button" onClick={() => toggleShow(setShowNovaPalavraChave)} className="focus:outline-none p-1">
+                    {showNovaPalavraChave ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
+                  </button>
+                }
+                {...updateDetailsForm.register('novaPalavraChave')}
+                error={updateDetailsForm.formState.errors.novaPalavraChave?.message}
+              />
+              <Input
+                label="Confirmar Nova Palavra-Chave"
+                type={showConfirmarNovaPalavraChave ? "text" : "password"}
+                placeholder="Confirme se digitou uma nova palavra-chave"
+                leftAddon={<Key className="h-5 w-5" />}
+                rightAddon={
+                  <button type="button" onClick={() => toggleShow(setShowConfirmarNovaPalavraChave)} className="focus:outline-none p-1">
+                    {showConfirmarNovaPalavraChave ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
+                  </button>
+                }
+                {...updateDetailsForm.register('confirmarNovaPalavraChave')}
+                error={updateDetailsForm.formState.errors.confirmarNovaPalavraChave?.message}
               />
             </div>
-            
             <div className="mt-6">
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isLoading}
-                leftIcon={<Key className="h-4 w-4" />}
-              >
-                Alterar Senha
+              <Button type="submit" variant="primary" isLoading={isUpdatingDetails || authContextLoading} leftIcon={<Edit3 className="h-4 w-4" />}>
+                Salvar Alterações
               </Button>
             </div>
           </form>

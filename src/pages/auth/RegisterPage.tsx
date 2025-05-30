@@ -27,7 +27,7 @@ const RegisterPage: React.FC = () => {
         </div>
         <h1 className="mt-4 text-2xl font-bold text-neutral-900">Crie sua conta</h1>
         <p className="mt-2 text-neutral-600">
-          Cadastre-se para acessar o sistema de prontuários da HM Psicoterapia
+          Cadastre-se para acessar o sistema de prontuários.
         </p>
       </div>
       

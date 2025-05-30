@@ -67,6 +67,16 @@ export const updateProfile = async (data: UpdateProfileRequest) => {
   }
 };
 
+export const updateKeyword = async (data: UpdateKeywordRequest): Promise<void> => { // Pode retornar User se o backend o fizer
+  try {
+    // Você precisará criar este endpoint no backend:
+    const response = await api.put('/administradores/profile/keyword', data);
+    return response.data; // Ou apenas retornar void se o backend não devolver dados do usuário
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const verifyEmailAndKeyword = async (credentials: VerifyKeywordCredentials) => {
   try {
     const response = await api.post('/administradores/verificar-palavra-chave', credentials);

@@ -10,20 +10,19 @@ const LoginPage: React.FC = () => {
   const { login, isLoading, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/prontuarios';
+  const from = location.state?.from?.pathname || '/painel-de-controle';
   
-  const [sessionExpired, setSessionExpired] = useState(false); // Mantido como booleano
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [registrationSuccessMessage, setRegistrationSuccessMessage] = useState<string | null>(null);
-  const [passwordResetSuccessMessage, setPasswordResetSuccessMessage] = useState<string | null>(null); // NOVO ESTADO
+  const [passwordResetSuccessMessage, setPasswordResetSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    let stateFromNavigation = location.state as any; // Para acessar o estado da navegação
+    let stateFromNavigation = location.state as any;
     let shouldClearState = false;
 
     if (params.get('session') === 'expired') {
       setSessionExpired(true);
-      // Limpa o query param da URL, mas preserva o location.state se existir
       navigate(location.pathname, { replace: true, state: stateFromNavigation || {} }); 
     }
 
@@ -38,7 +37,6 @@ const LoginPage: React.FC = () => {
     }
 
     if (shouldClearState) {
-      // Limpa o estado da rota para não mostrar as mensagens novamente
       navigate(location.pathname, { state: {}, replace: true });
     }
 
@@ -61,7 +59,7 @@ const LoginPage: React.FC = () => {
      setRegistrationSuccessMessage(null);
   };
 
-  const dismissPasswordResetSuccessAlert = () => { // Nova função para fechar o alerta
+  const dismissPasswordResetSuccessAlert = () => {
     setPasswordResetSuccessMessage(null);
   };
   
@@ -104,7 +102,7 @@ const LoginPage: React.FC = () => {
         </div>
         <h1 className="mt-4 text-2xl font-bold text-neutral-900">Acesse sua conta</h1>
         <p className="mt-2 text-neutral-600">
-          Entre para acessar o sistema de prontuários da HM Psicoterapia
+          Entre para acessar o sistema de prontuários.
         </p>
       </div>
       

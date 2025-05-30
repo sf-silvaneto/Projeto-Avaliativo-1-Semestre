@@ -12,10 +12,10 @@ const Footer: React.FC = () => {
           <div>
             <Link to="/" className="flex items-center">
               <FileText className="h-6 w-6 text-primary-600" />
-              <span className="ml-2 text-lg font-semibold text-neutral-900">HM Psicoterapia</span>
+              <span className="ml-2 text-lg font-semibold text-neutral-900">Clínica HM</span>
             </Link>
             <p className="mt-3 text-sm text-neutral-600">
-              Sistema de Prontuários Eletrônicos para profissionais de psicoterapia.
+              Sistema de Prontuários Eletrônicos para profissionais.
             </p>
           </div>
 
@@ -24,16 +24,6 @@ const Footer: React.FC = () => {
               Links Úteis
             </h3>
             <ul className="mt-4 space-y-2">
-              <li>
-                <Link to="/prontuarios" className="text-sm text-neutral-600 hover:text-primary-600">
-                  Prontuários
-                </Link>
-              </li>
-              <li>
-                <Link to="/perfil" className="text-sm text-neutral-600 hover:text-primary-600">
-                  Meu Perfil
-                </Link>
-              </li>
               <li>
                 <Link to="/termos" className="text-sm text-neutral-600 hover:text-primary-600">
                   Termos de Uso
@@ -67,10 +57,10 @@ const Footer: React.FC = () => {
 
         <div className="mt-8 pt-6 border-t border-neutral-200 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-neutral-500">
-            &copy; {currentYear} HM Psicoterapia. Todos os direitos reservados.
+            &copy; {currentYear} Clínica HM. Todos os direitos reservados.
           </p>
           <p className="mt-2 md:mt-0 text-sm text-neutral-500 flex items-center">
-            Feito com <Heart className="h-4 w-4 text-error-500 mx-1" /> em Brasil
+            Feito com <Heart className="h-4 w-4 text-error-500 mx-1" />
           </p>
         </div>
       </div>
