@@ -2,191 +2,117 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+import * as authService from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { FileText, Lock } from 'lucide-react';
+import { FileText, Lock, Key as KeyIcon, Mail, Eye, EyeOff } from 'lucide-react';
+import { FinalResetPasswordCredentials } from '../../types/auth';
 
-// Schema de validação para solicitação de redefinição
-const requestSchema = z.object({
-  email: z.string().email('Email inválido'),
+const verifySchema = z.object({
+  email: z.string().email('Formato de email inválido.'),
+  palavraChave: z.string().min(4, 'A palavra-chave deve ter no mínimo 4 caracteres.'),
 });
 
-// Schema de validação para redefinição de senha
+const strongPasswordValidation = new RegExp(
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/
+);
+
 const resetSchema = z.object({
-  senha: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-  confirmarSenha: z.string().min(6, 'A confirmação de senha deve ter pelo menos 6 caracteres'),
-}).refine((data) => data.senha === data.confirmarSenha, {
-  message: 'As senhas não coincidem',
-  path: ['confirmarSenha'],
+  novaSenha: z.string().min(6, 'A nova senha deve ter pelo menos 6 caracteres.')
+                .regex(strongPasswordValidation, 'Senha fraca. Use maiúscula, minúscula, número e símbolo.'),
+  confirmarNovaSenha: z.string(),
+}).refine((data) => data.novaSenha === data.confirmarNovaSenha, {
+  message: 'As senhas não coincidem.',
+  path: ['confirmarNovaSenha'],
 });
 
-type RequestFormData = z.infer<typeof requestSchema>;
+type VerifyFormData = z.infer<typeof verifySchema>;
 type ResetFormData = z.infer<typeof resetSchema>;
 
 const ResetPasswordPage: React.FC = () => {
-  const { requestPasswordReset, resetPassword, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Check if token is in URL
-  const queryParams = new URLSearchParams(location.search);
-  const token = queryParams.get('token');
-  
-  const [requestSent, setRequestSent] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
-  
-  // Form for requesting password reset
-  const requestForm = useForm<RequestFormData>({
-    resolver: zodResolver(requestSchema),
-    defaultValues: {
-      email: '',
-    },
+  const [stage, setStage] = useState<'verify' | 'reset'>('verify');
+  const [verifiedEmail, setVerifiedEmail] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Este successMessage agora é apenas para o sucesso da primeira etapa (verificação)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [showPalavraChave, setShowPalavraChave] = useState(false);
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
+  const [showConfirmarNovaSenha, setShowConfirmarNovaSenha] = useState(false);
+
+  const verifyForm = useForm<VerifyFormData>({
+    resolver: zodResolver(verifySchema),
+    mode: 'onChange',
+    defaultValues: { email: '', palavraChave: '' },
   });
-  
-  // Form for resetting password with token
+
   const resetForm = useForm<ResetFormData>({
     resolver: zodResolver(resetSchema),
-    defaultValues: {
-      senha: '',
-      confirmarSenha: '',
-    },
+    defaultValues: { novaSenha: '', confirmarNovaSenha: '' },
   });
-  
-  // Handle request for password reset
-  const handleRequestReset = async (data: RequestFormData) => {
+
+  const watchedEmailVerify = verifyForm.watch("email");
+  const watchedPalavraChaveVerify = verifyForm.watch("palavraChave");
+  const canSubmitVerification = 
+    !!watchedEmailVerify && !!watchedPalavraChaveVerify &&
+    !verifyForm.formState.errors.email && 
+    !verifyForm.formState.errors.palavraChave;
+
+  const handleVerifyKeywordSubmit = async (data: VerifyFormData) => {
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
     try {
-      await requestPasswordReset(data.email);
-      setRequestSent(true);
-      clearError();
-    } catch (error) {
-      console.error('Erro ao solicitar redefinição de senha:', error);
+      await authService.verifyEmailAndKeyword(data);
+      setVerifiedEmail(data.email);
+      setStage('reset');
+      setSuccessMessage('Verificação bem-sucedida! Agora defina sua nova senha.'); // Mensagem para esta etapa
+      verifyForm.reset();
+    } catch (err: any) {
+      setError(err.response?.data?.mensagem || err.response?.data?.message || 'Email ou Palavra Chave incorretos.');
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  // Handle password reset with token
-  const handleResetPassword = async (data: ResetFormData) => {
-    if (!token) return;
-    
+
+  const handleResetPasswordSubmit = async (data: ResetFormData) => {
+    if (!verifiedEmail) {
+      setError('Erro crítico: Email não verificado. Por favor, tente novamente desde o início.');
+      setStage('verify');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null); // Limpa a mensagem de sucesso do estágio anterior
     try {
-      await resetPassword({
-        token,
-        senha: data.senha,
-        confirmarSenha: data.confirmarSenha,
-      });
-      setResetSuccess(true);
-      clearError();
+      const payload: FinalResetPasswordCredentials = {
+        email: verifiedEmail,
+        novaSenha: data.novaSenha,
+        confirmarNovaSenha: data.confirmarNovaSenha,
+      };
+      await authService.resetPasswordAfterVerification(payload);
       
-      // Redirect to login after 3 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-    } catch (error) {
-      console.error('Erro ao redefinir senha:', error);
+      resetForm.reset();
+      // NAVEGA IMEDIATAMENTE para /login e passa o estado para exibir a mensagem lá
+      navigate('/login', { 
+        state: { 
+          passwordResetSuccess: true, // Flag para LoginPage identificar
+          message: 'Senha redefinida com sucesso! Por favor, faça o login com sua nova senha.' 
+        } 
+      });
+
+    } catch (err: any) {
+      setError(err.response?.data?.mensagem || err.response?.data?.message || 'Erro ao redefinir senha. Verifique os requisitos da senha.');
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  // Render request form or reset form based on token presence
-  const renderForm = () => {
-    if (resetSuccess) {
-      return (
-        <Alert
-          type="success"
-          title="Senha redefinida com sucesso!"
-          message="Sua senha foi alterada. Você será redirecionado para a página de login."
-        />
-      );
-    }
-    
-    if (token) {
-      return (
-        <form onSubmit={resetForm.handleSubmit(handleResetPassword)}>
-          {error && (
-            <Alert
-              type="error"
-              message={error}
-              className="mb-4"
-            />
-          )}
-          
-          <Input
-            label="Nova Senha"
-            type="password"
-            placeholder="Digite sua nova senha"
-            leftAddon={<Lock className="h-5 w-5" />}
-            helperText="Mínimo de 6 caracteres"
-            {...resetForm.register('senha')}
-            error={resetForm.formState.errors.senha?.message}
-          />
-          
-          <Input
-            label="Confirmar Nova Senha"
-            type="password"
-            placeholder="Confirme sua nova senha"
-            leftAddon={<Lock className="h-5 w-5" />}
-            {...resetForm.register('confirmarSenha')}
-            error={resetForm.formState.errors.confirmarSenha?.message}
-          />
-          
-          <div className="mt-6">
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              isLoading={isLoading}
-            >
-              Redefinir Senha
-            </Button>
-          </div>
-        </form>
-      );
-    }
-    
-    return (
-      <form onSubmit={requestForm.handleSubmit(handleRequestReset)}>
-        {requestSent ? (
-          <Alert
-            type="success"
-            title="Solicitação enviada!"
-            message="Se o email fornecido estiver cadastrado, você receberá um link para redefinir sua senha. Verifique sua caixa de entrada."
-          />
-        ) : (
-          <>
-            {error && (
-              <Alert
-                type="error"
-                message={error}
-                className="mb-4"
-              />
-            )}
-            
-            <Input
-              label="Email"
-              type="email"
-              placeholder="Digite seu email"
-              {...requestForm.register('email')}
-              error={requestForm.formState.errors.email?.message}
-            />
-            
-            <div className="mt-6">
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                isLoading={isLoading}
-              >
-                Solicitar Redefinição
-              </Button>
-            </div>
-          </>
-        )}
-      </form>
-    );
-  };
-  
+
   return (
     <div className="container-tight py-8">
       <div className="text-center mb-8">
@@ -194,25 +120,121 @@ const ResetPasswordPage: React.FC = () => {
           <FileText className="h-12 w-12 text-primary-600" />
         </div>
         <h1 className="mt-4 text-2xl font-bold text-neutral-900">
-          {token ? 'Redefinir Senha' : 'Recuperar Senha'}
+          {stage === 'verify' ? 'Recuperar Senha' : 'Definir Nova Senha'}
         </h1>
         <p className="mt-2 text-neutral-600">
-          {token
-            ? 'Digite sua nova senha para continuar'
-            : 'Digite seu email para receber um link de redefinição de senha'}
+          {stage === 'verify'
+            ? 'Informe seu email e palavra-chave para continuar.'
+            : `Defina uma nova senha para o email: ${verifiedEmail}.`}
         </p>
       </div>
-      
+
       <Card>
-        {renderForm()}
+        {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
+        {/* Este successMessage agora é para a primeira etapa, se desejar */}
+        {successMessage && stage === 'verify' && <Alert type="success" message={successMessage} className="mb-4" onClose={() => setSuccessMessage(null)} />} 
+        
+        {stage === 'verify' && (
+          <form onSubmit={verifyForm.handleSubmit(handleVerifyKeywordSubmit)}>
+            <Input
+              label="Email"
+              type="email"
+              placeholder="Digite seu email"
+              leftAddon={<Mail className="h-5 w-5" />}
+              {...verifyForm.register('email')}
+              error={verifyForm.formState.errors.email?.message}
+            />
+            <Input
+              label="Palavra Chave"
+              type={showPalavraChave ? "text" : "password"}
+              placeholder="Digite sua palavra-chave"
+              leftAddon={<KeyIcon className="h-5 w-5" />}
+              rightAddon={
+                <button type="button" onClick={() => setShowPalavraChave(!showPalavraChave)} className="focus:outline-none p-1">
+                  {showPalavraChave ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
+                </button>
+              }
+              {...verifyForm.register('palavraChave')}
+              error={verifyForm.formState.errors.palavraChave?.message}
+            />
+            <div className="mt-6">
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                isLoading={isLoading}
+                disabled={!canSubmitVerification || isLoading} 
+              >
+                Verificar
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {stage === 'reset' && (
+          <form onSubmit={resetForm.handleSubmit(handleResetPasswordSubmit)}>
+            <Input
+              label="Nova Senha"
+              type={showNovaSenha ? "text" : "password"}
+              placeholder="Digite sua nova senha"
+              leftAddon={<Lock className="h-5 w-5" />}
+              rightAddon={
+                <button type="button" onClick={() => setShowNovaSenha(!showNovaSenha)} className="focus:outline-none p-1">
+                  {showNovaSenha ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
+                </button>
+              }
+              helperText="Mín. 6 caracteres, com maiúscula, minúscula, número e símbolo."
+              {...resetForm.register('novaSenha')}
+              error={resetForm.formState.errors.novaSenha?.message}
+            />
+            <Input
+              label="Confirmar Nova Senha"
+              type={showConfirmarNovaSenha ? "text" : "password"}
+              placeholder="Confirme sua nova senha"
+              leftAddon={<Lock className="h-5 w-5" />}
+              rightAddon={ 
+                <button type="button" onClick={() => setShowConfirmarNovaSenha(!showConfirmarNovaSenha)} className="focus:outline-none p-1">
+                  {showConfirmarNovaSenha ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
+                </button>
+              }
+              {...resetForm.register('confirmarNovaSenha')}
+              error={resetForm.formState.errors.confirmarNovaSenha?.message}
+            />
+            <div className="mt-6">
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                isLoading={isLoading}
+              >
+                Redefinir Senha 
+              </Button>
+            </div>
+            <div className="text-center mt-4">
+                 <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    onClick={() => {
+                        setStage('verify');
+                        setError(null);
+                        setSuccessMessage(null);
+                        resetForm.reset(); 
+                    }}
+                 >
+                    Verificar outro email/palavra-chave
+                 </Button>
+            </div>
+          </form>
+        )}
       </Card>
-      
+
       <div className="mt-6 text-center">
         <p className="text-neutral-600">
           Lembrou sua senha?{' '}
-          <a href="/login" className="font-medium text-primary-600 hover:text-primary-700">
+          <Link to="/login" className="font-medium text-primary-600 hover:text-primary-700">
             Voltar para o login
-          </a>
+          </Link>
         </p>
       </div>
     </div>

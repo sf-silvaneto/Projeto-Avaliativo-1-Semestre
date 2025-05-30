@@ -53,13 +53,13 @@ const Footer: React.FC = () => {
             </h3>
             <ul className="mt-4 space-y-2">
               <li className="text-sm text-neutral-600">
-                Email: contato@hmpsicoterapia.com.br
+                Email: contato@hm.com
               </li>
               <li className="text-sm text-neutral-600">
                 Telefone: (84) 90000-0000
               </li>
               <li className="text-sm text-neutral-600">
-                Horário: Segunda a Sexta, 9h às 18h
+                Horário: Segunda a Sexta, 09:00 às 18:00
               </li>
             </ul>
           </div>

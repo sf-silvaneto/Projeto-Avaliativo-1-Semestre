@@ -1,15 +1,25 @@
 import api, { setAuthToken, removeAuthToken } from './api';
-import { LoginCredentials, RegisterCredentials, UpdatePasswordRequest, UpdateProfileRequest, User } from '../types/auth';
+import { 
+  LoginCredentials, 
+  RegisterCredentials, 
+  // UpdatePasswordRequest, // Removida se não for mais usada pelo novo fluxo
+  UpdateProfileRequest, 
+  User,
+  VerifyKeywordCredentials,      // Importando o tipo para verificação
+  FinalResetPasswordCredentials  // Importando o tipo para redefinição final
+} from '../types/auth';
 
 export const login = async (credentials: LoginCredentials) => {
   try {
-    const response = await api.post('/auth/login', credentials);
+    const response = await api.post('/administradores/login', credentials);
     
+    // A lógica de chamar setAuthToken aqui ou no AuthContext pode ser discutida.
+    // Se o AuthContext chama getCurrentUser após o login, o token precisa ser setado antes.
     if (response.data.token) {
       setAuthToken(response.data.token);
     }
     
-    return response.data;
+    return response.data; // Retorna { token, nome, email, mensagem }
   } catch (error) {
     throw error;
   }
@@ -17,7 +27,7 @@ export const login = async (credentials: LoginCredentials) => {
 
 export const register = async (userData: RegisterCredentials) => {
   try {
-    const response = await api.post('/auth/register', userData);
+    const response = await api.post('/administradores/registrar', userData);
     return response.data;
   } catch (error) {
     throw error;
@@ -26,7 +36,7 @@ export const register = async (userData: RegisterCredentials) => {
 
 export const logout = () => {
   try {
-    removeAuthToken();
+    removeAuthToken(); // Remove o token do cookie
     return true;
   } catch (error) {
     console.error('Erro ao fazer logout:', error);
@@ -36,8 +46,12 @@ export const logout = () => {
 
 export const getCurrentUser = async (): Promise<User> => {
   try {
-    const response = await api.get('/user/me');
-    return response.data;
+    // Garanta que o backend tenha um endpoint GET /api/administradores/me
+    // que retorne um objeto compatível com a interface User.
+    const response = await api.get('/administradores/me');
+    // Se o backend retorna { ..., adminData: { id, nome, ... } }, use response.data.adminData
+    // Se retorna o objeto User diretamente, use response.data
+    return response.data.adminData || response.data; 
   } catch (error) {
     throw error;
   }
@@ -45,25 +59,27 @@ export const getCurrentUser = async (): Promise<User> => {
 
 export const updateProfile = async (data: UpdateProfileRequest) => {
   try {
-    const response = await api.put('/user/profile', data);
+    // Garanta que o backend tenha um endpoint PUT /api/administradores/profile
+    const response = await api.put('/administradores/profile', data);
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-export const requestPasswordReset = async (email: string) => {
+export const verifyEmailAndKeyword = async (credentials: VerifyKeywordCredentials) => {
   try {
-    const response = await api.post('/auth/password-reset-request', { email });
-    return response.data;
+    const response = await api.post('/administradores/verificar-palavra-chave', credentials);
+    return response.data; 
   } catch (error) {
     throw error;
   }
 };
 
-export const resetPassword = async (data: UpdatePasswordRequest) => {
+export const resetPasswordAfterVerification = async (data: FinalResetPasswordCredentials) => {
   try {
-    const response = await api.post('/auth/reset-password', data);
+    const payload = { email: data.email, novaSenha: data.novaSenha };
+    const response = await api.put('/administradores/redefinir-senha', payload);
     return response.data;
   } catch (error) {
     throw error;

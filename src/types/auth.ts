@@ -2,7 +2,6 @@ export interface User {
   id: string;
   nome: string;
   email: string;
-  cpf: string;
   role: 'ADMIN' | 'USER';
   createdAt: string;
   updatedAt: string;
@@ -24,23 +23,24 @@ export interface LoginCredentials {
 export interface RegisterCredentials {
   nome: string;
   email: string;
-  cpf: string;
   senha: string;
   confirmarSenha: string;
+  palavraChave: string;
 }
 
-export interface ResetPasswordRequest {
+export interface VerifyKeywordCredentials {
   email: string;
+  palavraChave: string;
+}
+
+export interface FinalResetPasswordCredentials {
+  email: string;
+  novaSenha: string;
+  confirmarNovaSenha: string;
 }
 
 export interface UpdatePasswordRequest {
   token: string;
   senha: string;
   confirmarSenha: string;
-}
-
-export interface UpdateProfileRequest {
-  nome: string;
-  email: string;
-  cpf: string;
 }

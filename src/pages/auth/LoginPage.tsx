@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AuthForm from '../../components/auth/AuthForm';
@@ -7,34 +7,62 @@ import Alert from '../../components/ui/Alert';
 import { FileText } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, isLoading, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/prontuarios';
   
-  const [sessionExpired, setSessionExpired] = useState(false);
-  
-  // Check if session expired from query param
-  React.useEffect(() => {
+  const [sessionExpired, setSessionExpired] = useState(false); // Mantido como booleano
+  const [registrationSuccessMessage, setRegistrationSuccessMessage] = useState<string | null>(null);
+  const [passwordResetSuccessMessage, setPasswordResetSuccessMessage] = useState<string | null>(null); // NOVO ESTADO
+
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
+    let stateFromNavigation = location.state as any; // Para acessar o estado da navegação
+    let shouldClearState = false;
+
     if (params.get('session') === 'expired') {
       setSessionExpired(true);
+      // Limpa o query param da URL, mas preserva o location.state se existir
+      navigate(location.pathname, { replace: true, state: stateFromNavigation || {} }); 
     }
-  }, [location]);
+
+    if (stateFromNavigation?.registrationSuccess) {
+      setRegistrationSuccessMessage('Cadastro realizado com sucesso! Por favor, faça o login.');
+      shouldClearState = true;
+    }
+    
+    if (stateFromNavigation?.passwordResetSuccess && stateFromNavigation?.message) {
+      setPasswordResetSuccessMessage(stateFromNavigation.message);
+      shouldClearState = true;
+    }
+
+    if (shouldClearState) {
+      // Limpa o estado da rota para não mostrar as mensagens novamente
+      navigate(location.pathname, { state: {}, replace: true });
+    }
+
+  }, [location, navigate]);
   
   const handleLogin = async (data: { email: string; senha: string }) => {
     try {
       await login(data);
       navigate(from, { replace: true });
-    } catch (error) {
-      console.error('Erro ao fazer login:', error);
+    } catch (err) {
+      console.error('Falha no componente LoginPage ao tentar fazer login:', err);
     }
   };
   
   const dismissSessionAlert = () => {
     setSessionExpired(false);
-    const newUrl = window.location.pathname;
-    window.history.replaceState({}, '', newUrl);
+  };
+
+  const dismissRegistrationSuccessAlert = () => {
+     setRegistrationSuccessMessage(null);
+  };
+
+  const dismissPasswordResetSuccessAlert = () => { // Nova função para fechar o alerta
+    setPasswordResetSuccessMessage(null);
   };
   
   return (
@@ -46,6 +74,27 @@ const LoginPage: React.FC = () => {
           message="Sua sessão expirou. Por favor, faça login novamente."
           className="mb-6"
           onClose={dismissSessionAlert}
+        />
+      )}
+
+      {registrationSuccessMessage && (
+        <Alert
+          type="success"
+          title="Cadastro Concluído!"
+          message={registrationSuccessMessage}
+          className="mb-6"
+          onClose={dismissRegistrationSuccessAlert}
+        />
+      )}
+
+      {/* NOVO ALERT para mensagem de sucesso na redefinição de senha */}
+      {passwordResetSuccessMessage && (
+        <Alert
+          type="success"
+          title="Senha Redefinida!"
+          message={passwordResetSuccessMessage}
+          className="mb-6"
+          onClose={dismissPasswordResetSuccessAlert} 
         />
       )}
       

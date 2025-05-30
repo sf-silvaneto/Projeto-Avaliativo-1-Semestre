@@ -4,23 +4,18 @@ import { useAuth } from '../../context/AuthContext';
 import AuthForm from '../../components/auth/AuthForm';
 import Card from '../../components/ui/Card';
 import { FileText, Lock } from 'lucide-react';
+import { RegisterCredentials } from '../../types/auth';
 
 const RegisterPage: React.FC = () => {
   const { register, isLoading, error } = useAuth();
   const navigate = useNavigate();
   
-  const handleRegister = async (data: {
-    nome: string;
-    email: string;
-    cpf: string;
-    senha: string;
-    confirmarSenha: string;
-  }) => {
+  const handleRegister = async (data: RegisterCredentials) => {
     try {
       await register(data);
-      navigate('/prontuarios');
-    } catch (error) {
-      console.error('Erro ao cadastrar:', error);
+      navigate('/login', { state: { registrationSuccess: true } }); 
+    } catch (err) {
+      console.error('Falha no componente RegisterPage ao tentar registrar:', err);
     }
   };
   

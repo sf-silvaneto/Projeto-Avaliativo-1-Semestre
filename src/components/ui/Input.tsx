@@ -28,8 +28,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       'form-input',
       {
         'border-error-500 focus:ring-error-500': error,
-        'pl-10': leftAddon,
-        'pr-10': rightAddon,
+        'pl-10': leftAddon,  // Padding à esquerda se leftAddon existir
+        'pr-10': rightAddon, // Padding à direita se rightAddon existir (para não sobrepor o ícone)
         'w-full': fullWidth,
       },
       className
@@ -43,9 +43,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         
-        <div className="relative">
+        <div className="relative"> {/* Envolve o input e os addons para posicionamento absoluto */}
           {leftAddon && (
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-neutral-500">
+              {/* leftAddon pode ter pointer-events-none se for apenas visual */}
               {leftAddon}
             </div>
           )}
@@ -53,7 +54,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input id={inputId} className={inputClasses} ref={ref} {...props} />
           
           {rightAddon && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-neutral-500">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-500">
+              {/* REMOVIDO pointer-events-none daqui para permitir cliques no rightAddon (botão do olho) */}
               {rightAddon}
             </div>
           )}
