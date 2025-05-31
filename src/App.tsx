@@ -25,9 +25,15 @@ import ProntuarioDetailPage from './pages/prontuario/ProntuarioDetailPage';
 import ProntuarioEditPage from './pages/prontuario/ProntuarioEditPage';
 
 // Pages - Medicos
-import MedicoListPage from './pages/medico/MedicoListPage'; // <--- Verifique esta linha e o arquivo correspondente
+import MedicoListPage from './pages/medico/MedicoListPage';
 import MedicoCreatePage from './pages/medico/MedicoCreatePage';
 import MedicoEditPage from './pages/medico/MedicoEditPage';
+
+// Pages - Pacientes
+import PacienteListPage from './pages/paciente/PacienteListPage';
+import PacienteCreatePage from './pages/paciente/PacienteCreatePage';
+import PacienteEditPage from './pages/paciente/PacienteEditPage';
+// import PacienteDetailPage from './pages/paciente/PacienteDetailPage'; // Se for criar, descomente e importe
 
 
 // Pages - Legal
@@ -60,18 +66,26 @@ function App() {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/painel-de-controle" element={<DashboardPage />} />
+            
             <Route path="/prontuarios" element={<ProntuarioListPage />} />
             <Route path="/prontuarios/novo" element={<ProntuarioCreatePage />} />
             <Route path="/prontuarios/:id" element={<ProntuarioDetailPage />} />
             <Route path="/prontuarios/:id/editar" element={<ProntuarioEditPage />} />
+            
             <Route path="/perfil" element={<ProfilePage />} />
             
-            {/* ROTAS PARA MÉDICOS */}
             <Route path="/medicos" element={<MedicoListPage />} />
             <Route path="/medicos/novo" element={<MedicoCreatePage />} />
             <Route path="/medicos/:id/editar" element={<MedicoEditPage />} />
 
-            <Route path="/pacientes" element={<div>Página Gerenciar Pacientes (em construção)</div>} />
+            {/* ROTAS PARA PACIENTES */}
+            <Route path="/pacientes" element={<PacienteListPage />} />
+            <Route path="/pacientes/novo" element={<PacienteCreatePage />} />
+            <Route path="/pacientes/:id/editar" element={<PacienteEditPage />} />
+            {/* A linha abaixo estava causando o erro de comentário não terminado.
+                Se PacienteDetailPage for implementada, adicione a rota corretamente:
+            <Route path="/pacientes/:id" element={<PacienteDetailPage />} />
+            */}
           </Route>
           
           <Route path="/home" element={<Navigate to="/" replace />} />

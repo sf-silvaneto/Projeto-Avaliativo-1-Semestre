@@ -7,7 +7,7 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert, Loader2, ArrowLeft } from 'lucide-react';
+import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert, Loader2, ArrowLeft } from 'lucide-react'; // ArrowLeft já importado
 import * as authService from '../../services/authService';
 import { VerifiedProfileUpdateRequest, User } from '../../types/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -113,14 +113,12 @@ const ProfilePage: React.FC = () => {
       setDetailsUpdateError(null);
     } catch (err: any) {
       console.error("Erro na verificação da palavra-chave (Perfil):", err.response?.data || err.message);
-      // >>> INÍCIO DA MODIFICAÇÃO DA MENSAGEM DE ERRO <<<
       const backendMessage = err.response?.data?.mensagem || err.response?.data?.message;
       if (backendMessage === "Email ou palavra-chave incorretos") {
         setVerificationError("A palavra-chave atual fornecida está incorreta. Verifique e tente novamente.");
       } else {
         setVerificationError(backendMessage || "Ocorreu um erro ao verificar a palavra-chave. Tente novamente.");
       }
-      // >>> FIM DA MODIFICAÇÃO DA MENSAGEM DE ERRO <<<
       setIsKeywordVerified(false);
     } finally {
       setIsVerifyingKeyword(false);
@@ -172,7 +170,7 @@ const ProfilePage: React.FC = () => {
           replace: true
         });
       } else {
-         console.error("handleDetailsUpdate: Resposta da API não continha adminData:", response);
+          console.error("handleDetailsUpdate: Resposta da API não continha adminData:", response);
         setDetailsUpdateError("Resposta inesperada do servidor ao atualizar.");
       }
 
@@ -230,24 +228,25 @@ const ProfilePage: React.FC = () => {
               {...verificationForm.register('palavraChaveAtual')}
               error={verificationForm.formState.errors.palavraChaveAtual?.message}
             />
-            <div className="mt-6 flex flex-col sm:flex-row-reverse sm:justify-start gap-3">
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={isVerifyingKeyword || authContextLoading}
-                leftIcon={<ShieldCheck className="h-4 w-4" />}
-                className="sm:ml-3 w-full sm:w-auto"
-              >
-                Verificar Palavra-Chave
-              </Button>
+            <div className="mt-6 flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2">
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => navigate(-1)}
                 leftIcon={<ArrowLeft className="h-4 w-4" />}
                 className="w-full sm:w-auto"
+                disabled={isVerifyingKeyword || authContextLoading}
               >
                 Voltar
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isVerifyingKeyword || authContextLoading}
+                leftIcon={<ShieldCheck className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+              >
+                Verificar Palavra-Chave
               </Button>
             </div>
           </form>
@@ -256,16 +255,8 @@ const ProfilePage: React.FC = () => {
         <Card>
           <div className="flex justify-between items-center mb-1">
             <h2 className="text-lg font-semibold text-neutral-800">Atualizar Dados Pessoais e Palavra-Chave</h2>
-            <Button variant="link" size="sm" onClick={() => {
-                setIsKeywordVerified(false);
-                verificationForm.reset({palavraChaveAtual: ''});
-                setVerificationError(null);
-                setDetailsUpdateError(null);
-            }}>
-                Voltar / Reverificar
-            </Button>
           </div>
-           <div className="p-3 mb-4 bg-success-50 border border-success-200 rounded-md text-success-700 text-sm flex items-center">
+            <div className="p-3 mb-4 bg-success-50 border border-success-200 rounded-md text-success-700 text-sm flex items-center">
             <ShieldCheck className="h-5 w-5 inline mr-2 flex-shrink-0" />
             Identidade verificada. Você pode alterar seus dados abaixo.
           </div>
@@ -273,9 +264,9 @@ const ProfilePage: React.FC = () => {
           {detailsUpdateError && (
             <Alert type="error" message={detailsUpdateError} className="mb-4" onClose={() => setDetailsUpdateError(null)} />
           )}
-           {authContextError && !detailsUpdateError && (
+            {authContextError && !detailsUpdateError && (
              <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
-           )}
+            )}
 
           <form onSubmit={updateDetailsForm.handleSubmit(handleDetailsUpdate)}>
             <div className="space-y-4">
@@ -324,8 +315,25 @@ const ProfilePage: React.FC = () => {
                 error={updateDetailsForm.formState.errors.confirmarNovaPalavraChave?.message}
               />
             </div>
-            <div className="mt-6">
-              <Button type="submit" variant="primary" isLoading={isUpdatingDetails || authContextLoading} leftIcon={<Edit3 className="h-4 w-4" />}>
+            {/* Container dos botões para o formulário de atualização */}
+            <div className="mt-6 flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => navigate(-1)}
+                leftIcon={<ArrowLeft className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+                disabled={isUpdatingDetails || authContextLoading}
+              >
+                Voltar
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isUpdatingDetails || authContextLoading}
+                leftIcon={<Edit3 className="h-4 w-4" />}
+                className="w-full sm:w-auto"
+              >
                 Salvar Alterações
               </Button>
             </div>

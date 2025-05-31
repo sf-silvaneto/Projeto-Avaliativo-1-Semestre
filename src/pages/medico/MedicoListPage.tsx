@@ -174,10 +174,7 @@ const MedicoListPage: React.FC = () => {
     let processedValue = value;
 
     if (name === 'crm') {
-      // Nova lógica para CRM: números seguidos por até 2 letras.
-      // Converte para maiúsculas e remove caracteres não alfanuméricos.
       const cleanedInput = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      
       let numPart = "";
       let letterPart = "";
       let parsingNumbers = true;
@@ -187,45 +184,30 @@ const MedicoListPage: React.FC = () => {
           if (/\d/.test(char)) {
             numPart += char;
           } else if (/[A-Z]/.test(char)) {
-            // Primeira letra encontrada, muda para parsear letras
             parsingNumbers = false;
             letterPart += char;
           }
-          // Ignora outros caracteres (já filtrados por cleanedInput)
-        } else { // Parsing letras
+        } else { 
           if (/[A-Z]/.test(char) && letterPart.length < 2) {
             letterPart += char;
           } else {
-            // Não é uma letra, ou já temos 2 letras. Interrompe.
             break; 
           }
         }
       }
-
-      // Regra: "sempre as duas letras APÓS números"
-      // Se letterPart tem conteúdo, numPart também deve ter.
       if (letterPart.length > 0 && numPart.length === 0) {
-        // Input inválido como "SP" ou "S123" (letras antes ou sem números significativos)
-        // Para manter a consistência da regra, não formamos um CRM válido.
-        // Pode-se optar por limpar (processedValue = "") ou permitir apenas a parte numérica se houver (já em numPart).
-        // Como numPart está vazio, limpamos.
         processedValue = ""; 
       } else {
         processedValue = numPart + letterPart;
       }
 
     } else if (name === 'nome') {
-      // Permitir letras (incluindo acentuadas comuns em português), espaços, apóstrofos e hífens.
-      // Remover números e outros caracteres não permitidos.
       processedValue = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, '');
     } else if (name === 'especialidade') {
-      // Permitir letras (incluindo acentuadas comuns em português), espaços, apóstrofos e hífens.
       processedValue = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, '');
     }
-    // Para outros campos (como o select 'status'), o valor é usado como está.
-
     setSearchFilters(prev => ({ ...prev, [name]: processedValue }));
-    setCurrentPage(0); // Reseta para a primeira página ao alterar qualquer filtro
+    setCurrentPage(0); 
   };
 
   const handleClearFilters = () => {
@@ -252,7 +234,7 @@ const MedicoListPage: React.FC = () => {
       try {
         await atualizarStatusMedico(id, { status: newStatus });
         setSuccessMessage(`Status do médico alterado para ${newStatus.toLowerCase()} com sucesso.`);
-        fetchMedicos(searchFilters, currentPage); // Rebusca os médicos para refletir a mudança
+        fetchMedicos(searchFilters, currentPage); 
       } catch (err: any) {
         setError(err.response?.data?.mensagem || 'Erro ao alterar status do médico.');
       } finally {
@@ -272,10 +254,8 @@ const MedicoListPage: React.FC = () => {
 
   return (
     <div className="container-wide py-8">
-        <div className="flex items-center mb-6">
-            <Link to="/painel-de-controle" className="text-neutral-500 hover:text-neutral-700 mr-2">
-                <ArrowLeft className="h-5 w-5" />
-            </Link>
+        {/* Título da Página */}
+        <div className="flex items-center mb-6"> {/* Removido o Link de voltar daqui */}
             <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Médicos</h1>
         </div>
         
@@ -300,7 +280,7 @@ const MedicoListPage: React.FC = () => {
               type="button"
               variant="secondary"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              leftIcon={<FilterIcon className="h-9 w-5" />} // Ajustado para h-5 w-5 para consistência, se necessário
+              leftIcon={<FilterIcon className="h-9 w-5" />} // Ajustado para h-5 w-5
               className="w-full md:w-auto"
             >
               Filtros
@@ -312,7 +292,7 @@ const MedicoListPage: React.FC = () => {
               <Input
                 label="CRM"
                 name="crm"
-                placeholder="CRM (Ex: 12345SP)" // Placeholder atualizado
+                placeholder="CRM (Ex: 12345SP)"
                 value={searchFilters.crm}
                 onChange={handleSearchChange}
               />
@@ -341,7 +321,15 @@ const MedicoListPage: React.FC = () => {
           )}
         </Card>
 
-        <div className="flex justify-end mb-4">
+        {/* Botões de Ação: Voltar e Adicionar Médico */}
+        <div className="flex justify-end items-center space-x-2 mb-4">
+          <Button
+            variant="secondary"
+            onClick={() => navigate(-1)} // Navega para a página anterior
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+          >
+            Voltar
+          </Button>
           <Link to="/medicos/novo">
             <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
               Adicionar Médico
