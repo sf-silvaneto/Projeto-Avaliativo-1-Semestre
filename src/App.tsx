@@ -1,3 +1,4 @@
+// src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -23,6 +24,12 @@ import ProntuarioCreatePage from './pages/prontuario/ProntuarioCreatePage';
 import ProntuarioDetailPage from './pages/prontuario/ProntuarioDetailPage';
 import ProntuarioEditPage from './pages/prontuario/ProntuarioEditPage';
 
+// Pages - Medicos
+import MedicoListPage from './pages/medico/MedicoListPage'; // <--- Verifique esta linha e o arquivo correspondente
+import MedicoCreatePage from './pages/medico/MedicoCreatePage';
+import MedicoEditPage from './pages/medico/MedicoEditPage';
+
+
 // Pages - Legal
 import TermosDeUsoPage from './pages/legal/TermosDeUsoPage'; 
 import PoliticaDePrivacidadePage from './pages/legal/PoliticaDePrivacidadePage'; 
@@ -39,8 +46,8 @@ function App() {
           {/* Public Routes */}
           <Route element={<PublicRoute />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/termos" element={<TermosDeUsoPage />} /> {/* <<< DEVE FUNCIONAR */}
-            <Route path="/privacidade" element={<PoliticaDePrivacidadePage />} /> {/* <<< DEVE FUNCIONAR */}
+            <Route path="/termos" element={<TermosDeUsoPage />} />
+            <Route path="/privacidade" element={<PoliticaDePrivacidadePage />} />
           </Route>
           
           {/* Restricted Public Routes (not accessible when logged in) */}
@@ -52,21 +59,23 @@ function App() {
           
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/painel-de-controle" element={<DashboardPage />} /> {/* <<< NOVA ROTA */}
+            <Route path="/painel-de-controle" element={<DashboardPage />} />
             <Route path="/prontuarios" element={<ProntuarioListPage />} />
             <Route path="/prontuarios/novo" element={<ProntuarioCreatePage />} />
             <Route path="/prontuarios/:id" element={<ProntuarioDetailPage />} />
             <Route path="/prontuarios/:id/editar" element={<ProntuarioEditPage />} />
             <Route path="/perfil" element={<ProfilePage />} />
-            {/* Adicione aqui as futuras rotas para /medicos e /pacientes */}
-            <Route path="/medicos" element={<div>Página Gerenciar Médicos (em construção)</div>} />
+            
+            {/* ROTAS PARA MÉDICOS */}
+            <Route path="/medicos" element={<MedicoListPage />} />
+            <Route path="/medicos/novo" element={<MedicoCreatePage />} />
+            <Route path="/medicos/:id/editar" element={<MedicoEditPage />} />
+
             <Route path="/pacientes" element={<div>Página Gerenciar Pacientes (em construção)</div>} />
           </Route>
           
-          {/* Redirect /home to / */}
           <Route path="/home" element={<Navigate to="/" replace />} />
           
-          {/* 404 - Not Found */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Router>
