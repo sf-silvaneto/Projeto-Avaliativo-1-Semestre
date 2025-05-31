@@ -1,14 +1,13 @@
-// src/components/paciente/PacienteTable.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Edit2 as EditIcon, Trash2 } from 'lucide-react'; // Trash2 pode ser removido se não for usado em outro lugar
+import { Eye, Edit2 as EditIcon, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
-import { Paciente, Genero } from '../../types/paciente'; // Ajuste o caminho
+import { Paciente, Genero } from '../../types/paciente';
 
 interface PacienteTableProps {
   pacientes: Paciente[];
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void; // A prop onDelete ainda existe, mas o botão não será renderizado aqui
+  onDelete: (id: string) => void;
   isLoadingAction: boolean;
   pacienteInAction: string | null;
 }
@@ -16,7 +15,7 @@ interface PacienteTableProps {
 const PacienteTable: React.FC<PacienteTableProps> = ({
   pacientes,
   onEdit,
-  onDelete, // A função onDelete ainda é recebida como prop
+  onDelete,
   isLoadingAction,
   pacienteInAction,
 }) => {
@@ -24,7 +23,7 @@ const PacienteTable: React.FC<PacienteTableProps> = ({
     if (!dataString) return '-';
     if (/^\d{4}-\d{2}-\d{2}$/.test(dataString)) {
       const [year, month, day] = dataString.split('-');
-      return `${day}/${month}/${year}`; // Correção da data da resposta anterior
+      return `${day}/${month}/${year}`;
     }
     const date = new Date(dataString);
     if (isNaN(date.getTime())) return '-';
@@ -77,7 +76,6 @@ const PacienteTable: React.FC<PacienteTableProps> = ({
                     >
                       <EditIcon className="h-4 w-4" />
                     </Button>
-                    {/* Botão de Excluir Paciente foi removido daqui */}
                   </div>
                 </td>
               </tr>

@@ -1,4 +1,3 @@
-// src/components/medico/MedicoForm.tsx
 import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +11,6 @@ import { User, Activity, Award, Edit3, Save, ToggleLeft, ToggleRight, MapPin } f
 import { especialidadesMedicas, nomesEspecialidades } from '../../data/especialidadesMedicas';
 import { ufsBrasil } from '../../data/ufsBrasil';
 
-// Validador para permitir apenas números e no máximo 6 dígitos
 const sixDigitNumberSchema = z.string()
   .regex(/^\d*$/, 'Apenas números são permitidos')
   .max(6, 'Máximo de 6 dígitos');
@@ -22,14 +20,13 @@ const sixDigitNumberRequiredSchema = z.string()
   .regex(/^\d+$/, 'Apenas números são permitidos')
   .max(6, 'Máximo de 6 dígitos');
 
-// Validador para nome completo (apenas letras, espaços, acentos e MÍNIMO DE 10 CARACTERES)
 const nameSchema = z.string()
-  .min(10, 'Nome completo deve ter no mínimo 10 caracteres') // <--- ALTERAÇÃO AQUI
+  .min(10, 'Nome completo deve ter no mínimo 10 caracteres')
   .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/, 'Nome deve conter apenas letras e espaços');
 
 
 const medicoSchema = z.object({
-  nomeCompleto: nameSchema, // Usar o schema para nome atualizado
+  nomeCompleto: nameSchema,
   crm: sixDigitNumberRequiredSchema.min(1, 'CRM é obrigatório'),
   crmUf: z.string().min(2, 'UF do CRM é obrigatória').max(2),
   especialidade: z.string().min(1, 'Especialidade é obrigatória'),

@@ -1,4 +1,3 @@
-// src/pages/medico/MedicoCreatePage.tsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import MedicoForm, { MedicoFormData } from '../../components/medico/MedicoForm';
@@ -15,8 +14,6 @@ const MedicoCreatePage: React.FC = () => {
     setIsCreating(true);
     setError(null);
     try {
-      // O backend espera MedicoCreateDTO, que não tem 'status'
-      // O status é definido como ATIVO por padrão no backend.
       const createData = {
         nomeCompleto: data.nomeCompleto,
         crm: data.crm,

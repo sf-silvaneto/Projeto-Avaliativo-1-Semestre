@@ -1,21 +1,18 @@
-// src/components/paciente/PacienteForm.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import Input from '../../components/ui/Input'; // Corrigido o caminho
-import Select from '../../components/ui/Select'; // Corrigido o caminho
-import Button from '../../components/ui/Button'; // Corrigido o caminho
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
+import Button from '../../components/ui/Button';
 import { PacienteFormData, Genero, RacaCor, TipoSanguineo } from '../../types/paciente';
 import { ufsBrasil } from '../../data/ufsBrasil';
 import { User, Calendar, Mail, Phone, MapPin, CreditCard, Droplet, Users, Briefcase, Info, Search, Loader2 } from 'lucide-react';
 
-// Regex para permitir letras, espaços e acentos comuns em português
 const apenasLetrasEspacosAcentos = /^[a-zA-ZÀ-ú\s]+$/;
 const nomeMinLength = 10;
 const nomeMaePaiMinLength = 10;
 
-// Esquema de validação Zod atualizado
 const pacienteFormSchema = z.object({
   nome: z.string()
     .min(nomeMinLength, `Nome completo deve ter no mínimo ${nomeMinLength} caracteres.`)
@@ -89,8 +86,8 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
     control,
     formState: { errors },
     reset,
-    setValue, // Para preencher campos do CEP
-    clearErrors, // Para limpar erros do CEP
+    setValue,
+    clearErrors,
   } = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteFormSchema),
     defaultValues: initialData || {
@@ -179,13 +176,11 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
   const racaCorOptions = [{value: '', label: 'Selecione...'}, ...Object.values(RacaCor).map(rc => ({ value: rc, label: rc.charAt(0) + rc.slice(1).toLowerCase().replace(/_/g, " ") }))];
   const tipoSanguineoOptions = [{value: '', label: 'Selecione...'}, ...Object.values(TipoSanguineo).map(ts => ({ value: ts, label: ts.replace(/_/g, " ") }))];
 
-  // Função para permitir apenas letras e espaços (e acentos)
   const handleOnlyLettersInput = (event: React.FormEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     input.value = input.value.replace(/[^a-zA-ZÀ-ú\s]/g, '');
   };
 
-  // Função para permitir apenas números
   const handleOnlyNumbersInput = (event: React.FormEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     input.value = input.value.replace(/\D/g, '');

@@ -1,9 +1,8 @@
-// src/pages/paciente/PacienteEditPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';
 import Alert from '../../components/ui/Alert';
-import Button from '../../components/ui/Button'; // Para botão Voltar
+import Button from '../../components/ui/Button';
 import * as pacienteService from '../../services/pacienteService';
 import { Paciente, PacienteFormData } from '../../types/paciente';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -35,11 +34,10 @@ const PacienteEditPage: React.FC = () => {
     }
   }, [id]);
 
-  // Função para converter Paciente para PacienteFormData
   const mapPacienteToFormData = (p: Paciente): PacienteFormData => {
     return {
         nome: p.nome,
-        dataNascimento: p.dataNascimento, // Assumindo que já está no formato "YYYY-MM-DD"
+        dataNascimento: p.dataNascimento,
         cpf: p.cpf,
         rg: p.rg || '',
         genero: p.genero,
@@ -47,7 +45,7 @@ const PacienteEditPage: React.FC = () => {
         email: p.email,
         nomeMae: p.nomeMae,
         nomePai: p.nomePai || '',
-        dataEntrada: p.dataEntrada, // Assumindo formato "YYYY-MM-DD"
+        dataEntrada: p.dataEntrada,
         cartaoSus: p.cartaoSus || '',
         racaCor: p.racaCor || '',
         tipoSanguineo: p.tipoSanguineo || '',
@@ -134,7 +132,7 @@ const PacienteEditPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-900">Editar Paciente: {paciente.nome}</h1>
       </div>
 
-      {error && !isSaving && ( // Mostra erro de carregamento apenas se não estiver salvando
+      {error && !isSaving && (
         <Alert
           type="error"
           message={error}
@@ -142,7 +140,7 @@ const PacienteEditPage: React.FC = () => {
           onClose={() => setError(null)}
         />
       )}
-      {isSaving && error && ( // Mostra erro de salvamento
+      {isSaving && error && (
          <Alert
           type="error"
           title="Erro ao Salvar"

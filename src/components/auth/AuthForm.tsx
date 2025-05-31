@@ -1,13 +1,12 @@
-import React, { useState } from 'react'; // Adicionar useState
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
-import { User, Mail, Lock, AlertTriangle, Key as KeyIcon, Eye, EyeOff } from 'lucide-react'; // Importar Eye e EyeOff
+import { User, Mail, Lock, AlertTriangle, Key as KeyIcon, Eye, EyeOff } from 'lucide-react';
 
-// Regex para senha forte
 const strongPasswordValidation = new RegExp(
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/
 );
@@ -51,7 +50,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
   const isLogin = type === 'login';
   const currentSchema = isLogin ? loginSchema : cadastroSchema;
 
-  // Estados para controlar a visibilidade dos campos
   const [showSenha, setShowSenha] = useState(false);
   const [showConfirmarSenha, setShowConfirmarSenha] = useState(false);
   const [showPalavraChave, setShowPalavraChave] = useState(false);
@@ -74,7 +72,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
         <Alert type="error" message={error} className="mb-4" />
       )}
 
-      {/* Campo Nome Completo (Apenas para cadastro) */}
       {!isLogin && (
         <Input
           label="Nome Completo"
@@ -85,7 +82,6 @@ const AuthForm: React.FC<AuthFormProps> = ({
         />
       )}
 
-      {/* Campo Email (Comum para Login e Cadastro) */}
       <Input
         label="Email"
         type="email"
@@ -95,13 +91,12 @@ const AuthForm: React.FC<AuthFormProps> = ({
         error={getError('email')}
       />
       
-      {/* Campo Senha */}
       <Input
         label="Senha"
-        type={showSenha ? "text" : "password"} // Tipo dinâmico
+        type={showSenha ? "text" : "password"}
         placeholder={isLogin ? "Digite sua senha" : "Crie uma senha"}
         leftAddon={<Lock className="h-5 w-5" />}
-        rightAddon={ // Ícone para mostrar/ocultar
+        rightAddon={
           <button type="button" onClick={() => setShowSenha(!showSenha)} className="focus:outline-none p-1">
             {showSenha ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
           </button>
@@ -111,15 +106,14 @@ const AuthForm: React.FC<AuthFormProps> = ({
         error={getError('senha')}
       />
 
-      {/* Campos Confirmar Senha e Palavra Chave (Apenas para cadastro) */}
       {!isLogin && (
         <>
           <Input
             label="Confirmar Senha"
-            type={showConfirmarSenha ? "text" : "password"} // Tipo dinâmico
+            type={showConfirmarSenha ? "text" : "password"}
             placeholder="Confirme sua senha"
             leftAddon={<Lock className="h-5 w-5" />}
-            rightAddon={ // Ícone para mostrar/ocultar
+            rightAddon={
               <button type="button" onClick={() => setShowConfirmarSenha(!showConfirmarSenha)} className="focus:outline-none p-1">
                 {showConfirmarSenha ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
               </button>
@@ -129,10 +123,10 @@ const AuthForm: React.FC<AuthFormProps> = ({
           />
           <Input
             label="Palavra Chave"
-            type={showPalavraChave ? "text" : "password"} // Tipo dinâmico
+            type={showPalavraChave ? "text" : "password"}
             placeholder="Digite sua palavra-chave (mín. 4 caracteres)"
             leftAddon={<KeyIcon className="h-5 w-5" />}
-            rightAddon={ // Ícone para mostrar/ocultar
+            rightAddon={
               <button type="button" onClick={() => setShowPalavraChave(!showPalavraChave)} className="focus:outline-none p-1">
                 {showPalavraChave ? <EyeOff className="h-5 w-5 text-neutral-500" /> : <Eye className="h-5 w-5 text-neutral-500" />}
               </button>

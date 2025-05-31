@@ -1,7 +1,3 @@
-// Reutilizando e estendendo o Genero de prontuario.ts se aplicável ou definindo aqui
-// import { Genero as GeneroProntuario, Endereco as EnderecoProntuario } from './prontuario';
-
-// Se Genero, RacaCor, TipoSanguineo não estiverem em prontuario.ts, defina-os aqui
 export enum Genero {
   MASCULINO = 'MASCULINO',
   FEMININO = 'FEMININO',
@@ -37,28 +33,7 @@ export interface Endereco {
 }
 
 export interface Paciente {
-  id: string; // Ou number, dependendo do backend (Long vira string ou number no JSON)
-  nome: string;
-  dataNascimento: string; // "AAAA-MM-DD"
-  cpf: string;
-  rg?: string;
-  genero: Genero;
-  telefone: string;
-  email: string;
-  nomeMae: string;
-  nomePai?: string;
-  dataEntrada: string; // "AAAA-MM-DD"
-  cartaoSus?: string;
-  racaCor?: RacaCor;
-  tipoSanguineo?: TipoSanguineo;
-  nacionalidade?: string;
-  ocupacao?: string;
-  endereco: Endereco;
-  createdAt: string; // "AAAA-MM-DDTHH:mm:ss"
-  updatedAt: string; // "AAAA-MM-DDTHH:mm:ss"
-}
-
-export interface PacienteFormData { // Para formulários de criação/edição
+  id: string;
   nome: string;
   dataNascimento: string;
   cpf: string;
@@ -68,10 +43,31 @@ export interface PacienteFormData { // Para formulários de criação/edição
   email: string;
   nomeMae: string;
   nomePai?: string;
-  dataEntrada?: string; // Pode ser opcional no form e default no backend
+  dataEntrada: string;
   cartaoSus?: string;
-  racaCor?: RacaCor | ''; // Permitir string vazia para selects não selecionados
-  tipoSanguineo?: TipoSanguineo | ''; // Permitir string vazia
+  racaCor?: RacaCor;
+  tipoSanguineo?: TipoSanguineo;
+  nacionalidade?: string;
+  ocupacao?: string;
+  endereco: Endereco;
+  createdAt: string; 
+  updatedAt: string;
+}
+
+export interface PacienteFormData {
+  nome: string;
+  dataNascimento: string;
+  cpf: string;
+  rg?: string;
+  genero: Genero;
+  telefone: string;
+  email: string;
+  nomeMae: string;
+  nomePai?: string;
+  dataEntrada?: string;
+  cartaoSus?: string;
+  racaCor?: RacaCor | '';
+  tipoSanguineo?: TipoSanguineo | '';
   nacionalidade?: string;
   ocupacao?: string;
   endereco: {
@@ -85,13 +81,10 @@ export interface PacienteFormData { // Para formulários de criação/edição
   };
 }
 
-// DTO para criar (payload para o POST)
 export type PacienteCreateDTO = PacienteFormData;
 
-// DTO para atualizar (payload para o PUT, todos os campos de PacienteFormData são opcionais)
 export type PacienteUpdateDTO = Partial<PacienteFormData>;
 
-// Para paginação de pacientes
 export interface ResultadoBuscaPacientes {
   content: Paciente[];
   pageable: {
@@ -102,12 +95,10 @@ export interface ResultadoBuscaPacientes {
   };
 }
 
-// Parâmetros para busca e filtragem de pacientes
 export interface BuscaPacienteParams {
   pagina?: number;
   tamanho?: number;
   nome?: string;
   cpf?: string;
-  // Adicionar outros filtros conforme necessidade
-  sort?: string; // Ex: "nome,asc"
+  sort?: string;
 }

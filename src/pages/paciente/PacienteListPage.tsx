@@ -1,4 +1,3 @@
-// src/pages/paciente/PacienteListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -21,7 +20,7 @@ const PacienteListPage: React.FC = () => {
 
   const [searchFilters, setSearchFilters] = useState<PacienteSearchFormData>({});
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize] = useState(10); // Pode ser configurável no futuro
+  const [pageSize] = useState(10);
 
   const [resultadoBusca, setResultadoBusca] = useState<ResultadoBuscaPacientes | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +39,7 @@ const PacienteListPage: React.FC = () => {
         tamanho: pageSize,
         nome: filters.nome || undefined,
         cpf: filters.cpf || undefined,
-        sort: 'nome,asc', // Exemplo de ordenação padrão
+        sort: 'nome,asc',
       };
       const result = await pacienteService.buscarPacientes(params);
       setResultadoBusca(result);
@@ -59,14 +58,14 @@ const PacienteListPage: React.FC = () => {
     const state = location.state as { pacienteSuccess?: boolean, message?: string };
     if (state?.pacienteSuccess && state?.message) {
       setSuccessMessage(state.message);
-      fetchPacientes(searchFilters, currentPage); // Rebusca para refletir mudanças
-      navigate(location.pathname, { replace: true, state: {} }); // Limpa o state
+      fetchPacientes(searchFilters, currentPage);
+      navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate, fetchPacientes, searchFilters, currentPage]);
 
   const handleSearch = (formData: PacienteSearchFormData) => {
     setSearchFilters(formData);
-    setCurrentPage(0); // Reseta para a primeira página ao aplicar novos filtros
+    setCurrentPage(0);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -86,7 +85,7 @@ const PacienteListPage: React.FC = () => {
       try {
         await pacienteService.deletarPaciente(id);
         setSuccessMessage('Paciente excluído com sucesso.');
-        fetchPacientes(searchFilters, currentPage); // Rebusca
+        fetchPacientes(searchFilters, currentPage);
       } catch (err: any) {
         setError(err.response?.data?.mensagem || err.message || 'Erro ao excluir paciente.');
       } finally {
@@ -100,8 +99,7 @@ const PacienteListPage: React.FC = () => {
 
   return (
     <div className="container-wide py-8">
-      {/* Título da Página */}
-      <div className="flex items-center mb-6"> {/* Removido o Link de voltar daqui */}
+      <div className="flex items-center mb-6">
         <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Pacientes</h1>
       </div>
 
@@ -112,11 +110,10 @@ const PacienteListPage: React.FC = () => {
 
       <PacienteSearchForm onSearch={handleSearch} isLoading={isLoading} initialFilters={searchFilters} />
 
-      {/* Botões de Ação: Voltar e Adicionar Paciente */}
       <div className="flex justify-end items-center space-x-2 mb-4">
         <Button
-          variant="secondary" // Ou 'outline', 'ghost' conforme preferência de estilo
-          onClick={() => navigate(-1)} // Navega para a página anterior
+          variant="secondary"
+          onClick={() => navigate(-1)}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
         >
           Voltar

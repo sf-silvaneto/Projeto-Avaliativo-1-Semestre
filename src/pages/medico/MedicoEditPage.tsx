@@ -1,7 +1,5 @@
-// src/pages/medico/MedicoEditPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-// Ajuste aqui:
 import MedicoForm, { MedicoFormData } from '../../components/medico/MedicoForm';
 import Alert from '../../components/ui/Alert';
 import { buscarMedicoPorId, atualizarMedico } from '../../services/medicoService';
@@ -56,7 +54,7 @@ const MedicoEditPage: React.FC = () => {
       const apiErrorMessage = err.response?.data?.mensagem || err.response?.data?.message || 'Erro desconhecido ao atualizar médico.';
       setError(apiErrorMessage);
     } finally {
-        setIsSaving(false); // Garante que o loading para mesmo em caso de erro
+        setIsSaving(false);
     }
   };
 

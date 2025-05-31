@@ -1,4 +1,3 @@
-// src/pages/paciente/PacienteCreatePage.tsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';

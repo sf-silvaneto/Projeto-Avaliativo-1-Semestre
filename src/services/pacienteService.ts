@@ -5,12 +5,11 @@ import {
   PacienteUpdateDTO,
   ResultadoBuscaPacientes,
   BuscaPacienteParams,
-} from '../types/paciente'; // Ajuste o caminho se necessário
+} from '../types/paciente';
 
 export const buscarPacientes = async (params: BuscaPacienteParams): Promise<ResultadoBuscaPacientes> => {
   try {
     const response = await api.get('/pacientes', { params });
-    // O backend já retorna um objeto com 'content' e 'pageable'
     return response.data; 
   } catch (error) {
     console.error("Erro ao buscar pacientes:", error);
@@ -20,7 +19,6 @@ export const buscarPacientes = async (params: BuscaPacienteParams): Promise<Resu
 
 export const buscarPacientePorId = async (id: string): Promise<Paciente> => {
   try {
-    // O backend retorna { dados: Paciente, mensagem: string, codigo: number }
     const response = await api.get<{dados: Paciente}>(`/pacientes/${id}`);
     return response.data.dados;
   } catch (error) {
@@ -31,7 +29,6 @@ export const buscarPacientePorId = async (id: string): Promise<Paciente> => {
 
 export const criarPaciente = async (data: PacienteCreateDTO): Promise<Paciente> => {
   try {
-    // O backend retorna { dados: Paciente, mensagem: string, codigo: number }
     const response = await api.post<{dados: Paciente}>('/pacientes', data);
     return response.data.dados;
   } catch (error) {
@@ -42,7 +39,6 @@ export const criarPaciente = async (data: PacienteCreateDTO): Promise<Paciente> 
 
 export const atualizarPaciente = async (id: string, data: PacienteUpdateDTO): Promise<Paciente> => {
   try {
-    // O backend retorna { dados: Paciente, mensagem: string, codigo: number }
     const response = await api.put<{dados: Paciente}>(`/pacientes/${id}`, data);
     return response.data.dados;
   } catch (error) {

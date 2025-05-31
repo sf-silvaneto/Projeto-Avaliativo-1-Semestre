@@ -1,4 +1,3 @@
-// src/pages/medico/MedicoListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter as FilterIcon, Edit2, Eye, ToggleLeft, ToggleRight, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -14,7 +13,7 @@ interface MedicoSearchFormData {
   nome?: string;
   crm?: string;
   especialidade?: string;
-  status?: StatusMedico | ''; // Allow empty string for "Todos"
+  status?: StatusMedico | '';
 }
 
 const MedicoTable: React.FC<{
@@ -254,8 +253,7 @@ const MedicoListPage: React.FC = () => {
 
   return (
     <div className="container-wide py-8">
-        {/* Título da Página */}
-        <div className="flex items-center mb-6"> {/* Removido o Link de voltar daqui */}
+        <div className="flex items-center mb-6">
             <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Médicos</h1>
         </div>
         
@@ -280,7 +278,7 @@ const MedicoListPage: React.FC = () => {
               type="button"
               variant="secondary"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              leftIcon={<FilterIcon className="h-9 w-5" />} // Ajustado para h-5 w-5
+              leftIcon={<FilterIcon className="h-9 w-5" />}
               className="w-full md:w-auto"
             >
               Filtros
@@ -321,11 +319,10 @@ const MedicoListPage: React.FC = () => {
           )}
         </Card>
 
-        {/* Botões de Ação: Voltar e Adicionar Médico */}
         <div className="flex justify-end items-center space-x-2 mb-4">
           <Button
             variant="secondary"
-            onClick={() => navigate(-1)} // Navega para a página anterior
+            onClick={() => navigate(-1)}
             leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
             Voltar
