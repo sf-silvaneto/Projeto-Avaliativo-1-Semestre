@@ -1,7 +1,8 @@
 export interface Prontuario {
   id: string;
   numeroProntuario: string;
-  paciente: Paciente;
+  paciente: Paciente; // Mantém a estrutura completa para exibição
+  medicoResponsavel?: Medico; // Adicionado para exibir o médico responsável
   tipoTratamento: TipoTratamento;
   dataInicio: string;
   dataUltimaAtualizacao: string;
@@ -12,6 +13,7 @@ export interface Prontuario {
   anotacoes: Anotacao[];
   createdAt: string;
   updatedAt: string;
+  dataAlta?: string; // Adicionada data de alta opcional
 }
 
 export interface Paciente {
@@ -25,6 +27,16 @@ export interface Paciente {
   endereco: Endereco;
   createdAt: string;
   updatedAt: string;
+}
+
+// Adicionada interface Medico simplificada para uso no Prontuario
+// Se já existir uma interface Medico em `src/types/medico.ts` com esses campos,
+// você pode importá-la em vez de redeclarar aqui.
+export interface Medico {
+  id: number;
+  nomeCompleto: string;
+  crm: string;
+  especialidade: string;
 }
 
 export interface Endereco {
@@ -55,7 +67,8 @@ export enum TipoTratamento {
 export enum StatusProntuario {
   ATIVO = 'ATIVO',
   INATIVO = 'INATIVO',
-  ARQUIVADO = 'ARQUIVADO'
+  ARQUIVADO = 'ARQUIVADO',
+  ALTA = 'ALTA' // Adicionado status ALTA, se fizer sentido para o seu fluxo
 }
 
 export interface HistoricoMedico {
@@ -84,7 +97,7 @@ export interface Exame {
   nome: string;
   data: string;
   resultado: string;
-  arquivo?: string;
+  arquivo?: string; // URL do arquivo, se houver
   observacoes?: string;
   createdAt: string;
   updatedAt: string;
@@ -98,6 +111,18 @@ export interface Anotacao {
   createdAt: string;
   updatedAt: string;
 }
+
+// Alergia (Nova interface, se for gerenciada por prontuário/paciente)
+// Se alergias são informações do PACIENTE e não do prontuário específico,
+// esta interface deveria estar em `src/types/paciente.ts`.
+export interface Alergia {
+  id: string;
+  descricao: string;
+  // outros campos como data_descoberta, severidade, se necessário
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export interface BuscaProntuarioParams {
   termo?: string;
@@ -119,24 +144,10 @@ export interface ResultadoBusca {
   }
 }
 
+// NovoProntuarioRequest MODIFICADO
 export interface NovoProntuarioRequest {
-  paciente: {
-    nome: string;
-    dataNascimento: string;
-    cpf: string;
-    genero: Genero;
-    telefone: string;
-    email: string;
-    endereco: {
-      logradouro: string;
-      numero: string;
-      complemento?: string;
-      bairro: string;
-      cidade: string;
-      estado: string;
-      cep: string;
-    }
-  };
+  pacienteId: string; // Ou number, dependendo do tipo do ID do PacienteEntity no backend
+  medicoId: number;   // ID do médico responsável selecionado
   tipoTratamento: TipoTratamento;
   historicoMedico: {
     descricao: string;

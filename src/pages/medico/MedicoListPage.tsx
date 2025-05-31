@@ -322,7 +322,7 @@ const MedicoListPage: React.FC = () => {
         <div className="flex justify-end items-center space-x-2 mb-4">
           <Button
             variant="secondary"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/painel-de-controle')} // MODIFICAÇÃO APLICADA AQUI
             leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
             Voltar

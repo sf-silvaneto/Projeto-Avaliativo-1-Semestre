@@ -72,6 +72,7 @@ interface PacienteFormProps {
   initialData?: Partial<PacienteFormData>;
   isLoading?: boolean;
   isEditMode?: boolean;
+  customActions?: React.ReactNode; // <-- Nova prop adicionada aqui
 }
 
 const PacienteForm: React.FC<PacienteFormProps> = ({
@@ -79,6 +80,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
   initialData,
   isLoading = false,
   isEditMode = false,
+  customActions, // <-- Prop recebida aqui
 }) => {
   const {
     register,
@@ -169,8 +171,13 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
   React.useEffect(() => {
     if (initialData) {
       reset(initialData);
+    } else {
+        // Garante que dataEntrada seja definida no modo de criação
+        setValue('dataEntrada', new Date().toISOString().split('T')[0]);
+        setValue('nacionalidade', 'Brasileira');
+        setValue('genero', Genero.NAO_INFORMADO);
     }
-  }, [initialData, reset]);
+  }, [initialData, reset, setValue]);
 
   const generoOptions = Object.values(Genero).map(g => ({ value: g, label: g.charAt(0) + g.slice(1).toLowerCase().replace(/_/g, " ") }));
   const racaCorOptions = [{value: '', label: 'Selecione...'}, ...Object.values(RacaCor).map(rc => ({ value: rc, label: rc.charAt(0) + rc.slice(1).toLowerCase().replace(/_/g, " ") }))];
@@ -260,7 +267,9 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
         />
       </div>
 
-      <div className="pt-6 flex justify-end">
+      {/* Área dos botões de ação MODIFICADA */}
+      <div className="pt-8 flex flex-wrap justify-end items-center gap-3">
+        {customActions} {/* Renderiza as ações personalizadas (botão Voltar) */}
         <Button type="submit" variant={isEditMode ? "primary" : "success"} isLoading={isLoading}>
           {isEditMode ? 'Salvar Alterações' : 'Cadastrar Paciente'}
         </Button>

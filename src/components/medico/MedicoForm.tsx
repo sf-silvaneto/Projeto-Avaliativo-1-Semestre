@@ -6,7 +6,7 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import { Medico, StatusMedico } from '../../types/medico';
+import { Medico, StatusMedico } from '../../types/medico'; // Certifique-se que StatusMedico está aqui
 import { User, Activity, Award, Edit3, Save, ToggleLeft, ToggleRight, MapPin } from 'lucide-react';
 import { especialidadesMedicas, nomesEspecialidades } from '../../data/especialidadesMedicas';
 import { ufsBrasil } from '../../data/ufsBrasil';
@@ -39,9 +39,10 @@ export type MedicoFormData = z.infer<typeof medicoSchema>;
 
 interface MedicoFormProps {
   onSubmit: (data: MedicoFormData) => void;
-  initialData?: Medico;
+  initialData?: Medico; // O tipo Medico deve incluir o campo 'id' se for usado em algum lugar.
   isLoading?: boolean;
   isEditMode?: boolean;
+  customActions?: React.ReactNode; // Nova prop para ações personalizadas
 }
 
 const MedicoForm: React.FC<MedicoFormProps> = ({
@@ -49,6 +50,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
   initialData,
   isLoading = false,
   isEditMode = false,
+  customActions, // Recebe a prop
 }) => {
   let initialCrmNumero = '';
   let initialCrmUf = '';
@@ -66,8 +68,8 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
             initialCrmNumero = initialData.crm.slice(0, -2);
             initialCrmUf = potentialUf.toUpperCase();
         } else {
-            initialCrmNumero = initialData.crm; 
-            initialCrmUf = '';
+            initialCrmNumero = initialData.crm;
+            initialCrmUf = ''; // Garante que não haja UF inválida
         }
     }
   }
@@ -121,6 +123,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
                 crmUfVal = potentialUf.toUpperCase();
             } else {
                 crmNum = initialData.crm;
+                // crmUfVal permanece '' como default
             }
         }
       }
@@ -164,6 +167,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
 
   const handleNameInput = (event: React.FormEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
+    // Permite letras, espaços, e acentos. Remove outros caracteres.
     input.value = input.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s]/g, '');
   };
 
@@ -172,7 +176,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         (data) => {
             const submissionData = {
                 ...data,
-                crm: `${data.crm}${data.crmUf}`,
+                crm: `${data.crm}${data.crmUf}`, // Concatena CRM e UF para submissão
             };
             onSubmit(submissionData);
         }
@@ -182,7 +186,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         placeholder="Digite o nome completo do médico"
         leftAddon={<User className="h-5 w-5" />}
         {...register('nomeCompleto')}
-        onInput={handleNameInput}
+        onInput={handleNameInput} // Usar onInput para aplicar a máscara enquanto digita
         error={errors.nomeCompleto?.message}
         required
       />
@@ -198,7 +202,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
                 error={errors.crm?.message}
                 required
                 maxLength={6}
-                type="text" 
+                type="text" // Manter como text para permitir a manipulação via handleNumericInput
             />
         </div>
         <Controller
@@ -254,11 +258,11 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         rows={4}
         {...register('resumoEspecialidade')}
         error={errors.resumoEspecialidade?.message}
-        readOnly
+        readOnly // O resumo é preenchido automaticamente
       />
 
       {isEditMode && (
-         <Controller
+          <Controller
           name="status"
           control={control}
           defaultValue={initialData?.status || StatusMedico.ATIVO}
@@ -275,7 +279,9 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         />
       )}
 
-      <div className="pt-4 flex justify-end">
+      {/* Área dos botões de ação MODIFICADA */}
+      <div className="pt-6 flex flex-wrap justify-end items-center gap-3">
+        {customActions} {/* Renderiza o botão Voltar (ou outras ações) aqui */}
         <Button
           type="submit"
           variant={isEditMode ? "primary" : "success"}

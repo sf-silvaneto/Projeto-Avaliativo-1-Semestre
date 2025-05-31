@@ -1,246 +1,209 @@
-import React, { useState } from 'react';
-import { useForm, FormProvider, useFormContext, Controller } from 'react-hook-form';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useForm, FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useNavigate } from 'react-router-dom';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { Genero, TipoTratamento, NovoProntuarioRequest } from '../../types/prontuario';
-import { ChevronRight, ChevronLeft, Save, User, Phone, Mail, MapPin, Calendar, FileText } from 'lucide-react';
+import { TipoTratamento, NovoProntuarioRequest } from '../../types/prontuario';
+import { Medico, StatusMedico } from '../../types/medico';
+import { Paciente, BuscaPacienteParams } from '../../types/paciente';
+import { buscarMedicos } from '../../services/medicoService';
+import { buscarPacientes } from '../../services/pacienteService';
+import { 
+  ChevronRight, ChevronLeft, Save, User, Stethoscope, FileText, 
+  ArrowLeft, Search, AlertCircle, Loader2, Users
+} from 'lucide-react';
 
-// Validador de CPF
-const validarCPF = (cpf: string) => {
-  // Remove caracteres não numéricos
-  cpf = cpf.replace(/[^\d]/g, '');
-
-  // Verifica se tem 11 dígitos
-  if (cpf.length !== 11) return false;
-
-  // Verifica se todos os dígitos são iguais
-  if (/^(\d)\1+$/.test(cpf)) return false;
-
-  // Cálculo de validação
-  let soma = 0;
-  let resto;
-
-  for (let i = 1; i <= 9; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-  }
-
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(9, 10))) return false;
-
-  soma = 0;
-  for (let i = 1; i <= 10; i++) {
-    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-  }
-
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(10, 11))) return false;
-
-  return true;
-};
-
-// Validador de telefone
-const validarTelefone = (telefone: string) => {
-  // Remove caracteres não numéricos
-  telefone = telefone.replace(/[^\d]/g, '');
-  
-  // Verifica se tem entre 10 e 11 dígitos (com ou sem DDD)
-  return telefone.length >= 10 && telefone.length <= 11;
-};
-
-// Validador de CEP
-const validarCEP = (cep: string) => {
-  // Remove caracteres não numéricos
-  cep = cep.replace(/[^\d]/g, '');
-  
-  // CEP tem 8 dígitos
-  return cep.length === 8;
-};
-
-// Schema de validação do formulário
 const prontuarioSchema = z.object({
-  paciente: z.object({
-    nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-    dataNascimento: z.string().refine(val => !isNaN(Date.parse(val)), {
-      message: 'Data de nascimento inválida',
-    }),
-    cpf: z.string().refine(validarCPF, {
-      message: 'CPF inválido',
-    }),
-    genero: z.nativeEnum(Genero, {
-      errorMap: () => ({ message: 'Selecione um gênero válido' }),
-    }),
-    telefone: z.string().refine(validarTelefone, {
-      message: 'Telefone inválido',
-    }),
-    email: z.string().email('Email inválido'),
-    endereco: z.object({
-      logradouro: z.string().min(3, 'Logradouro deve ter pelo menos 3 caracteres'),
-      numero: z.string().min(1, 'Número é obrigatório'),
-      complemento: z.string().optional(),
-      bairro: z.string().min(2, 'Bairro deve ter pelo menos 2 caracteres'),
-      cidade: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
-      estado: z.string().length(2, 'Use a sigla do estado com 2 letras'),
-      cep: z.string().refine(validarCEP, {
-        message: 'CEP inválido',
-      }),
-    }),
-  }),
+  pacienteId: z.string().min(1, 'Paciente é obrigatório. Realize a busca e selecione um paciente.'),
+  medicoId: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
+    z.number({ required_error: "Selecione um médico responsável" }).positive("Médico responsável é obrigatório")
+  ),
   tipoTratamento: z.nativeEnum(TipoTratamento, {
     errorMap: () => ({ message: 'Selecione um tipo de tratamento válido' }),
   }),
   historicoMedico: z.object({
-    descricao: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
+    descricao: z.string().min(10, 'Descrição do histórico deve ter pelo menos 10 caracteres'),
   }),
 });
 
 type ProntuarioFormData = z.infer<typeof prontuarioSchema>;
 
-// Componente para dados do paciente
-const DadosPacienteStep: React.FC = () => {
-  const { register, formState: { errors } } = useFormContext<ProntuarioFormData>();
+const SelecaoEntidadesStep: React.FC = () => {
+  const { control, formState: { errors }, setValue, trigger, watch } = useFormContext<ProntuarioFormData>();
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [medicos, setMedicos] = useState<Medico[]>([]);
+  const [searchTermPaciente, setSearchTermPaciente] = useState('');
+  const [isSearchingPacientes, setIsSearchingPacientes] = useState(false);
+  const [searchAttempted, setSearchAttempted] = useState(false);
+
+  const pacienteIdSelecionado = watch('pacienteId');
+
+  useEffect(() => {
+    const carregarMedicos = async () => {
+      try {
+        const response = await buscarMedicos({ status: StatusMedico.ATIVO, tamanho: 200, pagina: 0 });
+        setMedicos(response.content);
+      } catch (error) {
+        console.error("Erro ao buscar médicos:", error);
+      }
+    };
+    carregarMedicos();
+  }, []);
+
+  const performSearch = useCallback(async (term: string) => {
+    setIsSearchingPacientes(true);
+    setSearchAttempted(true);
+    setPacientes([]);
+
+    const params: BuscaPacienteParams = { tamanho: 10, pagina: 0 };
+    const isCpfSearch = /^\d+$/.test(term) && term.length >= 3;
+
+    if (isCpfSearch) {
+      params.cpf = term;
+    } else {
+      params.nome = term;
+    }
+
+    try {
+      const response = await buscarPacientes(params);
+      setPacientes(response.content);
+    } catch (error) {
+      console.error("Erro ao buscar pacientes:", error);
+      setPacientes([]);
+    } finally {
+      setIsSearchingPacientes(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (searchTermPaciente.length === 0) {
+      setPacientes([]);
+      setSearchAttempted(false);
+      return;
+    }
+    if (searchTermPaciente.length > 2) {
+      const timerId = setTimeout(() => {
+        performSearch(searchTermPaciente);
+      }, 700);
+      return () => clearTimeout(timerId);
+    } else {
+      setSearchAttempted(false);
+      setIsSearchingPacientes(false);
+    }
+  }, [searchTermPaciente, performSearch]);
+
+  const medicoOptions = medicos.map(medico => ({
+    value: medico.id.toString(),
+    label: `${medico.nomeCompleto} - CRM: ${medico.crm} (${medico.especialidade})`
+  }));
+
+  const pacienteOptions = pacientes.map(paciente => ({
+    value: paciente.id.toString(),
+    label: `${paciente.nome} (CPF: ${paciente.cpf})`
+  }));
   
-  const generoOptions = [
-    { value: Genero.MASCULINO, label: 'Masculino' },
-    { value: Genero.FEMININO, label: 'Feminino' },
-    { value: Genero.OUTRO, label: 'Outro' },
-    { value: Genero.NAO_INFORMADO, label: 'Não informado' },
-  ];
-  
+  const handlePacienteSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = event.target.value;
+    setValue('pacienteId', selectedId, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
+    const selectedPaciente = pacientes.find(p => p.id.toString() === selectedId);
+    if (selectedPaciente) {
+      setSearchTermPaciente(selectedPaciente.nome);
+    }
+    setPacientes([]); 
+    setSearchAttempted(false);
+  };
+
   return (
-    <div className="animate-fade-in">
-      <h3 className="mb-4 text-lg font-medium text-neutral-900">Dados do Paciente</h3>
+    <div className="animate-fade-in space-y-6">
+      <h3 className="text-xl font-semibold text-neutral-800 border-b border-neutral-300 pb-3 mb-6">
+        Vincular Paciente e Médico
+      </h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-soft">
         <Input
-          label="Nome Completo"
-          placeholder="Nome completo do paciente"
-          leftAddon={<User className="h-5 w-5" />}
-          {...register('paciente.nome')}
-          error={errors.paciente?.nome?.message}
-          required
+            label="Buscar Paciente por Nome ou CPF*"
+            placeholder="Digite 3+ caracteres para buscar..."
+            value={searchTermPaciente}
+            onChange={(e) => setSearchTermPaciente(e.target.value)}
+            leftAddon={<Search className="h-5 w-5 text-neutral-500" />}
+            helperText="Após a busca, selecione um paciente da lista abaixo."
+            className="mb-3"
         />
+
+        {isSearchingPacientes && (
+          <div className="flex items-center text-sm text-primary-600 mt-2 py-2">
+            <Loader2 size={18} className="mr-2 animate-spin" />
+            Buscando pacientes...
+          </div>
+        )}
         
-        <Input
-          label="Data de Nascimento"
-          type="date"
-          leftAddon={<Calendar className="h-5 w-5" />}
-          {...register('paciente.dataNascimento')}
-          error={errors.paciente?.dataNascimento?.message}
-          required
-        />
+        {!isSearchingPacientes && searchAttempted && pacientes.length > 0 && (
+             <Controller
+                name="pacienteId"
+                control={control}
+                render={({ field }) => (
+                    <Select
+                        label="Selecionar Paciente Encontrado:"
+                        options={[{ value: "", label: "Selecione um paciente da lista" }, ...pacienteOptions]}
+                        value={field.value}
+                        onChange={(e) => {
+                            handlePacienteSelection(e);
+                        }}
+                        error={errors.pacienteId?.message}
+                        className="mt-2"
+                    />
+                )}
+            />
+        )}
         
-        <Input
-          label="CPF"
-          placeholder="000.000.000-00"
-          helperText="Digite apenas os números"
-          {...register('paciente.cpf')}
-          error={errors.paciente?.cpf?.message}
-          required
-        />
-        
-        <Select
-          label="Gênero"
-          options={generoOptions}
-          {...register('paciente.genero')}
-          error={errors.paciente?.genero?.message}
-          required
-        />
-        
-        <Input
-          label="Telefone"
-          placeholder="(00) 00000-0000"
-          leftAddon={<Phone className="h-5 w-5" />}
-          {...register('paciente.telefone')}
-          error={errors.paciente?.telefone?.message}
-          required
-        />
-        
-        <Input
-          label="Email"
-          type="email"
-          placeholder="email@exemplo.com"
-          leftAddon={<Mail className="h-5 w-5" />}
-          {...register('paciente.email')}
-          error={errors.paciente?.email?.message}
-          required
-        />
+        {!isSearchingPacientes && searchAttempted && pacientes.length === 0 && searchTermPaciente.length > 2 && (
+            <div className="flex items-start text-sm text-warning-700 mt-2 p-3 bg-warning-50 rounded-md border border-warning-200">
+                <AlertCircle size={20} className="mr-2 flex-shrink-0 text-warning-500" />
+                <div>
+                    Nenhum paciente encontrado para "<span className="font-medium">{searchTermPaciente}</span>".
+                    <Button 
+                        variant="link" 
+                        size="sm" 
+                        onClick={() => window.open('/pacientes/novo', '_blank')}
+                        className="p-0 h-auto ml-1 text-primary-600 hover:text-primary-700 font-medium inline"
+                    >
+                        Cadastrar Novo Paciente?
+                    </Button>
+                </div>
+            </div>
+        )}
+         {errors.pacienteId && !pacienteIdSelecionado && (
+             <p className="form-error mt-1">{errors.pacienteId.message}</p>
+          )}
       </div>
-      
-      <h4 className="mt-6 mb-4 text-base font-medium text-neutral-900">Endereço</h4>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="CEP"
-          placeholder="00000-000"
-          helperText="Digite apenas os números"
-          leftAddon={<MapPin className="h-5 w-5" />}
-          {...register('paciente.endereco.cep')}
-          error={errors.paciente?.endereco?.cep?.message}
-          required
-        />
-        
-        <Input
-          label="Logradouro"
-          placeholder="Rua, Avenida, etc."
-          {...register('paciente.endereco.logradouro')}
-          error={errors.paciente?.endereco?.logradouro?.message}
-          required
-        />
-        
-        <Input
-          label="Número"
-          placeholder="Número"
-          {...register('paciente.endereco.numero')}
-          error={errors.paciente?.endereco?.numero?.message}
-          required
-        />
-        
-        <Input
-          label="Complemento"
-          placeholder="Apartamento, bloco, etc."
-          {...register('paciente.endereco.complemento')}
-          error={errors.paciente?.endereco?.complemento?.message}
-        />
-        
-        <Input
-          label="Bairro"
-          placeholder="Bairro"
-          {...register('paciente.endereco.bairro')}
-          error={errors.paciente?.endereco?.bairro?.message}
-          required
-        />
-        
-        <Input
-          label="Cidade"
-          placeholder="Cidade"
-          {...register('paciente.endereco.cidade')}
-          error={errors.paciente?.endereco?.cidade?.message}
-          required
-        />
-        
-        <Input
-          label="Estado"
-          placeholder="UF"
-          maxLength={2}
-          {...register('paciente.endereco.estado')}
-          error={errors.paciente?.endereco?.estado?.message}
-          required
+
+      <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-soft">
+        <Controller
+            name="medicoId"
+            control={control}
+            render={({ field }) => (
+                <Select
+                label="Médico Responsável*"
+                options={[{value: "", label: "Selecione um médico"}, ...medicoOptions]}
+                {...field}
+                onChange={(e) => field.onChange(e.target.value)}
+                error={errors.medicoId?.message}
+                leftAddon={<Stethoscope className="h-5 w-5 text-neutral-500" />}
+            />
+            )}
         />
       </div>
     </div>
   );
 };
 
-// Componente para informações de tratamento
 const InformacoesTratamentoStep: React.FC = () => {
   const { register, formState: { errors } } = useFormContext<ProntuarioFormData>();
-  
   const tipoTratamentoOptions = [
     { value: TipoTratamento.TERAPIA_INDIVIDUAL, label: 'Terapia Individual' },
     { value: TipoTratamento.TERAPIA_CASAL, label: 'Terapia de Casal' },
@@ -248,29 +211,32 @@ const InformacoesTratamentoStep: React.FC = () => {
     { value: TipoTratamento.TERAPIA_FAMILIAR, label: 'Terapia Familiar' },
     { value: TipoTratamento.OUTRO, label: 'Outro' },
   ];
-  
   return (
     <div className="animate-fade-in">
-      <h3 className="mb-4 text-lg font-medium text-neutral-900">Informações de Tratamento</h3>
-      
-      <div className="grid grid-cols-1 gap-4">
-        <Select
-          label="Tipo de Tratamento"
-          options={tipoTratamentoOptions}
-          leftAddon={<FileText className="h-5 w-5" />}
-          {...register('tipoTratamento')}
-          error={errors.tipoTratamento?.message}
-          required
-        />
-        
-        <Textarea
-          label="Histórico Médico Inicial"
-          placeholder="Descreva o histórico médico inicial do paciente..."
-          rows={6}
-          {...register('historicoMedico.descricao')}
-          error={errors.historicoMedico?.descricao?.message}
-          required
-        />
+      <h3 className="text-xl font-semibold text-neutral-800 border-b border-neutral-300 pb-3 mb-6">
+        Informações do Tratamento
+      </h3>
+      <div className="grid grid-cols-1 gap-6">
+        <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-soft">
+            <Select
+              label="Tipo de Tratamento*"
+              options={[{value: "", label: "Selecione um tipo"}, ...tipoTratamentoOptions]}
+              {...register('tipoTratamento')}
+              error={errors.tipoTratamento?.message}
+              required
+              leftAddon={<FileText className="h-5 w-5 text-neutral-500" />}
+            />
+        </div>
+        <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-soft">
+            <Textarea
+              label="Histórico Médico Inicial / Queixa Principal*"
+              placeholder="Descreva o histórico médico inicial e/ou a queixa principal do paciente..."
+              rows={6}
+              {...register('historicoMedico.descricao')}
+              error={errors.historicoMedico?.descricao?.message}
+              required
+            />
+        </div>
       </div>
     </div>
   );
@@ -278,7 +244,7 @@ const InformacoesTratamentoStep: React.FC = () => {
 
 interface ProntuarioFormProps {
   onSubmit: (data: NovoProntuarioRequest) => void;
-  initialData?: NovoProntuarioRequest;
+  initialData?: Partial<NovoProntuarioRequest>;
   isLoading?: boolean;
 }
 
@@ -288,125 +254,93 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
   isLoading = false,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  
+  const navigate = useNavigate();
+
   const methods = useForm<ProntuarioFormData>({
     resolver: zodResolver(prontuarioSchema),
-    defaultValues: initialData || {
-      paciente: {
-        nome: '',
-        dataNascimento: '',
-        cpf: '',
-        genero: Genero.NAO_INFORMADO,
-        telefone: '',
-        email: '',
-        endereco: {
-          logradouro: '',
-          numero: '',
-          complemento: '',
-          bairro: '',
-          cidade: '',
-          estado: '',
-          cep: '',
-        },
-      },
-      tipoTratamento: TipoTratamento.TERAPIA_INDIVIDUAL,
+    defaultValues: {
+      pacienteId: initialData?.pacienteId || '',
+      medicoId: initialData?.medicoId || undefined,
+      tipoTratamento: initialData?.tipoTratamento || undefined,
       historicoMedico: {
-        descricao: '',
+        descricao: initialData?.historicoMedico?.descricao || '',
       },
     },
   });
   
   const steps = [
-    { title: 'Dados do Paciente', component: <DadosPacienteStep /> },
-    { title: 'Informações de Tratamento', component: <InformacoesTratamentoStep /> },
+    { title: 'Paciente e Médico', icon: <Users className="h-4 w-4" />, component: <SelecaoEntidadesStep /> },
+    { title: 'Detalhes do Tratamento', icon: <FileText className="h-4 w-4" />, component: <InformacoesTratamentoStep /> },
   ];
   
-  const nextStep = () => {
-    // Valida o formulário com base no step atual
+  const nextStep = async () => {
+    let isValidCurrentStep = false;
     if (currentStep === 0) {
-      methods.trigger([
-        'paciente.nome',
-        'paciente.dataNascimento',
-        'paciente.cpf',
-        'paciente.genero',
-        'paciente.telefone',
-        'paciente.email',
-        'paciente.endereco.logradouro',
-        'paciente.endereco.numero',
-        'paciente.endereco.bairro',
-        'paciente.endereco.cidade',
-        'paciente.endereco.estado',
-        'paciente.endereco.cep',
-      ]).then((isValid) => {
-        if (isValid) {
-          setCurrentStep(currentStep + 1);
-        }
-      });
+      isValidCurrentStep = await methods.trigger(['pacienteId', 'medicoId']);
+    } else if (currentStep === 1) { 
+      isValidCurrentStep = await methods.trigger(['tipoTratamento', 'historicoMedico.descricao']);
+    }
+    
+    if (isValidCurrentStep && currentStep < steps.length - 1) {
+        setCurrentStep(currentStep + 1);
     }
   };
   
-  const prevStep = () => {
-    setCurrentStep(currentStep - 1);
+  const handleVoltarClick = () => { 
+    if (currentStep === 0) {
+      navigate('/prontuarios'); 
+    } else {
+      setCurrentStep(currentStep - 1); 
+    }
   };
   
-  const handleSubmit = methods.handleSubmit((data) => {
-    onSubmit(data as NovoProntuarioRequest);
+  const handleSubmitForm = methods.handleSubmit((data) => {
+    const submissionData: NovoProntuarioRequest = {
+      ...data,
+      pacienteId: data.pacienteId, 
+      medicoId: Number(data.medicoId),
+    };
+    onSubmit(submissionData);
   });
   
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmitForm}>
         {/* Stepper */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <ol className="flex items-center w-full">
             {steps.map((step, index) => (
               <React.Fragment key={index}>
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      index <= currentStep
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-neutral-200 text-neutral-700'
-                    }`}
-                  >
-                    {index + 1}
+                <li className={`flex w-full items-center ${index <= currentStep ? 'text-primary-600 dark:text-primary-500' : 'text-neutral-500 dark:text-neutral-400'} ${index < steps.length -1 ? `after:content-[''] after:w-full after:h-1 after:border-b ${index < currentStep ? 'after:border-primary-600 dark:after:border-primary-500' : 'after:border-neutral-200 dark:after:border-neutral-700'} after:border-1 after:inline-block` : ''}`}>
+                  <div className={`flex items-center justify-center w-10 h-10 ${index <= currentStep ? 'bg-primary-100 dark:bg-primary-800' : 'bg-neutral-100 dark:bg-neutral-800'} rounded-full lg:h-12 lg:w-12 shrink-0`}>
+                    {step.icon}
                   </div>
-                  <span
-                    className={`mt-2 text-sm ${
-                      index <= currentStep ? 'text-primary-600 font-medium' : 'text-neutral-500'
-                    }`}
-                  >
-                    {step.title}
-                  </span>
-                </div>
-                
-                {index < steps.length - 1 && (
-                  <div
-                    className={`flex-1 h-1 mx-4 ${
-                      index < currentStep ? 'bg-primary-600' : 'bg-neutral-200'
-                    }`}
-                  />
-                )}
+                </li>
               </React.Fragment>
+            ))}
+          </ol>
+           <div className="mt-3 flex justify-between text-sm font-medium">
+            {steps.map((step, index) => (
+                <span key={`label-${index}`} className={`w-1/${steps.length} text-center ${index <= currentStep ? 'text-primary-600' : 'text-neutral-500'}`}>{step.title}</span>
             ))}
           </div>
         </div>
         
-        {/* Step Content */}
-        <div className="mb-8">
+        <div className="mb-8 min-h-[400px]">
           {steps[currentStep].component}
         </div>
         
-        {/* Navigation */}
-        <div className="flex justify-between pt-4 border-t border-neutral-200">
+        {/* Área dos botões de ação MODIFICADA */}
+        <div className="flex justify-end items-center gap-3 pt-6 border-t border-neutral-300 mt-8"> {/* Alterado para justify-end e gap-3 (ou outro valor de sua preferência) */}
           <Button
             type="button"
             variant="secondary"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            leftIcon={<ChevronLeft className="h-4 w-4" />}
+            onClick={handleVoltarClick}
+            disabled={isLoading}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            // size="lg" // Removido size="lg"
           >
-            Anterior
+            Voltar
           </Button>
           
           {currentStep < steps.length - 1 ? (
@@ -414,7 +348,9 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
               type="button"
               variant="primary"
               onClick={nextStep}
+              disabled={isLoading}
               rightIcon={<ChevronRight className="h-4 w-4" />}
+              // size="lg" // Removido size="lg"
             >
               Próximo
             </Button>
@@ -424,6 +360,7 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
               variant="success"
               isLoading={isLoading}
               leftIcon={<Save className="h-4 w-4" />}
+              // size="lg" // Removido size="lg"
             >
               Salvar Prontuário
             </Button>
