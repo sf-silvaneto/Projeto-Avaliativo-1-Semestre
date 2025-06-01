@@ -13,24 +13,30 @@ import {
   Activity, 
   Pill, 
   FileImage, 
-  MessageSquare 
+  MessageSquare,
+  Loader2 // Importar Loader2
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { buscarProntuarioPorId } from '../../services/prontuarioService';
-import { Prontuario, TipoTratamento, StatusProntuario, Genero } from '../../types/prontuario';
+import { Prontuario, StatusProntuario, Genero } from '../../types/prontuario';
+
 
 const ProntuarioDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'historico' | 'medicacoes' | 'exames' | 'anotacoes'>('historico');
+  const [activeTab, setActiveTab] = useState<'historico' | 'medicacoes' | 'exames' | 'anotacoes' | 'entradasMedicas'>('historico');
   
   useEffect(() => {
     const fetchProntuario = async () => {
-      if (!id) return;
+      if (!id) {
+        setError("ID do prontuário não fornecido.");
+        setIsLoading(false);
+        return;
+      }
       
       setIsLoading(true);
       setError(null);
@@ -51,23 +57,19 @@ const ProntuarioDetailPage: React.FC = () => {
     fetchProntuario();
   }, [id]);
   
-  const formatData = (dataString: string) => {
-    const data = new Date(dataString);
-    return data.toLocaleDateString('pt-BR');
+  const formatData = (dataString?: string) => { // Adicionado '?' para dataString opcional
+    if (!dataString) return 'Data inválida';
+    try {
+      const data = new Date(dataString);
+      if (isNaN(data.getTime())) return 'Data inválida';
+      return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // Adicionado timeZone UTC para consistência
+    } catch (e) {
+      return 'Data inválida';
+    }
   };
   
-  const renderTipoTratamento = (tipo: TipoTratamento) => {
-    const tipos = {
-      [TipoTratamento.TERAPIA_INDIVIDUAL]: 'Terapia Individual',
-      [TipoTratamento.TERAPIA_CASAL]: 'Terapia de Casal',
-      [TipoTratamento.TERAPIA_GRUPO]: 'Terapia de Grupo',
-      [TipoTratamento.TERAPIA_FAMILIAR]: 'Terapia Familiar',
-      [TipoTratamento.OUTRO]: 'Outro',
-    };
-    return tipos[tipo] || tipo;
-  };
-  
-  const renderGenero = (genero: Genero) => {
+  const renderGenero = (genero?: Genero) => {
+    if (!genero) return 'Não informado';
     const generos = {
       [Genero.MASCULINO]: 'Masculino',
       [Genero.FEMININO]: 'Feminino',
@@ -77,17 +79,20 @@ const ProntuarioDetailPage: React.FC = () => {
     return generos[genero] || genero;
   };
   
-  const renderStatus = (status: StatusProntuario) => {
+  const renderStatus = (status?: StatusProntuario) => {
+    if(!status) return null;
     const statusClasses = {
       [StatusProntuario.ATIVO]: 'bg-success-100 text-success-800',
       [StatusProntuario.INATIVO]: 'bg-neutral-100 text-neutral-800',
       [StatusProntuario.ARQUIVADO]: 'bg-warning-100 text-warning-800',
+      [StatusProntuario.ALTA]: 'bg-blue-100 text-blue-800',
     };
 
     const statusLabels = {
       [StatusProntuario.ATIVO]: 'Ativo',
       [StatusProntuario.INATIVO]: 'Inativo',
       [StatusProntuario.ARQUIVADO]: 'Arquivado',
+      [StatusProntuario.ALTA]: 'Alta',
     };
 
     return (
@@ -99,13 +104,10 @@ const ProntuarioDetailPage: React.FC = () => {
   
   if (isLoading) {
     return (
-      <div className="container-medium">
-        <div className="text-center py-12">
-          <div className="animate-pulse">
-            <div className="h-8 bg-neutral-200 rounded w-1/3 mb-6 mx-auto"></div>
-            <div className="h-64 bg-neutral-100 rounded mb-6"></div>
-            <div className="h-32 bg-neutral-100 rounded"></div>
-          </div>
+      <div className="container-medium py-8 flex justify-center items-center min-h-[300px]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-primary-600 animate-spin mx-auto" />
+          <p className="mt-4 text-neutral-600">Carregando dados do prontuário...</p>
         </div>
       </div>
     );
@@ -113,10 +115,10 @@ const ProntuarioDetailPage: React.FC = () => {
   
   if (error) {
     return (
-      <div className="container-medium">
+      <div className="container-medium py-8">
         <Alert
           type="error"
-          title="Erro ao carregar prontuário"
+          title="Erro ao Carregar Prontuário"
           message={error}
         />
         <div className="mt-4">
@@ -132,11 +134,11 @@ const ProntuarioDetailPage: React.FC = () => {
   
   if (!prontuario) {
     return (
-      <div className="container-medium">
+      <div className="container-medium py-8">
         <Alert
           type="warning"
-          title="Prontuário não encontrado"
-          message="O prontuário solicitado não foi encontrado."
+          title="Prontuário Não Encontrado"
+          message="O prontuário solicitado não foi encontrado ou não existe."
         />
         <div className="mt-4">
           <Link to="/prontuarios">
@@ -175,7 +177,7 @@ const ProntuarioDetailPage: React.FC = () => {
         <div className="mt-4 md:mt-0">
           <Link to={`/prontuarios/${prontuario.id}/editar`}>
             <Button variant="primary" leftIcon={<FileEdit className="h-4 w-4" />}>
-              Editar Prontuário
+              Editar Detalhes do Prontuário
             </Button>
           </Link>
         </div>
@@ -184,61 +186,53 @@ const ProntuarioDetailPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="md:col-span-2">
           <h2 className="text-lg font-medium text-neutral-900 mb-4">Dados do Paciente</h2>
-          
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <User className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
-              <div>
-                <h3 className="text-sm font-medium text-neutral-900">{prontuario.paciente.nome}</h3>
-                <p className="text-sm text-neutral-500">
-                  {renderGenero(prontuario.paciente.genero)} &middot; 
-                  {' '}{formatData(prontuario.paciente.dataNascimento)}
-                </p>
+          {prontuario.paciente ? (
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <User className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
+                <div>
+                  <h3 className="text-sm font-medium text-neutral-900">{prontuario.paciente.nome}</h3>
+                  <p className="text-sm text-neutral-500">
+                    {renderGenero(prontuario.paciente.genero)} &middot; 
+                    {' '}{formatData(prontuario.paciente.dataNascimento)}
+                  </p>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-start">
-              <Phone className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
-              <div>
-                <h3 className="text-sm font-medium text-neutral-900">Contato</h3>
-                <p className="text-sm text-neutral-500">{prontuario.paciente.telefone}</p>
-                <p className="text-sm text-neutral-500">{prontuario.paciente.email}</p>
+              <div className="flex items-start">
+                <Phone className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
+                <div>
+                  <h3 className="text-sm font-medium text-neutral-900">Contato</h3>
+                  <p className="text-sm text-neutral-500">{prontuario.paciente.telefone}</p>
+                  <p className="text-sm text-neutral-500">{prontuario.paciente.email}</p>
+                </div>
               </div>
+              {prontuario.paciente.endereco && (
+                <div className="flex items-start">
+                  <MapPin className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
+                  <div>
+                    <h3 className="text-sm font-medium text-neutral-900">Endereço</h3>
+                    <p className="text-sm text-neutral-500">
+                      {prontuario.paciente.endereco.logradouro}, {prontuario.paciente.endereco.numero}
+                      {prontuario.paciente.endereco.complemento && `, ${prontuario.paciente.endereco.complemento}`}
+                    </p>
+                    <p className="text-sm text-neutral-500">
+                      {prontuario.paciente.endereco.bairro}, {prontuario.paciente.endereco.cidade} - {prontuario.paciente.endereco.estado}
+                    </p>
+                    <p className="text-sm text-neutral-500">
+                      CEP: {prontuario.paciente.endereco.cep}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-            
-            <div className="flex items-start">
-              <MapPin className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
-              <div>
-                <h3 className="text-sm font-medium text-neutral-900">Endereço</h3>
-                <p className="text-sm text-neutral-500">
-                  {prontuario.paciente.endereco.logradouro}, {prontuario.paciente.endereco.numero}
-                  {prontuario.paciente.endereco.complemento && `, ${prontuario.paciente.endereco.complemento}`}
-                </p>
-                <p className="text-sm text-neutral-500">
-                  {prontuario.paciente.endereco.bairro}, {prontuario.paciente.endereco.cidade} - {prontuario.paciente.endereco.estado}
-                </p>
-                <p className="text-sm text-neutral-500">
-                  CEP: {prontuario.paciente.endereco.cep}
-                </p>
-              </div>
-            </div>
-          </div>
+          ) : (
+            <p className="text-neutral-500">Dados do paciente não disponíveis.</p>
+          )}
         </Card>
         
         <Card>
-          <h2 className="text-lg font-medium text-neutral-900 mb-4">Informações do Tratamento</h2>
-          
+          <h2 className="text-lg font-medium text-neutral-900 mb-4">Informações Gerais do Prontuário</h2>
           <div className="space-y-4">
-            <div className="flex items-start">
-              <FileText className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
-              <div>
-                <h3 className="text-sm font-medium text-neutral-900">Tipo de Tratamento</h3>
-                <p className="text-sm text-neutral-500">
-                  {renderTipoTratamento(prontuario.tipoTratamento)}
-                </p>
-              </div>
-            </div>
-            
             <div className="flex items-start">
               <Calendar className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" />
               <div>
@@ -249,8 +243,23 @@ const ProntuarioDetailPage: React.FC = () => {
                 <p className="text-sm text-neutral-500">
                   <span className="font-medium">Última atualização:</span> {formatData(prontuario.dataUltimaAtualizacao)}
                 </p>
+                 {prontuario.dataAlta && (
+                    <p className="text-sm text-neutral-500">
+                        <span className="font-medium">Data da Alta:</span> {formatData(prontuario.dataAlta)}
+                    </p>
+                 )}
               </div>
             </div>
+             {prontuario.medicoResponsavel && (
+                 <div className="flex items-start">
+                    <User className="h-5 w-5 text-neutral-400 mt-0.5 mr-2" /> {/* Pode usar Stethoscope aqui também */}
+                    <div>
+                        <h3 className="text-sm font-medium text-neutral-900">Médico Responsável</h3>
+                        <p className="text-sm text-neutral-500">{prontuario.medicoResponsavel.nomeCompleto}</p>
+                        <p className="text-xs text-neutral-500">CRM: {prontuario.medicoResponsavel.crm} ({prontuario.medicoResponsavel.especialidade})</p>
+                    </div>
+                </div>
+             )}
           </div>
           
           <div className="mt-6 pt-4 border-t border-neutral-200">
@@ -259,84 +268,44 @@ const ProntuarioDetailPage: React.FC = () => {
               size="sm"
               leftIcon={<FilePlus className="h-4 w-4" />}
               fullWidth
+              onClick={() => alert("Lógica para adicionar novo tipo de registro (Internação, Consulta, etc.) aqui.")}
             >
-              Adicionar Registro
+              Adicionar Novo Registro ao Prontuário
             </Button>
           </div>
         </Card>
       </div>
       
       <div className="mb-6">
+        <h2 className="text-xl font-semibold text-neutral-800 mb-3">Registros Detalhados do Prontuário</h2>
+        <p className="text-neutral-600 mb-4">
+          Esta seção será expandida para listar os diferentes tipos de registros (Consultas, Internações, Exames, Cirurgias) de forma organizada.
+        </p>
+        {/* Lógica futura para abas ou listagem cronológica dos novos tipos de registros */}
+        {/* Exemplo:
         <div className="border-b border-neutral-200">
           <nav className="-mb-px flex space-x-6 overflow-x-auto">
             <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === 'historico'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-              onClick={() => setActiveTab('historico')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${ activeTab === 'entradasMedicas' ? 'border-primary-600 text-primary-600' : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'}`}
+              onClick={() => setActiveTab('entradasMedicas')}
             >
               <Activity className="h-4 w-4 inline mr-1" />
-              Histórico Médico
+              Consultas/Entradas
             </button>
-            <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === 'medicacoes'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-              onClick={() => setActiveTab('medicacoes')}
-            >
-              <Pill className="h-4 w-4 inline mr-1" />
-              Medicações
-            </button>
-            <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === 'exames'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-              onClick={() => setActiveTab('exames')}
-            >
-              <FileImage className="h-4 w-4 inline mr-1" />
-              Exames
-            </button>
-            <button
-              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                activeTab === 'anotacoes'
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
-              }`}
-              onClick={() => setActiveTab('anotacoes')}
-            >
-              <MessageSquare className="h-4 w-4 inline mr-1" />
-              Anotações
-            </button>
+            { // Adicionar outras abas para Internações, Exames, Cirurgias
+            }
           </nav>
         </div>
+        */}
       </div>
       
       <div className="animate-fade-in">
-        {activeTab === 'historico' && (
+        {/* Conteúdo das Abas/Listagem dos Registros */}
+        {/* Se activeTab === 'historico' (ou um novo tipo de registro) */}
+        {prontuario.historicoMedico && prontuario.historicoMedico.length > 0 && (
           <div>
-            {prontuario.historicoMedico.length === 0 ? (
-              <div className="bg-neutral-50 rounded-lg p-6 text-center">
-                <Activity className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-neutral-700 mb-2">Sem registros de histórico médico</h3>
-                <p className="text-neutral-500 mb-4">
-                  Ainda não foram adicionados registros no histórico médico deste paciente.
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<FilePlus className="h-4 w-4" />}
-                >
-                  Adicionar ao Histórico
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
+            <h3 className="text-lg font-medium text-neutral-800 mb-3">Histórico Médico Inicial</h3>
+            <div className="space-y-4">
                 {prontuario.historicoMedico.map((item) => (
                   <Card key={item.id} className="border border-neutral-200">
                     <div className="flex justify-between mb-2">
@@ -346,191 +315,11 @@ const ProntuarioDetailPage: React.FC = () => {
                     <p className="text-neutral-700 whitespace-pre-line">{item.descricao}</p>
                   </Card>
                 ))}
-                
-                <div className="text-center mt-6">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<FilePlus className="h-4 w-4" />}
-                  >
-                    Adicionar ao Histórico
-                  </Button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
-        
-        {activeTab === 'medicacoes' && (
-          <div>
-            {prontuario.medicacoes.length === 0 ? (
-              <div className="bg-neutral-50 rounded-lg p-6 text-center">
-                <Pill className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-neutral-700 mb-2">Sem registros de medicações</h3>
-                <p className="text-neutral-500 mb-4">
-                  Ainda não foram adicionadas medicações para este paciente.
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<FilePlus className="h-4 w-4" />}
-                >
-                  Adicionar Medicação
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {prontuario.medicacoes.map((item) => (
-                  <Card key={item.id} className="border border-neutral-200">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-lg font-medium text-neutral-900">{item.nome}</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                      <div>
-                        <h4 className="text-xs text-neutral-500">Dosagem</h4>
-                        <p className="text-sm text-neutral-700">{item.dosagem}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-neutral-500">Frequência</h4>
-                        <p className="text-sm text-neutral-700">{item.frequencia}</p>
-                      </div>
-                      <div>
-                        <h4 className="text-xs text-neutral-500">Período</h4>
-                        <p className="text-sm text-neutral-700">
-                          {formatData(item.dataInicio)} - {item.dataFim ? formatData(item.dataFim) : 'Atual'}
-                        </p>
-                      </div>
-                    </div>
-                    {item.observacoes && (
-                      <div className="mt-2 pt-2 border-t border-neutral-100">
-                        <h4 className="text-xs text-neutral-500">Observações</h4>
-                        <p className="text-sm text-neutral-700">{item.observacoes}</p>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-                
-                <div className="text-center mt-6">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<FilePlus className="h-4 w-4" />}
-                  >
-                    Adicionar Medicação
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {activeTab === 'exames' && (
-          <div>
-            {prontuario.exames.length === 0 ? (
-              <div className="bg-neutral-50 rounded-lg p-6 text-center">
-                <FileImage className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-neutral-700 mb-2">Sem registros de exames</h3>
-                <p className="text-neutral-500 mb-4">
-                  Ainda não foram adicionados exames para este paciente.
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<FilePlus className="h-4 w-4" />}
-                >
-                  Adicionar Exame
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {prontuario.exames.map((item) => (
-                  <Card key={item.id} className="border border-neutral-200">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-lg font-medium text-neutral-900">{item.nome}</span>
-                      <span className="text-sm text-neutral-500">{formatData(item.data)}</span>
-                    </div>
-                    <div className="mb-2">
-                      <h4 className="text-xs text-neutral-500">Resultado</h4>
-                      <p className="text-sm text-neutral-700">{item.resultado}</p>
-                    </div>
-                    {item.observacoes && (
-                      <div className="mb-2">
-                        <h4 className="text-xs text-neutral-500">Observações</h4>
-                        <p className="text-sm text-neutral-700">{item.observacoes}</p>
-                      </div>
-                    )}
-                    {item.arquivo && (
-                      <div className="mt-2 pt-2 border-t border-neutral-100">
-                        <a
-                          href={item.arquivo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-primary-600 hover:text-primary-700"
-                        >
-                          <FileText className="h-4 w-4 mr-1" />
-                          <span>Ver arquivo do exame</span>
-                        </a>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-                
-                <div className="text-center mt-6">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<FilePlus className="h-4 w-4" />}
-                  >
-                    Adicionar Exame
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {activeTab === 'anotacoes' && (
-          <div>
-            {prontuario.anotacoes.length === 0 ? (
-              <div className="bg-neutral-50 rounded-lg p-6 text-center">
-                <MessageSquare className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-neutral-700 mb-2">Sem anotações</h3>
-                <p className="text-neutral-500 mb-4">
-                  Ainda não foram adicionadas anotações para este paciente.
-                </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<FilePlus className="h-4 w-4" />}
-                >
-                  Adicionar Anotação
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {prontuario.anotacoes.map((item) => (
-                  <Card key={item.id} className="border border-neutral-200">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium text-neutral-900">{formatData(item.data)}</span>
-                      <span className="text-sm text-neutral-500">Responsável: {item.responsavel}</span>
-                    </div>
-                    <p className="text-neutral-700 whitespace-pre-line">{item.texto}</p>
-                  </Card>
-                ))}
-                
-                <div className="text-center mt-6">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    leftIcon={<FilePlus className="h-4 w-4" />}
-                  >
-                    Adicionar Anotação
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Outras seções para medicações, exames, anotações, etc., podem ser renderizadas aqui ou integradas na nova lógica de registros. */}
+
       </div>
     </div>
   );

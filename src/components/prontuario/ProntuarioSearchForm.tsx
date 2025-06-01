@@ -4,13 +4,12 @@ import { Search, Filter, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-// TipoTratamento não é mais necessário aqui
 import { StatusProntuario } from '../../types/prontuario';
 
 interface SearchFormData {
   termo?: string;
   numeroProntuario?: string;
-  // tipoTratamento?: TipoTratamento; // REMOVIDO
+  // tipoTratamento?: TipoTratamento; // Confirmado como REMOVIDO
   status?: StatusProntuario;
 }
 
@@ -27,29 +26,25 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
     defaultValues: {
       termo: '',
       numeroProntuario: '',
-      // tipoTratamento: undefined, // REMOVIDO
-      status: undefined,
+      // tipoTratamento: undefined, // Confirmado como REMOVIDO
+      status: undefined, 
     },
   });
 
   const watchFields = watch();
-  // Ajustar a lógica de hasFilters se necessário, embora deva continuar funcionando
   const hasFilters = Object.values(watchFields).some(value => value && value !== '');
 
   const handleReset = () => {
-    reset({ // Certificar que o reset também não inclua tipoTratamento
+    reset({
         termo: '',
         numeroProntuario: '',
-        status: undefined,
+        status: undefined, 
     });
-    onSearch({});
+    onSearch({}); 
   };
 
-  // tipoTratamentoOptions não é mais necessário
-  // const tipoTratamentoOptions = [ ... ];
-
   const statusOptions = [
-    { value: '', label: 'Todos os Status' }, // Adicionado para permitir limpar o filtro de status
+    { value: '', label: 'Todos os Status' },
     { value: StatusProntuario.ATIVO, label: 'Ativo' },
     { value: StatusProntuario.INATIVO, label: 'Inativo' },
     { value: StatusProntuario.ARQUIVADO, label: 'Arquivado' },
@@ -93,16 +88,12 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
 
         {showAdvancedSearch && (
           <div id="advanced-search" className="border-t border-neutral-200 pt-4 animate-slide-down">
-            {/* Ajustar o grid se o campo de tipo de tratamento foi removido */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Ex: md:grid-cols-2 se sobraram 2 filtros */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Número do Prontuário"
-                placeholder="Digite o número..."
+                label="Número do Prontuário Específico" 
+                placeholder="Digite o número exato..."
                 {...register('numeroProntuario')}
               />
-              
-              {/* O Select de Tipo de Tratamento foi removido daqui */}
-              
               <Select
                 label="Status do Prontuário"
                 options={statusOptions}
@@ -116,7 +107,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
           <div className="flex justify-end mt-4">
             <Button
               type="button"
-              variant="link" // Alterado para link para melhor UX de limpar
+              variant="link"
               size="sm"
               leftIcon={<X className="h-4 w-4" />}
               onClick={handleReset}
