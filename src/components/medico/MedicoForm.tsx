@@ -6,10 +6,12 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import { Medico, StatusMedico } from '../../types/medico'; // Certifique-se que StatusMedico está aqui
+import { Medico, StatusMedico } from '../../types/medico';
 import { User, Activity, Award, Edit3, Save, ToggleLeft, ToggleRight, MapPin } from 'lucide-react';
 import { especialidadesMedicas, nomesEspecialidades } from '../../data/especialidadesMedicas';
 import { ufsBrasil } from '../../data/ufsBrasil';
+
+const apenasLetrasEspacosAcentosHifenApostrofo = /^[a-zA-ZÀ-ú\s'-]+$/;
 
 const sixDigitNumberSchema = z.string()
   .regex(/^\d*$/, 'Apenas números são permitidos')
@@ -22,7 +24,7 @@ const sixDigitNumberRequiredSchema = z.string()
 
 const nameSchema = z.string()
   .min(10, 'Nome completo deve ter no mínimo 10 caracteres')
-  .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/, 'Nome deve conter apenas letras e espaços');
+  .regex(apenasLetrasEspacosAcentosHifenApostrofo, 'Nome deve conter apenas letras, espaços, acentos, apóstrofos e hífens');
 
 
 const medicoSchema = z.object({
@@ -39,10 +41,10 @@ export type MedicoFormData = z.infer<typeof medicoSchema>;
 
 interface MedicoFormProps {
   onSubmit: (data: MedicoFormData) => void;
-  initialData?: Medico; // O tipo Medico deve incluir o campo 'id' se for usado em algum lugar.
+  initialData?: Medico;
   isLoading?: boolean;
   isEditMode?: boolean;
-  customActions?: React.ReactNode; // Nova prop para ações personalizadas
+  customActions?: React.ReactNode;
 }
 
 const MedicoForm: React.FC<MedicoFormProps> = ({
@@ -50,7 +52,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
   initialData,
   isLoading = false,
   isEditMode = false,
-  customActions, // Recebe a prop
+  customActions,
 }) => {
   let initialCrmNumero = '';
   let initialCrmUf = '';
@@ -69,7 +71,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
             initialCrmUf = potentialUf.toUpperCase();
         } else {
             initialCrmNumero = initialData.crm;
-            initialCrmUf = ''; // Garante que não haja UF inválida
+            initialCrmUf = ''; 
         }
     }
   }
@@ -123,7 +125,6 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
                 crmUfVal = potentialUf.toUpperCase();
             } else {
                 crmNum = initialData.crm;
-                // crmUfVal permanece '' como default
             }
         }
       }
@@ -165,10 +166,20 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
     return event.target.value;
   };
 
-  const handleNameInput = (event: React.FormEvent<HTMLInputElement>) => {
+  const handleNomeCompletoInput = (event: React.FormEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
-    // Permite letras, espaços, e acentos. Remove outros caracteres.
-    input.value = input.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s]/g, '');
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    let value = input.value;
+    
+    value = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, ''); 
+    input.value = value.toUpperCase();
+    
+    if (start !== null && end !== null) {
+      try {
+          input.setSelectionRange(start, end);
+      } catch (e) { /* ignore */ }
+    }
   };
 
   return (
@@ -176,24 +187,24 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         (data) => {
             const submissionData = {
                 ...data,
-                crm: `${data.crm}${data.crmUf}`, // Concatena CRM e UF para submissão
+                crm: `${data.crm}${data.crmUf}`, 
             };
             onSubmit(submissionData);
         }
     )} className="space-y-4">
       <Input
-        label="Nome Completo"
+        label="Nome Completo*"
         placeholder="Digite o nome completo do médico"
         leftAddon={<User className="h-5 w-5" />}
         {...register('nomeCompleto')}
-        onInput={handleNameInput} // Usar onInput para aplicar a máscara enquanto digita
+        onInput={handleNomeCompletoInput}
         error={errors.nomeCompleto?.message}
         required
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <div className="md:col-span-2">
             <Input
-                label="CRM"
+                label="CRM*"
                 placeholder="Somente números"
                 leftAddon={<Activity className="h-5 w-5" />}
                 {...register('crm', { 
@@ -202,7 +213,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
                 error={errors.crm?.message}
                 required
                 maxLength={6}
-                type="text" // Manter como text para permitir a manipulação via handleNumericInput
+                type="text"
             />
         </div>
         <Controller
@@ -211,7 +222,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
             defaultValue={initialCrmUf || ""}
             render={({ field }) => (
                 <Select
-                label="UF do CRM"
+                label="UF do CRM*"
                 options={ufsBrasil}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
@@ -229,8 +240,8 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
             defaultValue={initialData?.especialidade || ""}
             render={({ field }) => (
             <Select
-                label="Especialidade"
-                options={nomesEspecialidades}
+                label="Especialidade*"
+                options={[{value: "", label: "Selecione..."}, ...nomesEspecialidades]}
                 value={field.value}
                 onChange={(e) => field.onChange(e.target.value)}
                 error={errors.especialidade?.message}
@@ -253,12 +264,12 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
       </div>
       
       <Textarea
-        label="Resumo da Especialidade"
+        label="Resumo da Especialidade (Automático)"
         placeholder="Selecione uma especialidade para preencher o resumo"
         rows={4}
         {...register('resumoEspecialidade')}
         error={errors.resumoEspecialidade?.message}
-        readOnly // O resumo é preenchido automaticamente
+        readOnly 
       />
 
       {isEditMode && (
@@ -279,9 +290,8 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         />
       )}
 
-      {/* Área dos botões de ação MODIFICADA */}
       <div className="pt-6 flex flex-wrap justify-end items-center gap-3">
-        {customActions} {/* Renderiza o botão Voltar (ou outras ações) aqui */}
+        {customActions} 
         <Button
           type="submit"
           variant={isEditMode ? "primary" : "success"}

@@ -7,10 +7,12 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert, Loader2, ArrowLeft } from 'lucide-react'; // ArrowLeft já importado
+import { User as UserIcon, Mail, Key, Edit3, Eye, EyeOff, ShieldCheck, ShieldAlert, Loader2, ArrowLeft } from 'lucide-react';
 import * as authService from '../../services/authService';
 import { VerifiedProfileUpdateRequest, User } from '../../types/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
+
+const apenasLetrasEspacosAcentosHifenApostrofo = /^[a-zA-ZÀ-ú\s'-]+$/;
 
 const verifyKeywordSchema = z.object({
   palavraChaveAtual: z.string().min(1, "Palavra-chave atual é obrigatória."),
@@ -18,7 +20,9 @@ const verifyKeywordSchema = z.object({
 type VerifyKeywordFormData = z.infer<typeof verifyKeywordSchema>;
 
 const updateDetailsSchema = z.object({
-  nome: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres.'),
+  nome: z.string()
+        .min(3, 'O nome deve ter no mínimo 3 caracteres.')
+        .regex(apenasLetrasEspacosAcentosHifenApostrofo, 'Nome deve conter apenas letras, espaços, acentos, apóstrofos e hífens.'),
   email: z.string().email('O email fornecido é inválido.'),
   novaPalavraChave: z.string().optional(),
   confirmarNovaPalavraChave: z.string().optional(),
@@ -138,8 +142,9 @@ const ProfilePage: React.FC = () => {
     const payload: VerifiedProfileUpdateRequest = {};
     let hasChanges = false;
 
-    if (data.nome.trim() !== user.nome) {
-      payload.nome = data.nome.trim();
+    const nomeParaEnvio = data.nome.trim(); 
+    if (nomeParaEnvio !== user.nome) { 
+      payload.nome = nomeParaEnvio;
       hasChanges = true;
     }
     if (data.email.trim().toLowerCase() !== user.email.toLowerCase()) {
@@ -186,6 +191,23 @@ const ProfilePage: React.FC = () => {
     setter(prev => !prev);
   };
 
+  const handleNomeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    let value = input.value;
+    
+    value = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, ''); 
+    input.value = value.toUpperCase();
+    
+    if (start !== null && end !== null) {
+      try {
+          input.setSelectionRange(start, end);
+      } catch (e) { /* ignore */ }
+    }
+  };
+
+
   if (authContextLoading && !user) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-neutral-50">
@@ -212,7 +234,7 @@ const ProfilePage: React.FC = () => {
             <Alert type="error" message={verificationError} className="mb-4" onClose={() => setVerificationError(null)} />
           )}
           {authContextError && !verificationError && (
-             <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
+              <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
           )}
           <form onSubmit={verificationForm.handleSubmit(handleKeywordVerification)}>
             <Input
@@ -265,7 +287,7 @@ const ProfilePage: React.FC = () => {
             <Alert type="error" message={detailsUpdateError} className="mb-4" onClose={() => setDetailsUpdateError(null)} />
           )}
             {authContextError && !detailsUpdateError && (
-             <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
+              <Alert type="error" message={authContextError} className="mb-4" onClose={clearError} />
             )}
 
           <form onSubmit={updateDetailsForm.handleSubmit(handleDetailsUpdate)}>
@@ -275,6 +297,7 @@ const ProfilePage: React.FC = () => {
                 label="Nome Completo"
                 leftAddon={<UserIcon className="h-5 w-5" />}
                 {...updateDetailsForm.register('nome')}
+                onInput={handleNomeInput}
                 error={updateDetailsForm.formState.errors.nome?.message}
               />
               <Input
@@ -315,7 +338,6 @@ const ProfilePage: React.FC = () => {
                 error={updateDetailsForm.formState.errors.confirmarNovaPalavraChave?.message}
               />
             </div>
-            {/* Container dos botões para o formulário de atualização */}
             <div className="mt-6 flex flex-col sm:flex-row sm:justify-end sm:items-center gap-2">
               <Button
                 type="button"

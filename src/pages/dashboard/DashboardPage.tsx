@@ -52,14 +52,14 @@ const DashboardPage: React.FC = () => {
           </Card>
         </Link>
 
-        <Link to="/perfil" className="no-underline">
-          <Card className="hover:shadow-medium transition-shadow duration-200 cursor-pointer">
-            <div className="flex flex-col items-center text-center p-4">
+        <Link to="/perfil" className="no-underline flex">
+           <Card className="hover:shadow-medium transition-shadow duration-200 cursor-pointer flex flex-col h-full w-full">
+           <div className="flex flex-col items-center text-center p-4 flex-grow">
               <UserCog className="h-12 w-12 text-primary-600 mb-3" />
               <h2 className="text-xl font-semibold text-neutral-800">Meu Perfil</h2>
               <p className="text-neutral-600 text-sm">Altere seus dados e palavra-chave.</p>
             </div>
-          </Card>
+           </Card>
         </Link>
 
         <Link to="/medicos" className="no-underline">

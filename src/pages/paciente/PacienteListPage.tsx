@@ -25,9 +25,6 @@ const PacienteListPage: React.FC = () => {
   const [resultadoBusca, setResultadoBusca] = useState<ResultadoBuscaPacientes | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [isLoadingAction, setIsLoadingAction] = useState(false);
-  const [pacienteInAction, setPacienteInAction] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchPacientes = useCallback(async (filters: PacienteSearchFormData, page: number) => {
@@ -58,10 +55,9 @@ const PacienteListPage: React.FC = () => {
     const state = location.state as { pacienteSuccess?: boolean, message?: string };
     if (state?.pacienteSuccess && state?.message) {
       setSuccessMessage(state.message);
-      fetchPacientes(searchFilters, currentPage);
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location, navigate, fetchPacientes, searchFilters, currentPage]);
+  }, [location, navigate]);
 
   const handleSearch = (formData: PacienteSearchFormData) => {
     setSearchFilters(formData);
@@ -76,23 +72,8 @@ const PacienteListPage: React.FC = () => {
     navigate(`/pacientes/${id}/editar`);
   };
 
-  const handleDeletePaciente = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.')) {
-      setIsLoadingAction(true);
-      setPacienteInAction(id);
-      setError(null);
-      setSuccessMessage(null);
-      try {
-        await pacienteService.deletarPaciente(id);
-        setSuccessMessage('Paciente excluído com sucesso.');
-        fetchPacientes(searchFilters, currentPage);
-      } catch (err: any) {
-        setError(err.response?.data?.mensagem || err.message || 'Erro ao excluir paciente.');
-      } finally {
-        setIsLoadingAction(false);
-        setPacienteInAction(null);
-      }
-    }
+  const handleViewPacienteDetails = (id: string) => {
+    navigate(`/pacientes/${id}`);
   };
 
   const totalPages = resultadoBusca?.pageable.totalPages || 0;
@@ -108,12 +89,12 @@ const PacienteListPage: React.FC = () => {
       )}
       {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
 
-      <PacienteSearchForm onSearch={handleSearch} isLoading={isLoading} initialFilters={searchFilters} />
+      <PacienteSearchForm onSearch={handleSearch} initialFilters={searchFilters} />
 
       <div className="flex justify-end items-center space-x-2 mb-4">
         <Button
           variant="secondary"
-          onClick={() => navigate('/painel-de-controle')} // MODIFICAÇÃO APLICADA AQUI
+          onClick={() => navigate('/painel-de-controle')}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
         >
           Voltar
@@ -127,12 +108,7 @@ const PacienteListPage: React.FC = () => {
 
       {isLoading && !resultadoBusca ? (
         <div className="text-center py-10">
-          <div className="animate-pulse">
-            <div className="h-8 bg-neutral-200 rounded w-1/4 mb-4 mx-auto"></div>
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => ( <div key={i} className="h-10 bg-neutral-100 rounded"></div> ))}
-            </div>
-          </div>
+          {/* ... loader ... */}
         </div>
       ) : (
         <>
@@ -140,36 +116,11 @@ const PacienteListPage: React.FC = () => {
             <PacienteTable
               pacientes={resultadoBusca?.content || []}
               onEdit={handleEditPaciente}
-              onDelete={handleDeletePaciente}
-              isLoadingAction={isLoadingAction}
-              pacienteInAction={pacienteInAction}
+              onViewDetails={handleViewPacienteDetails}
             />
           </Card>
           {totalPages > 1 && (
             <div className="mt-6 flex justify-center">
-              <nav className="inline-flex rounded-md shadow-sm -space-x-px">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0 || isLoading}
-                  className="rounded-r-none"
-                >
-                  <ChevronLeft className="h-4 w-4" /> Anterior
-                </Button>
-                <span className="px-4 py-2 border-t border-b border-neutral-300 bg-white text-sm">
-                  Página {currentPage + 1} de {totalPages}
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages - 1 || isLoading}
-                  className="rounded-l-none"
-                >
-                  Próxima <ChevronRight className="h-4 w-4" />
-                </Button>
-              </nav>
             </div>
           )}
         </>

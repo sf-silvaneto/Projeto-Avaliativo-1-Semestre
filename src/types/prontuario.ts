@@ -27,13 +27,14 @@ export interface Paciente {
   endereco: Endereco;
   createdAt: string;
   updatedAt: string;
+  // Campos adicionais que podem ser úteis para exibir no contexto do prontuário
+  alergiasDeclaradas?: string;
+  comorbidadesDeclaradas?: string;
+  medicamentosContinuos?: string;
 }
 
-// Adicionada interface Medico simplificada para uso no Prontuario
-// Se já existir uma interface Medico em `src/types/medico.ts` com esses campos,
-// você pode importá-la em vez de redeclarar aqui.
 export interface Medico {
-  id: number;
+  id: number; // No seu Medico.ts, o ID é number
   nomeCompleto: string;
   crm: string;
   especialidade: string;
@@ -68,14 +69,14 @@ export enum StatusProntuario {
   ATIVO = 'ATIVO',
   INATIVO = 'INATIVO',
   ARQUIVADO = 'ARQUIVADO',
-  ALTA = 'ALTA' // Adicionado status ALTA, se fizer sentido para o seu fluxo
+  ALTA = 'ALTA'
 }
 
 export interface HistoricoMedico {
   id: string;
-  data: string;
+  data: string; // Mantido como string, assumindo que vem como ISO e é formatado no frontend
   descricao: string;
-  responsavel: string;
+  responsavel: string; // Nome do responsável
   createdAt: string;
   updatedAt: string;
 }
@@ -92,12 +93,21 @@ export interface Medicacao {
   updatedAt: string;
 }
 
+// AnexoSimples é usado em prontuarioRegistros.ts, definindo aqui para centralizar se necessário
+export interface AnexoSimples {
+    id: string; // ou number
+    nomeOriginalArquivo: string;
+    urlVisualizacao?: string; // URL para visualização/download
+    tipoConteudo?: string;
+}
+
 export interface Exame {
   id: string;
   nome: string;
   data: string;
   resultado: string;
-  arquivo?: string; // URL do arquivo, se houver
+  arquivoUrl?: string; // Mantido como no seu DTO, o frontend pode ter usado 'arquivo' para File
+  anexos?: AnexoSimples[]; // Para consistência com outros registros que podem ter anexos
   observacoes?: string;
   createdAt: string;
   updatedAt: string;
@@ -105,33 +115,30 @@ export interface Exame {
 
 export interface Anotacao {
   id: string;
-  data: string;
+  data: string; // Mantido como string
   texto: string;
-  responsavel: string;
+  responsavel: string; // Nome do responsável
   createdAt: string;
   updatedAt: string;
 }
 
-// Alergia (Nova interface, se for gerenciada por prontuário/paciente)
-// Se alergias são informações do PACIENTE e não do prontuário específico,
-// esta interface deveria estar em `src/types/paciente.ts`.
 export interface Alergia {
   id: string;
   descricao: string;
-  // outros campos como data_descoberta, severidade, se necessário
   createdAt: string;
   updatedAt: string;
 }
 
-
+// Parâmetros para busca de prontuários - tipoTratamento REMOVIDO
 export interface BuscaProntuarioParams {
-  termo?: string;
+  termo?: string; // Busca geral por nome do paciente, CPF, ou número do prontuário
   numeroProntuario?: string;
-  nomePaciente?: string;
-  tipoTratamento?: TipoTratamento;
+  nomePaciente?: string; // Se quiser um filtro específico para nome do paciente
+  // tipoTratamento?: TipoTratamento; // REMOVIDO CONFORME SOLICITAÇÃO
   status?: StatusProntuario;
   pagina: number;
   tamanho: number;
+  // Adicionar outros campos de ordenação se necessário, ex: sort?: string (ex: "paciente.nome,asc")
 }
 
 export interface ResultadoBusca {
@@ -141,15 +148,28 @@ export interface ResultadoBusca {
     pageSize: number;
     totalPages: number;
     totalElements: number;
-  }
-}
-
-// NovoProntuarioRequest MODIFICADO
-export interface NovoProntuarioRequest {
-  pacienteId: string; // Ou number, dependendo do tipo do ID do PacienteEntity no backend
-  medicoId: number;   // ID do médico responsável selecionado
-  tipoTratamento: TipoTratamento;
-  historicoMedico: {
-    descricao: string;
   };
 }
+
+// DTO para criar um novo prontuário (request para o backend)
+// Mantido como estava no seu arquivo original
+export interface NovoProntuarioRequest {
+  pacienteId: string; 
+  medicoId: number;
+  tipoTratamento: TipoTratamento;
+  historicoMedico: { // Simplificado para o histórico inicial
+    descricao: string;
+  };
+  // Não incluir paciente: PacienteRequestDTO; aqui se o paciente deve ser pré-existente
+}
+
+// Se você tiver um PacienteRequestDTO para criar um paciente junto com o prontuário (opcional)
+// export interface PacienteRequestDTO {
+//   nome: string;
+//   dataNascimento: string;
+//   cpf: string;
+//   genero: Genero;
+//   telefone: string;
+//   email: string;
+//   endereco: Endereco;
+// }

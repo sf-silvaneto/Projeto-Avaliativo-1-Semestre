@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import MedicoForm, { MedicoFormData } from '../../components/medico/MedicoForm';
 import Alert from '../../components/ui/Alert';
+import Button from '../../components/ui/Button';
 import { buscarMedicoPorId, atualizarMedico } from '../../services/medicoService';
 import { Medico, MedicoUpdateDTO, StatusMedico } from '../../types/medico';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -39,8 +40,12 @@ const MedicoEditPage: React.FC = () => {
     setError(null);
     try {
       const updateData: MedicoUpdateDTO = {
-        ...data,
-        status: data.status || medico?.status || StatusMedico.ATIVO, 
+        nomeCompleto: data.nomeCompleto,
+        crm: data.crm,
+        especialidade: data.especialidade,
+        resumoEspecialidade: data.resumoEspecialidade,
+        rqe: data.rqe,
+        status: data.status || medico?.status || StatusMedico.ATIVO,
       };
       
       const medicoAtualizado = await atualizarMedico(Number(id), updateData);
@@ -58,6 +63,18 @@ const MedicoEditPage: React.FC = () => {
     }
   };
 
+  const voltarButton = (
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={() => navigate('/medicos')}
+      leftIcon={<ArrowLeft className="h-4 w-4" />}
+      disabled={isSaving || isLoading}
+    >
+      Voltar
+    </Button>
+  );
+
   if (isLoading) {
     return (
       <div className="container-medium py-8 flex justify-center items-center min-h-[300px]">
@@ -71,11 +88,14 @@ const MedicoEditPage: React.FC = () => {
       <div className="container-medium py-8">
         <Alert type="error" title="Erro ao carregar" message={error} />
         <div className="mt-4">
-          <Link to="/medicos">
-            <Button variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Voltar para Lista
+           <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/medicos')}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+            >
+              Voltar
             </Button>
-          </Link>
         </div>
       </div>
     );
@@ -86,26 +106,28 @@ const MedicoEditPage: React.FC = () => {
       <div className="container-medium py-8">
         <Alert type="warning" title="Não encontrado" message="Médico não encontrado." />
          <div className="mt-4">
-          <Link to="/medicos">
-            <Button variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Voltar para Lista
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/medicos')}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+            >
+              Voltar
             </Button>
-          </Link>
         </div>
       </div>
     );
   }
 
+  const initialFormDataForForm: Medico = { ...medico };
+
   return (
     <div className="container-medium py-8">
-       <div className="flex items-center mb-6">
-        <Link to="/medicos" className="text-neutral-500 hover:text-neutral-700 mr-2">
-            <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-2xl font-bold text-neutral-900">Editar Médico: {medico.nomeCompleto}</h1>
-      </div>
+       <h1 className="text-2xl font-bold text-neutral-900 mb-6">
+         Editar Médico: {medico.nomeCompleto}
+       </h1>
 
-      {error && (
+      {error && ( 
         <Alert
           type="error"
           message={error}
@@ -117,9 +139,10 @@ const MedicoEditPage: React.FC = () => {
       <div className="card">
         <MedicoForm
           onSubmit={handleUpdateMedico}
-          initialData={medico}
+          initialData={initialFormDataForForm}
           isLoading={isSaving}
           isEditMode={true}
+          customActions={voltarButton} 
         />
       </div>
     </div>

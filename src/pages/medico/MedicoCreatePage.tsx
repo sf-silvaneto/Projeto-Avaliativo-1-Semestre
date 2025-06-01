@@ -5,8 +5,6 @@ import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import { criarMedico } from '../../services/medicoService';
 import { ArrowLeft } from 'lucide-react';
-// Se StatusMedico for usado aqui (ex: em um estado inicial), importe-o.
-// import { StatusMedico } from '../../types/medico';
 
 
 const MedicoCreatePage: React.FC = () => {
@@ -18,17 +16,12 @@ const MedicoCreatePage: React.FC = () => {
     setIsCreating(true);
     setError(null);
     try {
-      // A propriedade 'crm' já vem concatenada do MedicoForm (ex: '12345SP')
-      // Se o backend espera 'crm' e 'crmUf' separados, ajuste aqui ou no MedicoForm.
-      // No MedicoForm atual, 'crm' já é 'numeroCRM + UF'.
       const createData = {
         nomeCompleto: data.nomeCompleto,
-        crm: data.crm, // Já está no formato 'numeroUF'
+        crm: data.crm,
         especialidade: data.especialidade,
         resumoEspecialidade: data.resumoEspecialidade,
         rqe: data.rqe,
-        // status é opcional no schema e MedicoForm define um default,
-        // então não precisa ser enviado explicitamente aqui a menos que queira sobrescrever.
       };
 
       const novoMedico = await criarMedico(createData);
@@ -47,14 +40,13 @@ const MedicoCreatePage: React.FC = () => {
     }
   };
 
-  // Crie o botão "Voltar" como um elemento JSX
   const voltarButton = (
     <Button
-      type="button" // Importante para não submeter o formulário
+      type="button"
       variant="secondary"
-      onClick={() => navigate('/medicos')} // Navega para a lista de médicos
+      onClick={() => navigate('/medicos')}
       leftIcon={<ArrowLeft className="h-4 w-4" />}
-      disabled={isCreating} // Opcional: desabilitar enquanto cria
+      disabled={isCreating}
     >
       Voltar
     </Button>
@@ -63,7 +55,6 @@ const MedicoCreatePage: React.FC = () => {
   return (
     <div className="container-medium py-8">
       <div className="flex items-center mb-6">
-        {/* A Seta e o Link foram removidos daqui */}
         <h1 className="text-2xl font-bold text-neutral-900">Adicionar Novo Médico</h1>
       </div>
 
@@ -76,13 +67,12 @@ const MedicoCreatePage: React.FC = () => {
         />
       )}
 
-      {/* Envolver MedicoForm com um Card ou div com padding, se necessário */}
-      <div className="card bg-white p-6 rounded-lg shadow"> {/* Exemplo de card styling */}
+      <div className="card bg-white p-6 rounded-lg shadow">
         <MedicoForm
           onSubmit={handleCreateMedico}
           isLoading={isCreating}
-          isEditMode={false} // Modo de criação
-          customActions={voltarButton} // Passe o botão Voltar como prop
+          isEditMode={false}
+          customActions={voltarButton}
         />
       </div>
     </div>

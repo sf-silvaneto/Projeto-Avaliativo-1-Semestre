@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
@@ -35,6 +35,15 @@ const PacienteEditPage: React.FC = () => {
   }, [id]);
 
   const mapPacienteToFormData = (p: Paciente): PacienteFormData => {
+    const temAlergias = p.alergiasDeclaradas !== null && p.alergiasDeclaradas !== undefined && p.alergiasDeclaradas !== "Não" ? 'sim' : 'nao';
+    const alergiasDeclaradas = temAlergias === 'sim' ? p.alergiasDeclaradas || '' : '';
+
+    const temComorbidades = p.comorbidadesDeclaradas !== null && p.comorbidadesDeclaradas !== undefined && p.comorbidadesDeclaradas !== "Não" ? 'sim' : 'nao';
+    const comorbidadesDeclaradas = temComorbidades === 'sim' ? p.comorbidadesDeclaradas || '' : '';
+    
+    const usaMedicamentos = p.medicamentosContinuos !== null && p.medicamentosContinuos !== undefined && p.medicamentosContinuos !== "Não" ? 'sim' : 'nao';
+    const medicamentosContinuos = usaMedicamentos === 'sim' ? p.medicamentosContinuos || '' : '';
+
     return {
         nome: p.nome,
         dataNascimento: p.dataNascimento,
@@ -51,6 +60,12 @@ const PacienteEditPage: React.FC = () => {
         tipoSanguineo: p.tipoSanguineo || '',
         nacionalidade: p.nacionalidade || '',
         ocupacao: p.ocupacao || '',
+        temAlergias: temAlergias as 'sim' | 'nao',
+        alergiasDeclaradas: alergiasDeclaradas,
+        temComorbidades: temComorbidades as 'sim' | 'nao',
+        comorbidadesDeclaradas: comorbidadesDeclaradas,
+        usaMedicamentos: usaMedicamentos as 'sim' | 'nao',
+        medicamentosContinuos: medicamentosContinuos,
         endereco: {
             logradouro: p.endereco.logradouro,
             numero: p.endereco.numero,
@@ -83,6 +98,19 @@ const PacienteEditPage: React.FC = () => {
     }
   };
 
+  const voltarButton = (
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={() => navigate('/pacientes')}
+      leftIcon={<ArrowLeft className="h-4 w-4" />}
+      disabled={isSaving || isLoading}
+    >
+      Voltar
+    </Button>
+  );
+
+
   if (isLoading) {
     return (
       <div className="container-medium py-8 flex justify-center items-center min-h-[300px]">
@@ -96,11 +124,14 @@ const PacienteEditPage: React.FC = () => {
       <div className="container-medium py-8">
         <Alert type="error" title="Erro ao carregar" message={error} />
         <div className="mt-4">
-          <Link to="/pacientes">
-            <Button variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Voltar para Lista
+           <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/pacientes')}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+            >
+              Voltar
             </Button>
-          </Link>
         </div>
       </div>
     );
@@ -111,11 +142,14 @@ const PacienteEditPage: React.FC = () => {
       <div className="container-medium py-8">
         <Alert type="warning" title="Não encontrado" message="Paciente não encontrado." />
          <div className="mt-4">
-          <Link to="/pacientes">
-            <Button variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-              Voltar para Lista
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/pacientes')}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+            >
+              Voltar
             </Button>
-          </Link>
         </div>
       </div>
     );
@@ -125,12 +159,9 @@ const PacienteEditPage: React.FC = () => {
 
   return (
     <div className="container-medium py-8">
-      <div className="flex items-center mb-6">
-        <Link to="/pacientes" className="text-neutral-500 hover:text-neutral-700 mr-2">
-            <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-2xl font-bold text-neutral-900">Editar Paciente: {paciente.nome}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-neutral-900 mb-6">
+        Editar Paciente: {paciente.nome}
+      </h1>
 
       {error && !isSaving && (
         <Alert
@@ -150,13 +181,13 @@ const PacienteEditPage: React.FC = () => {
         />
       )}
 
-
       <div className="card">
         <PacienteForm
           onSubmit={handleUpdatePaciente}
           initialData={initialFormData}
           isLoading={isSaving}
           isEditMode={true}
+          customActions={voltarButton}
         />
       </div>
     </div>

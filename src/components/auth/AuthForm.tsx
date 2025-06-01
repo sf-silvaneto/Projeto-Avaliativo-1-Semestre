@@ -7,6 +7,8 @@ import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { User, Mail, Lock, AlertTriangle, Key as KeyIcon, Eye, EyeOff } from 'lucide-react';
 
+const apenasLetrasEspacosAcentosHifenApostrofo = /^[a-zA-ZÀ-ú\s'-]+$/;
+
 const strongPasswordValidation = new RegExp(
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{6,}$/
 );
@@ -17,9 +19,11 @@ const loginSchema = z.object({
 });
 
 const cadastroSchema = z.object({
-  nome: z.string().min(3, 'O nome deve ter pelo menos 3 caracteres.'),
+  nome: z.string()
+        .min(3, 'O nome deve ter pelo menos 3 caracteres.')
+        .regex(apenasLetrasEspacosAcentosHifenApostrofo, 'Nome deve conter apenas letras, espaços, acentos, apóstrofos e hífens.'), // Regex adicionada
   email: z.string().email('Email inválido.')
-           .regex(/^[^\s@]+@hm\.com$/, 'O email deve ser do domínio @hm.com.'),
+            .regex(/^[^\s@]+@hm\.com$/, 'O email deve ser do domínio @hm.com.'),
   senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.')
             .regex(strongPasswordValidation, 'Senha fraca. Use maiúscula, minúscula, número e símbolo.'),
   confirmarSenha: z.string(),
@@ -60,10 +64,33 @@ const AuthForm: React.FC<AuthFormProps> = ({
     formState: { errors },
   } = useForm<LoginFormData | CadastroFormData>({
     resolver: zodResolver(currentSchema),
+    defaultValues: isLogin ? {} : {
+      nome: '',
+      email: '',
+      senha: '',
+      confirmarSenha: '',
+      palavraChave: ''
+    }
   });
 
   const getError = (fieldName: keyof CadastroFormData | keyof LoginFormData) => {
-    return errors[fieldName]?.message;
+    return (errors as any)[fieldName]?.message;
+  };
+
+  const handleNomeInput = (event: React.FormEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    let value = input.value;
+    
+    value = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, ''); 
+    input.value = value.toUpperCase();
+    
+    if (start !== null && end !== null) {
+      try {
+          input.setSelectionRange(start, end);
+      } catch (e) { /* ignore */ }
+    }
   };
 
   return (
@@ -78,6 +105,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
           placeholder="Digite seu nome completo"
           leftAddon={<User className="h-5 w-5" />}
           {...register('nome')}
+          onInput={handleNomeInput}
           error={getError('nome')}
         />
       )}

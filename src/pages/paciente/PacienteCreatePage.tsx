@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Link removido se não for mais usado
+import { useNavigate } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';
 import Alert from '../../components/ui/Alert';
-import Button from '../../components/ui/Button'; // Importação do Button
+import Button from '../../components/ui/Button';
 import * as pacienteService from '../../services/pacienteService';
 import { PacienteFormData } from '../../types/paciente';
-import { ArrowLeft } from 'lucide-react'; // Ícone para o botão Voltar
+import { ArrowLeft } from 'lucide-react';
 
 const PacienteCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,16 +28,15 @@ const PacienteCreatePage: React.FC = () => {
       const apiErrorMessage = err.response?.data?.mensagem || err.response?.data?.message || 'Erro desconhecido ao criar paciente.';
       setError(apiErrorMessage);
     } finally {
-        setIsSubmitting(false); // Garante que isSubmitting seja definido como false no final
+        setIsSubmitting(false);
     }
   };
 
-  // Define o botão "Voltar" para ser passado ao PacienteForm
   const voltarButton = (
     <Button
-      type="button" // Importante para não submeter o formulário
+      type="button"
       variant="secondary"
-      onClick={() => navigate('/pacientes')} // Navega para a lista de pacientes
+      onClick={() => navigate('/pacientes')}
       leftIcon={<ArrowLeft className="h-4 w-4" />}
       disabled={isSubmitting}
     >
@@ -48,7 +47,6 @@ const PacienteCreatePage: React.FC = () => {
   return (
     <div className="container-medium py-8">
       <div className="flex items-center mb-6">
-        {/* Link to="/pacientes" foi removido daqui */}
         <h1 className="text-2xl font-bold text-neutral-900">Adicionar Novo Paciente</h1>
       </div>
 
@@ -61,12 +59,12 @@ const PacienteCreatePage: React.FC = () => {
         />
       )}
 
-      <div className="card bg-white p-6 rounded-lg shadow"> {/* Exemplo de card styling */}
+      <div className="card bg-white p-6 rounded-lg shadow">
         <PacienteForm
           onSubmit={handleCreatePaciente}
           isLoading={isSubmitting}
           isEditMode={false}
-          customActions={voltarButton} // Passa o botão Voltar como prop
+          customActions={voltarButton} 
         />
       </div>
     </div>

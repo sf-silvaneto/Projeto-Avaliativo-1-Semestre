@@ -1,23 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, Edit2 as EditIcon, Trash2 } from 'lucide-react';
+import { Eye, Edit2 as EditIcon } from 'lucide-react';
 import Button from '../ui/Button';
-import { Paciente, Genero } from '../../types/paciente';
+import { Paciente } from '../../types/paciente';
 
 interface PacienteTableProps {
   pacientes: Paciente[];
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
-  isLoadingAction: boolean;
-  pacienteInAction: string | null;
+  onViewDetails: (id: string) => void;
 }
 
 const PacienteTable: React.FC<PacienteTableProps> = ({
   pacientes,
   onEdit,
-  onDelete,
-  isLoadingAction,
-  pacienteInAction,
+  onViewDetails,
 }) => {
   const formatData = (dataString?: string) => {
     if (!dataString) return '-';
@@ -30,9 +25,25 @@ const PacienteTable: React.FC<PacienteTableProps> = ({
     return date.toLocaleDateString('pt-BR');
   };
 
-  const renderGenero = (genero: Genero) => {
-    if (!genero) return '-';
-    return genero.charAt(0) + genero.slice(1).toLowerCase().replace(/_/g, " ");
+  const formatCPF = (cpf: string): string => {
+    if (!cpf) return '-';
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length === 11) {
+      return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+    return cpf;
+  };
+
+  const formatTelefone = (telefone: string): string => {
+    if (!telefone) return '-';
+    const digits = telefone.replace(/\D/g, '');
+    const len = digits.length;
+    if (len === 10) {
+      return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    } else if (len === 11) {
+      return digits.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '($1)$2 $3-$4');
+    }
+    return telefone;
   };
 
   return (
@@ -61,18 +72,32 @@ const PacienteTable: React.FC<PacienteTableProps> = ({
                   <div className="text-sm font-medium text-neutral-900">{paciente.nome}</div>
                   <div className="text-xs text-neutral-500">{paciente.email}</div>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">{paciente.cpf}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">{formatData(paciente.dataNascimento)}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">{paciente.telefone}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
+                  {formatCPF(paciente.cpf)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
+                  {formatData(paciente.dataNascimento)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
+                  {formatTelefone(paciente.telefone)}
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-center">
                   <div className="flex justify-center items-center space-x-2">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => onViewDetails(paciente.id.toString())} // NOVA AÇÃO
+                      title="Visualizar Detalhes"
+                      className="p-1 text-blue-600 hover:text-blue-800" // Cor diferente para visualizar
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="link"
                       size="sm"
                       onClick={() => onEdit(paciente.id.toString())}
                       title="Editar Paciente"
                       className="p-1 text-primary-600 hover:text-primary-800"
-                      disabled={isLoadingAction && pacienteInAction === paciente.id.toString()}
                     >
                       <EditIcon className="h-4 w-4" />
                     </Button>

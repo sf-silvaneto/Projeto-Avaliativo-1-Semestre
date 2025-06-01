@@ -1,6 +1,18 @@
-// src/types/prontuarioRegistros.ts
+// Arquivo: src/types/prontuarioRegistros.ts
 
-import { AnexoSimples } from './prontuario'; // Supondo que AnexoSimples está em prontuario.ts
+// Supondo que AnexoSimples pode não existir ou não ser o ideal, vamos definir AnexoDetalhado
+// Se AnexoSimples já existir em prontuario.ts com os campos corretos, pode usá-la.
+// import { AnexoSimples } from './prontuario'; // Se for usar AnexoSimples de lá
+
+// NOVA INTERFACE PARA ANEXOS DETALHADOS
+export interface AnexoDetalhado {
+  id: string; // ou number, dependendo do backend
+  nomeOriginalArquivo: string;
+  nomeArquivoArmazenado: string; // No frontend, isso pode se transformar em uma URL para download
+  tipoConteudo: string;
+  tamanhoBytes?: number; // Opcional, caso nem sempre venha
+  dataUpload?: string; // ISOString
+}
 
 // --- Entrada Médica ---
 export interface NovaEntradaMedicaRequest {
@@ -18,11 +30,10 @@ export interface NovaEntradaMedicaRequest {
   usaMedicamentosContinuos?: string; // "sim" ou "nao"
   medicamentosContinuosDetalhes?: string;
   historicoFamiliarRelevante?: string;
-  // Anexos seriam tratados separadamente, possivelmente com um FormData se for upload direto,
-  // ou uma lista de IDs de AnexoEntity se os anexos forem carregados antes.
+  // Anexos serão tratados separadamente no upload, mas a request pode não precisar deles diretamente aqui.
 }
 
-export interface EntradaMedicaDetalhada { // Resposta do backend
+export interface EntradaMedicaDetalhada { // Resposta do backend para uma entrada/evolução
   id: string; // ou number
   prontuarioId: string; // ou number
   dataHoraEntrada: string;
@@ -39,28 +50,42 @@ export interface EntradaMedicaDetalhada { // Resposta do backend
   usaMedicamentosContinuos?: boolean;
   medicamentosContinuosDetalhes?: string;
   historicoFamiliarRelevante?: string;
-  responsavelNome?: string; 
-  responsavelDetalhes?: string; 
-  anexos?: AnexoSimples[];
+
+  // CAMPOS ATUALIZADOS/ADICIONADOS PARA O RESPONSÁVEL
+  tipoResponsavel?: "MEDICO" | "ADMINISTRADOR" | string; // string para flexibilidade inicial
+  responsavelId?: string | number;
+  responsavelNomeCompleto?: string;
+  responsavelEspecialidade?: string; // Se for médico
+  responsavelCRM?: string;           // Se for médico
+  // nomeResponsavelDisplay?: string; // Pode ser removido se os acima forem usados
+
+  anexos?: AnexoDetalhado[]; // <<<< ADICIONADO PARA ANEXOS
   createdAt: string;
   updatedAt: string;
 }
 
-// --- Evolução Clínica ---
-export interface NovaEvolucaoRequest {
+// --- Evolução Clínica --- (Pode ser que EntradaMedicaDetalhada sirva para evoluções também)
+export interface NovaEvolucaoRequest { // Se for uma entidade/DTO diferente no backend
   dataEvolucao: string; // ISOString
   textoEvolucao: string;
   // anexos?: File[]; // Para upload, ou string[] para URLs/IDs
 }
 
-export interface EvolucaoClinica { // Resposta do backend
+export interface EvolucaoClinica { // Resposta do backend para uma evolução
   id: string; // ou number
   prontuarioId: string; // ou number
   dataEvolucao: string;
   textoEvolucao: string;
-  responsavelNome?: string;
-  responsavelDetalhes?: string;
-  anexos?: AnexoSimples[];
+
+  // CAMPOS ATUALIZADOS/ADICIONADOS PARA O RESPONSÁVEL (similar a EntradaMedicaDetalhada)
+  tipoResponsavel?: "MEDICO" | "ADMINISTRADOR" | string;
+  responsavelId?: string | number;
+  responsavelNomeCompleto?: string;
+  responsavelEspecialidade?: string;
+  responsavelCRM?: string;
+  // responsavelDetalhes?: string; // Pode ser removido
+
+  anexos?: AnexoDetalhado[]; // <<<< ADICIONADO PARA ANEXOS
   createdAt: string;
   updatedAt: string;
 }

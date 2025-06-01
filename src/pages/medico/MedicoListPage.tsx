@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter as FilterIcon, Edit2, Eye, ToggleLeft, ToggleRight, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter as FilterIcon, Edit2, Eye, ToggleLeft, ToggleRight, ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
@@ -16,18 +16,14 @@ interface MedicoSearchFormData {
   status?: StatusMedico | '';
 }
 
-const MedicoTable: React.FC<{
+const MedicoTableComponent: React.FC<{
   medicos: Medico[];
   onEdit: (id: number) => void;
+  onViewDetails: (id: number) => void;
   onToggleStatus: (id: number, currentStatus: StatusMedico) => Promise<void>;
   isLoadingToggleOrDelete: boolean;
   medicoInAction: number | null;
-}> = ({ medicos, onEdit, onToggleStatus, isLoadingToggleOrDelete, medicoInAction }) => {
-
-  const formatData = (dataString?: string) => {
-    if (!dataString) return '-';
-    return new Date(dataString).toLocaleDateString('pt-BR');
-  };
+}> = ({ medicos, onEdit, onViewDetails, onToggleStatus, isLoadingToggleOrDelete, medicoInAction }) => {
 
   const renderStatusBadge = (status: StatusMedico) => {
     const isActive = status === StatusMedico.ATIVO;
@@ -72,6 +68,15 @@ const MedicoTable: React.FC<{
                 <td className="px-4 py-3 whitespace-nowrap">{renderStatusBadge(medico.status)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-center">
                   <div className="flex justify-center items-center space-x-2">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => onViewDetails(medico.id)}
+                      title="Visualizar Detalhes"
+                      className="p-1 text-blue-600 hover:text-blue-800"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="link"
                       size="sm"
@@ -157,15 +162,14 @@ const MedicoListPage: React.FC = () => {
 
   useEffect(() => {
     const state = location.state as { medicoSuccess?: boolean, message?: string, medicoUpdateSuccess?: boolean };
-    if (state?.medicoSuccess && state?.message) {
-      setSuccessMessage(state.message);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-    if (state?.medicoUpdateSuccess && state?.message) {
+    if ((state?.medicoSuccess || state?.medicoUpdateSuccess) && state?.message) {
         setSuccessMessage(state.message);
+        if(state?.medicoSuccess || state?.medicoUpdateSuccess) {
+            fetchMedicos(searchFilters, currentPage);
+        }
         navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location, navigate]);
+  }, [location, navigate, fetchMedicos, searchFilters, currentPage]);
 
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -200,9 +204,7 @@ const MedicoListPage: React.FC = () => {
         processedValue = numPart + letterPart;
       }
 
-    } else if (name === 'nome') {
-      processedValue = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, '');
-    } else if (name === 'especialidade') {
+    } else if (name === 'nome' || name === 'especialidade') { 
       processedValue = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, '');
     }
     setSearchFilters(prev => ({ ...prev, [name]: processedValue }));
@@ -222,6 +224,10 @@ const MedicoListPage: React.FC = () => {
     navigate(`/medicos/${id}/editar`);
   };
 
+  const handleViewMedicoDetails = (id: number) => {
+    navigate(`/medicos/${id}`);
+  };
+
   const handleToggleStatus = async (id: number, currentStatus: StatusMedico) => {
     const newStatus = currentStatus === StatusMedico.ATIVO ? StatusMedico.INATIVO : StatusMedico.ATIVO;
     const confirmAction = window.confirm(`Tem certeza que deseja ${newStatus === StatusMedico.ATIVO ? 'ativar' : 'inativar'} este médico?`);
@@ -232,7 +238,7 @@ const MedicoListPage: React.FC = () => {
       setSuccessMessage(null);
       try {
         await atualizarStatusMedico(id, { status: newStatus });
-        setSuccessMessage(`Status do médico alterado para ${newStatus.toLowerCase()} com sucesso.`);
+        setSuccessMessage(`Status do médico alterado para ${newStatus.toString().toLowerCase()} com sucesso.`);
         fetchMedicos(searchFilters, currentPage); 
       } catch (err: any) {
         setError(err.response?.data?.mensagem || 'Erro ao alterar status do médico.');
@@ -244,7 +250,7 @@ const MedicoListPage: React.FC = () => {
   };
 
   const statusOptions = [
-    { value: '', label: 'Todos' },
+    { value: '', label: 'Todos os Status' },
     { value: StatusMedico.ATIVO, label: 'Ativo' },
     { value: StatusMedico.INATIVO, label: 'Inativo' },
   ];
@@ -278,10 +284,10 @@ const MedicoListPage: React.FC = () => {
               type="button"
               variant="secondary"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              leftIcon={<FilterIcon className="h-9 w-5" />}
+              leftIcon={<FilterIcon className="h-9 w-4" />}
               className="w-full md:w-auto"
             >
-              Filtros
+              Filtros Avançados
             </Button>
           </div>
 
@@ -310,9 +316,9 @@ const MedicoListPage: React.FC = () => {
               />
             </div>
           )}
-          {(searchFilters.nome || searchFilters.crm || searchFilters.especialidade || searchFilters.status) && (
+           {(searchFilters.nome || searchFilters.crm || searchFilters.especialidade || searchFilters.status) && (
             <div className="flex justify-end">
-                <Button type="button" variant="link" size="sm" onClick={handleClearFilters} className="text-sm">
+                <Button type="button" variant="link" size="sm" onClick={handleClearFilters} className="text-sm text-neutral-600 hover:text-error-600">
                     Limpar Filtros
                 </Button>
             </div>
@@ -322,7 +328,7 @@ const MedicoListPage: React.FC = () => {
         <div className="flex justify-end items-center space-x-2 mb-4">
           <Button
             variant="secondary"
-            onClick={() => navigate('/painel-de-controle')} // MODIFICAÇÃO APLICADA AQUI
+            onClick={() => navigate('/painel-de-controle')}
             leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
             Voltar
@@ -335,22 +341,17 @@ const MedicoListPage: React.FC = () => {
         </div>
 
         {isLoading && !resultadoBusca ? (
-            <div className="text-center py-10">
-              <div className="animate-pulse">
-                <div className="h-8 bg-neutral-200 rounded w-1/4 mb-4 mx-auto"></div>
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-10 bg-neutral-100 rounded"></div>
-                  ))}
-                </div>
-              </div>
+             <div className="text-center py-10">
+                <Loader2 className="mx-auto h-12 w-12 text-primary-600 animate-spin" />
+                <p className="mt-2 text-neutral-500">Carregando médicos...</p>
             </div>
         ) : (
             <>
               <Card>
-                <MedicoTable
+                <MedicoTableComponent 
                     medicos={resultadoBusca?.content || []}
                     onEdit={handleEditMedico}
+                    onViewDetails={handleViewMedicoDetails} 
                     onToggleStatus={handleToggleStatus}
                     isLoadingToggleOrDelete={isLoadingAction}
                     medicoInAction={medicoInAction}
@@ -363,7 +364,7 @@ const MedicoListPage: React.FC = () => {
                       variant="secondary"
                       size="sm"
                       onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 0}
+                      disabled={currentPage === 0 || isLoading}
                       className="rounded-r-none"
                     >
                       <ChevronLeft className="h-4 w-4" /> Anterior
@@ -375,7 +376,7 @@ const MedicoListPage: React.FC = () => {
                       variant="secondary"
                       size="sm"
                       onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= totalPages - 1}
+                      disabled={currentPage >= totalPages - 1 || isLoading}
                       className="rounded-l-none"
                     >
                       Próxima <ChevronRight className="h-4 w-4" />

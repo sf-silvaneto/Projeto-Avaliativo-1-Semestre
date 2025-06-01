@@ -9,7 +9,8 @@ import { buscarProntuarios } from '../../services/prontuarioService';
 import { BuscaProntuarioParams, Prontuario, ResultadoBusca } from '../../types/prontuario';
 
 const ProntuarioListPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useState<BuscaProntuarioParams>({
+  // tipoTratamento removido da interface interna se não for mais usado em BuscaProntuarioParams
+  const [searchParams, setSearchParams] = useState<Omit<BuscaProntuarioParams, 'tipoTratamento'>>({
     pagina: 0,
     tamanho: 10,
   });
@@ -24,7 +25,13 @@ const ProntuarioListPage: React.FC = () => {
       setError(null);
       
       try {
-        const result = await buscarProntuarios(searchParams);
+        // A chamada para buscarProntuarios agora não inclui tipoTratamento nos params
+        const paramsToFetch: BuscaProntuarioParams = {
+            ...searchParams,
+            // tipoTratamento: undefined, // Garante que não seja enviado se ainda existir na interface
+        };
+        // Se BuscaProntuarioParams foi atualizada para remover tipoTratamento, pode passar searchParams diretamente
+        const result = await buscarProntuarios(paramsToFetch);
         setResultado(result);
       } catch (error: any) {
         console.error('Erro ao buscar prontuários:', error);
@@ -39,39 +46,36 @@ const ProntuarioListPage: React.FC = () => {
     fetchProntuarios();
   }, [searchParams]);
   
-  const handleSearch = (formData: any) => {
-    setSearchParams({
-      ...searchParams,
+  const handleSearch = (formData: { termo?: string; numeroProntuario?: string; status?: Prontuario['status']}) => {
+    setSearchParams(prevParams => ({
+      ...prevParams, // Mantém pagina e tamanho atuais ou outros filtros não relacionados
       pagina: 0, 
       termo: formData.termo || undefined,
       numeroProntuario: formData.numeroProntuario || undefined,
-      tipoTratamento: formData.tipoTratamento || undefined,
+      // tipoTratamento: formData.tipoTratamento || undefined, // REMOVIDO
       status: formData.status || undefined,
-    });
+    }));
   };
   
   const handlePageChange = (page: number) => {
-    setSearchParams({
-      ...searchParams,
+    setSearchParams(prevParams => ({
+      ...prevParams,
       pagina: page - 1, 
-    });
+    }));
   };
   
   return (
     <div className="container-wide">
-      {/* CABEÇALHO DA PÁGINA - APENAS O TÍTULO AQUI */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <h1 className="text-2xl font-bold text-neutral-900 mb-4 md:mb-0">Gerenciar Prontuários</h1>
-        {/* Botões foram movidos para baixo */}
       </div>
       
       <ProntuarioSearchForm onSearch={handleSearch} isLoading={isLoading} />
 
-      {/* BOTÕES MOVIDOS PARA CÁ - ABAIXO DO FORM DE BUSCA */}
       <div className="flex justify-end items-center space-x-2 mb-4">
         <Link to="/painel-de-controle">
           <Button variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-            Voltar
+            Voltar ao Painel
           </Button>
         </Link>
         <Link to="/prontuarios/novo">
@@ -94,7 +98,7 @@ const ProntuarioListPage: React.FC = () => {
         prontuarios={resultado?.content || []}
         totalItems={resultado?.pageable.totalElements || 0}
         currentPage={(searchParams.pagina || 0) + 1}
-        pageSize={searchParams.tamanho}
+        pageSize={searchParams.tamanho || 10} // Garante um valor padrão
         onPageChange={handlePageChange}
         isLoading={isLoading}
       />

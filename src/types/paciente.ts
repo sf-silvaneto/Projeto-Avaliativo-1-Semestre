@@ -1,3 +1,4 @@
+// Arquivo: src/types/paciente.ts
 export enum Genero {
   MASCULINO = 'MASCULINO',
   FEMININO = 'FEMININO',
@@ -50,8 +51,11 @@ export interface Paciente {
   nacionalidade?: string;
   ocupacao?: string;
   endereco: Endereco;
-  createdAt: string; 
+  createdAt: string;
   updatedAt: string;
+  alergiasDeclaradas?: string;
+  comorbidadesDeclaradas?: string;
+  medicamentosContinuos?: string;
 }
 
 export interface PacienteFormData {
@@ -70,6 +74,12 @@ export interface PacienteFormData {
   tipoSanguineo?: TipoSanguineo | '';
   nacionalidade?: string;
   ocupacao?: string;
+  temAlergias?: 'sim' | 'nao';
+  alergiasDeclaradas?: string;
+  temComorbidades?: 'sim' | 'nao';
+  comorbidadesDeclaradas?: string;
+  usaMedicamentos?: 'sim' | 'nao';
+  medicamentosContinuos?: string;
   endereco: {
     logradouro: string;
     numero: string;
@@ -82,9 +92,7 @@ export interface PacienteFormData {
 }
 
 export type PacienteCreateDTO = PacienteFormData;
-
 export type PacienteUpdateDTO = Partial<PacienteFormData>;
-
 export interface ResultadoBuscaPacientes {
   content: Paciente[];
   pageable: {
