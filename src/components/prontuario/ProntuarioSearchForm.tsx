@@ -1,16 +1,16 @@
+// src/components/prontuario/ProntuarioSearchForm.tsx
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Search, Filter, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-import { StatusProntuario } from '../../types/prontuario';
+import { StatusProntuario } from '../../types/prontuario'; // Importa o enum StatusProntuario atualizado
 
 interface SearchFormData {
   termo?: string;
   numeroProntuario?: string;
-  // tipoTratamento?: TipoTratamento; // Confirmado como REMOVIDO
-  status?: StatusProntuario;
+  status?: StatusProntuario | ''; // Permite string vazia para "Todos os Status"
 }
 
 interface ProntuarioSearchFormProps {
@@ -26,8 +26,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
     defaultValues: {
       termo: '',
       numeroProntuario: '',
-      // tipoTratamento: undefined, // Confirmado como REMOVIDO
-      status: undefined, 
+      status: '', // Default para string vazia, que corresponde a "Todos os Status"
     },
   });
 
@@ -38,18 +37,18 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
     reset({
         termo: '',
         numeroProntuario: '',
-        status: undefined, 
+        status: '',
     });
-    onSearch({}); 
+    onSearch({}); // Submete a busca com filtros limpos
   };
 
+  // ===== OPÇÕES DE STATUS CORRIGIDAS PARA O FILTRO =====
   const statusOptions = [
     { value: '', label: 'Todos os Status' },
-    { value: StatusProntuario.ATIVO, label: 'Ativo' },
-    { value: StatusProntuario.INATIVO, label: 'Inativo' },
+    { value: StatusProntuario.INTERNADO, label: 'Internado' },
     { value: StatusProntuario.ARQUIVADO, label: 'Arquivado' },
-    { value: StatusProntuario.ALTA, label: 'Alta' },
   ];
+  // =====================================================
 
   const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
 
@@ -60,7 +59,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
           <div className="flex-1">
             <Input
               placeholder="Buscar por nome do paciente, nº prontuário ou CPF..."
-              leftAddon={<Search className="h-5 w-5" />}
+              leftAddon={<Search className="h-5 w-5 text-gray-400" />}
               {...register('termo')}
               aria-label="Buscar prontuários"
             />
@@ -72,7 +71,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
               leftIcon={<Filter className="h-4 w-4" />}
               onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
               aria-expanded={showAdvancedSearch}
-              aria-controls="advanced-search"
+              aria-controls="advanced-search-filters"
             >
               Filtros Avançados
             </Button>
@@ -87,16 +86,16 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
         </div>
 
         {showAdvancedSearch && (
-          <div id="advanced-search" className="border-t border-neutral-200 pt-4 animate-slide-down">
+          <div id="advanced-search-filters" className="border-t border-gray-200 pt-4 animate-slide-down">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Número do Prontuário Específico" 
+                label="Número do Prontuário Específico"
                 placeholder="Digite o número exato..."
                 {...register('numeroProntuario')}
               />
               <Select
                 label="Status do Prontuário"
-                options={statusOptions}
+                options={statusOptions} // Utiliza as opções corrigidas
                 {...register('status')}
               />
             </div>
@@ -111,9 +110,9 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
               size="sm"
               leftIcon={<X className="h-4 w-4" />}
               onClick={handleReset}
-              className="text-neutral-600 hover:text-error-600"
+              className="text-gray-600 hover:text-red-600"
             >
-              Limpar filtros
+              Limpar filtrosss
             </Button>
           </div>
         )}

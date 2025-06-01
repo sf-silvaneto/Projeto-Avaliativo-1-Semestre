@@ -1,20 +1,6 @@
-export interface Prontuario {
-  id: string;
-  numeroProntuario: string;
-  paciente: Paciente;
-  medicoResponsavel?: Medico;
-  // tipoTratamento: TipoTratamento; // REMOVIDO
-  dataInicio: string;
-  dataUltimaAtualizacao: string;
-  status: StatusProntuario;
-  historicoMedico: HistoricoMedico[];
-  medicacoes: Medicacao[];
-  exames: Exame[];
-  anotacoes: Anotacao[];
-  createdAt: string;
-  updatedAt: string;
-  dataAlta?: string;
-}
+// src/types/prontuario.ts
+
+import { ConsultaDetalhada, InternacaoDetalhada } from './prontuarioRegistros';
 
 export interface Paciente {
   id: string;
@@ -56,24 +42,16 @@ export enum Genero {
   NAO_INFORMADO = 'NAO_INFORMADO'
 }
 
-// export enum TipoTratamento { // REMOVIDO
-//   TERAPIA_INDIVIDUAL = 'TERAPIA_INDIVIDUAL',
-//   TERAPIA_CASAL = 'TERAPIA_CASAL',
-//   TERAPIA_GRUPO = 'TERAPIA_GRUPO',
-//   TERAPIA_FAMILIAR = 'TERAPIA_FAMILIAR',
-//   OUTRO = 'OUTRO'
-// }
-
+// StatusProntuario ATUALIZADO
 export enum StatusProntuario {
-  ATIVO = 'ATIVO',
-  INATIVO = 'INATIVO',
-  ARQUIVADO = 'ARQUIVADO',
-  ALTA = 'ALTA'
+  EM_ELABORACAO = 'EM_ELABORACAO', // Status inicial antes do primeiro evento (opcional)
+  INTERNADO = 'INTERNADO',
+  ARQUIVADO = 'ARQUIVADO'
 }
 
 export interface HistoricoMedico {
   id: string;
-  data: string;
+  data: string; 
   descricao: string;
   responsavel: string;
   createdAt: string;
@@ -95,17 +73,17 @@ export interface Medicacao {
 export interface AnexoSimples {
     id: string;
     nomeOriginalArquivo: string;
-    urlVisualizacao?: string;
+    urlVisualizacao?: string; 
     tipoConteudo?: string;
 }
 
-export interface Exame {
+export interface Exame { 
   id: string;
   nome: string;
   data: string;
   resultado: string;
-  arquivoUrl?: string;
-  anexos?: AnexoSimples[];
+  arquivoUrl?: string; 
+  anexos?: AnexoSimples[]; 
   observacoes?: string;
   createdAt: string;
   updatedAt: string;
@@ -120,24 +98,38 @@ export interface Anotacao {
   updatedAt: string;
 }
 
-export interface Alergia {
-  id: string;
-  descricao: string;
-  createdAt: string;
-  updatedAt: string;
+export interface Prontuario {
+  id: string; 
+  numeroProntuario: string;
+  paciente: Paciente;
+  medicoResponsavel?: Medico; 
+  administradorCriador?: { id: string; nome: string; email: string; }; 
+  dataInicio: string; 
+  dataUltimaAtualizacao: string; 
+  status: StatusProntuario;
+  
+  historicoGeral?: HistoricoMedico[]; 
+  consultas?: ConsultaDetalhada[]; 
+  internacoes?: InternacaoDetalhada[]; 
+  examesRegistrados?: Exame[]; 
+  medicacoes?: Medicacao[]; 
+  anotacoesGerais?: Anotacao[]; 
+
+  createdAt: string; 
+  updatedAt: string; 
+  dataAltaAdministrativa?: string; 
 }
 
 export interface BuscaProntuarioParams {
   termo?: string;
   numeroProntuario?: string;
-  nomePaciente?: string;
-  status?: StatusProntuario;
+  status?: StatusProntuario | ''; 
   pagina: number;
   tamanho: number;
   sort?: string;
 }
 
-export interface ResultadoBusca {
+export interface ResultadoBuscaProntuarios { 
   content: Prontuario[];
   pageable: {
     pageNumber: number;
@@ -147,11 +139,11 @@ export interface ResultadoBusca {
   };
 }
 
-export interface NovoProntuarioRequest {
-  pacienteId: string;
-  medicoId: number;
-  // tipoTratamento: TipoTratamento; // REMOVIDO
-  historicoMedico: {
+export interface IniciarProntuarioRequest { 
+    pacienteId: string;
+    medicoId: number; 
+}
+
+export interface AdicionarHistoricoGeralRequest {
     descricao: string;
-  };
 }
