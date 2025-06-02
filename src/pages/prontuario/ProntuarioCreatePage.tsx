@@ -3,18 +3,25 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProntuarioForm, { ProntuarioWizardFormData } from '../../components/prontuario/ProntuarioForm';
 import Alert from '../../components/ui/Alert';
-// Importar os NOVOS serviços para adicionar eventos com criação de prontuário
 import {
     adicionarConsultaComNovoProntuario,
-    adicionarInternacaoComNovoProntuario
-    // Importe aqui outros serviços para "adicionarExameComNovoProntuario", etc.
+    // adicionarInternacaoComNovoProntuario, // Removido
+    adicionarExameComNovoProntuario,
+    adicionarProcedimentoComNovoProntuario,
+    adicionarEncaminhamentoComNovoProntuario // Adicionado
 } from '../../services/prontuarioService';
 import {
     NovaConsultaRequest,
-    NovaInternacaoRequest,
-    // AdicionarExameRequest // Se aplicável
+    // NovaInternacaoRequest, // Removido
+    AdicionarExameRequest,
+    NovaProcedimentoRequest,
+    NovaEncaminhamentoRequest, // Adicionado
+    ConsultaDetalhada,
+    // InternacaoDetalhada, // Removido
+    ExameDetalhado,
+    ProcedimentoDetalhado,
+    EncaminhamentoDetalhado // Adicionado
 } from '../../types/prontuarioRegistros';
-import { Prontuario } from '../../types/prontuario'; // Para o tipo de retorno esperado
 
 const ProntuarioCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -34,69 +41,72 @@ const ProntuarioCreatePage: React.FC = () => {
     }
 
     try {
-      let prontuarioOuEventoCriado: any; // O tipo exato dependerá da resposta da sua API
+      let prontuarioOuEventoCriado: ConsultaDetalhada | ExameDetalhado | ProcedimentoDetalhado | EncaminhamentoDetalhado | any;
 
       switch (tipoPrimeiroRegistro) {
         case 'CONSULTA':
-          // No backend, adicionarConsulta recebe pacienteId e medicoExecutorId como @RequestParam
-          // O 'dadosEvento' aqui é o NovaConsultaRequest
           prontuarioOuEventoCriado = await adicionarConsultaComNovoProntuario(
             pacienteId,
-            medicoId, // medicoId do wizard é o medicoExecutorId para a primeira consulta
+            medicoId,
             dadosEvento as NovaConsultaRequest
           );
           break;
-        case 'INTERNACAO':
-          // O backend, para adicionarInternacao, espera pacienteId e medicoResponsavelAdmissaoId DENTRO do DTO
-          const dadosInternacaoComIds: NovaInternacaoRequest = {
-            ...(dadosEvento as Omit<NovaInternacaoRequest, 'pacienteId' | 'medicoResponsavelAdmissaoId'>),
-            pacienteId: pacienteId, // Vindo do wizard
-            medicoResponsavelAdmissaoId: medicoId, // medicoId do wizard é o medico da admissão
-          };
-          prontuarioOuEventoCriado = await adicionarInternacaoComNovoProntuario(dadosInternacaoComIds);
-          break;
-        // TODO: Adicionar casos para 'EXAME', 'CIRURGIA', 'ANOTACAO_GERAL'
-        // Exemplo para EXAME (supondo que exista um adicionarExameComNovoProntuario)
-        // case 'EXAME':
-        //   prontuarioOuEventoCriado = await adicionarExameComNovoProntuario(pacienteId, medicoId, dadosEvento as AdicionarExameRequest);
+        // case 'INTERNACAO': // Removido
+        //   const dadosInternacaoComIds: NovaInternacaoRequest = {
+        //     ...(dadosEvento as Omit<NovaInternacaoRequest, 'pacienteId' | 'medicoResponsavelAdmissaoId'>),
+        //     pacienteId: pacienteId,
+        //     medicoResponsavelAdmissaoId: medicoId,
+        //   };
+        //   prontuarioOuEventoCriado = await adicionarInternacaoComNovoProntuario(dadosInternacaoComIds);
         //   break;
+        case 'EXAME':
+          prontuarioOuEventoCriado = await adicionarExameComNovoProntuario(
+            pacienteId,
+            medicoId,
+            dadosEvento as AdicionarExameRequest
+          );
+          break;
+        case 'PROCEDIMENTO':
+          const dadosProcedimentoComExecutor: NovaProcedimentoRequest = {
+            ...(dadosEvento as Omit<NovaProcedimentoRequest, 'medicoExecutorId'>),
+            medicoExecutorId: medicoId,
+          };
+          prontuarioOuEventoCriado = await adicionarProcedimentoComNovoProntuario(
+            pacienteId,
+            dadosProcedimentoComExecutor
+          );
+          break;
+        case 'ENCAMINHAMENTO': // Adicionado
+          const dadosEncaminhamentoComSolicitante: NovaEncaminhamentoRequest = {
+            ...(dadosEvento as Omit<NovaEncaminhamentoRequest, 'medicoSolicitanteId'>),
+            medicoSolicitanteId: medicoId, // Médico do wizard é o solicitante
+          };
+          prontuarioOuEventoCriado = await adicionarEncaminhamentoComNovoProntuario(
+            pacienteId,
+            dadosEncaminhamentoComSolicitante
+          );
+          break;
         default:
           throw new Error(`Tipo de registro '${tipoPrimeiroRegistro}' não suportado para criação inicial.`);
       }
 
-      // Navegar para a página de detalhes do prontuário recém-criado/atualizado
-      // A resposta da API (prontuarioOuEventoCriado) deve conter o ID do prontuário.
-      // Ajuste a lógica abaixo conforme a estrutura da sua resposta da API.
       let prontuarioIdParaNavegacao: string | undefined;
 
       if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuarioId) {
         prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuarioId;
-      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.id && (prontuarioOuEventoCriado as Prontuario).numeroProntuario) {
-        // Se a API retornar o ProntuarioDTO completo
-        prontuarioIdParaNavegacao = (prontuarioOuEventoCriado as Prontuario).id;
       } else {
-         // Tentar obter o ID do prontuário do evento, se o DTO do evento tiver um campo prontuarioId
-         // ou se o próprio DTO do evento tiver um campo 'id' que na verdade é o ID do prontuário
-         // (menos provável, mas para cobrir cenários).
-         // Este é um ponto crucial que depende da estrutura da sua API de resposta.
-         // Exemplo: Se o ConsultaDetalhada ou InternacaoDetalhada tiver um campo `prontuarioId`
-         const eventoComProntuarioId = prontuarioOuEventoCriado as { prontuarioId?: string; id?: string };
-         if(eventoComProntuarioId.prontuarioId) {
-             prontuarioIdParaNavegacao = eventoComProntuarioId.prontuarioId;
-         } else {
-             // Se for um prontuário criado e o ID do prontuário for retornado diretamente
-             const prontuarioDireto = prontuarioOuEventoCriado as {id?: string};
-             if(prontuarioDireto.id) prontuarioIdParaNavegacao = prontuarioDireto.id;
-         }
+         console.warn("Não foi possível determinar o ID do prontuário para navegação a partir da resposta da API.", prontuarioOuEventoCriado);
+         setError("Registro criado, mas não foi possível redirecionar. Verifique a lista de prontuários.");
+         setIsLoading(false);
+         return;
       }
 
       if (prontuarioIdParaNavegacao) {
         navigate(`/prontuarios/${prontuarioIdParaNavegacao}`);
       } else {
-        console.warn("Não foi possível determinar o ID do prontuário para navegação a partir da resposta da API.", prontuarioOuEventoCriado);
-        setError("Registro criado, mas não foi possível redirecionar. Verifique a lista de prontuários.");
+        console.warn("ID do prontuário para navegação não encontrado após criação.", prontuarioOuEventoCriado);
+        setError("Registro criado, mas falha ao obter ID do prontuário para redirecionamento.");
         setIsLoading(false);
-        // navigate('/prontuarios'); // Fallback
       }
 
     } catch (err: any) {
@@ -109,9 +119,8 @@ const ProntuarioCreatePage: React.FC = () => {
   };
 
   return (
-    <div className="container-medium py-8"> {/* Adicionado py-8 para espaçamento vertical */}
+    <div className="container-medium py-8">
       <h1 className="text-2xl font-bold text-neutral-900 mb-6">Iniciar Novo Prontuário</h1>
-      
       {error && (
         <Alert
           type="error"
@@ -120,8 +129,7 @@ const ProntuarioCreatePage: React.FC = () => {
           onClose={() => setError(null)}
         />
       )}
-      
-      <div className="card"> {/* Usando a classe card global */}
+      <div className="card">
         <ProntuarioForm
           onSubmitFinal={handleCreatePrimeiroRegistro}
           isLoading={isLoading}

@@ -9,8 +9,10 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import {
     NovaConsultaRequest,
-    NovaInternacaoRequest,
-    // AdicionarExameRequest, // Descomente se for usar
+    // NovaInternacaoRequest, // Removido
+    AdicionarExameRequest,
+    NovaProcedimentoRequest,
+    NovaEncaminhamentoRequest, // Adicionado
     TipoPrimeiroRegistro
 } from '../../types/prontuarioRegistros';
 import { Medico, StatusMedico } from '../../types/medico';
@@ -18,14 +20,19 @@ import { Paciente, BuscaPacienteParams } from '../../types/paciente';
 import { buscarMedicos } from '../../services/medicoService';
 import { buscarPacientes } from '../../services/pacienteService';
 import {
-  ChevronRight, ChevronLeft, User, Stethoscope, FileText,
-  ArrowLeft, Search, Loader2, Users, Activity, BedDouble, Microscope, Scissors, AlertCircle
+  ChevronRight, User, Stethoscope, FileText,
+  ArrowLeft, Search, Loader2, Users, Activity, Microscope, // BedDouble removido
+  ClipboardPlus, Send, // Send para encaminhamento, ClipboardPlus para Procedimento
+  AlertCircle
 } from 'lucide-react';
 
 // Importar os sub-formulários de evento
-import ConsultaForm from './ConsultaForm'; // Garanta que este arquivo existe e exporta ConsultaForm
-import InternacaoForm from './InternacaoForm'; // Garanta que este arquivo existe e exporta InternacaoForm
-// import ExameForm from './ExameForm'; // Exemplo, se você criar este formulário
+import ConsultaForm from './ConsultaForm';
+// import InternacaoForm from './InternacaoForm'; // Removido
+import ExameForm from './ExameForm';
+import ProcedimentoForm from './ProcedimentoForm';
+import EncaminhamentoForm from './EncaminhamentoForm'; // Adicionado (será criado como placeholder)
+
 
 // Schemas Zod:
 const selecaoEntidadeSchema = z.object({
@@ -39,7 +46,8 @@ const selecaoEntidadeSchema = z.object({
 type SelecaoEntidadeFormData = z.infer<typeof selecaoEntidadeSchema>;
 
 const tipoRegistroSchema = z.object({
-  tipoPrimeiroRegistro: z.enum(['CONSULTA', 'INTERNACAO', 'EXAME', 'CIRURGIA', 'ANOTACAO_GERAL'], {
+  // 'INTERNACAO' removido, 'ENCAMINHAMENTO' adicionado
+  tipoPrimeiroRegistro: z.enum(['CONSULTA', 'EXAME', 'PROCEDIMENTO', 'ENCAMINHAMENTO', 'ANOTACAO_GERAL'], {
     required_error: "Selecione o tipo de registro a ser criado.",
     invalid_type_error: "Tipo de registro inválido.",
   }),
@@ -57,7 +65,7 @@ const SelecaoEntidadesStep: React.FC = () => {
   const [isSearchingPacientes, setIsSearchingPacientes] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [showPacienteSuggestions, setShowPacienteSuggestions] = useState(false);
-  
+
   const pacienteIdAtual = watch('pacienteId');
   const nomePacienteFormatadoAtual = watch('pacienteNomeFormatado');
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -73,7 +81,7 @@ const SelecaoEntidadesStep: React.FC = () => {
     };
     carregarMedicos();
   }, []);
-  
+
   const formatCPFDisplay = (cpf: string): string => {
     if (!cpf) return '';
     const cleaned = cpf.replace(/\D/g, '');
@@ -102,13 +110,13 @@ const SelecaoEntidadesStep: React.FC = () => {
 
     try {
       const response = await buscarPacientes(params);
-      setPacientes(response.content); setShowPacienteSuggestions(true); 
+      setPacientes(response.content); setShowPacienteSuggestions(true);
     } catch (error) {
-      console.error("Erro ao buscar pacientes:", error); setPacientes([]); setShowPacienteSuggestions(true); 
+      console.error("Erro ao buscar pacientes:", error); setPacientes([]); setShowPacienteSuggestions(true);
     } finally {
       setIsSearchingPacientes(false);
     }
-  }, []); 
+  }, []);
 
   useEffect(() => {
     if (searchTermPaciente !== nomePacienteFormatadoAtual && pacienteIdAtual) {
@@ -126,9 +134,9 @@ const SelecaoEntidadesStep: React.FC = () => {
         setShowPacienteSuggestions(false); return;
     }
     if (trimmedSearchTerm.length > 2) {
-        const timerId = setTimeout(() => performSearch(trimmedSearchTerm), 500); 
+        const timerId = setTimeout(() => performSearch(trimmedSearchTerm), 500);
         return () => clearTimeout(timerId);
-    } else { 
+    } else {
         setShowPacienteSuggestions(false); setPacientes([]);
     }
   }, [searchTermPaciente, performSearch, nomePacienteFormatadoAtual, pacienteIdAtual, setValue, getValues]);
@@ -137,7 +145,7 @@ const SelecaoEntidadesStep: React.FC = () => {
     value: medico.id.toString(),
     label: `${medico.nomeCompleto} | ${medico.especialidade} | CRM: ${medico.crm}`
   }));
-  
+
   const handlePacienteSelect = (paciente: Paciente) => {
     const nomeFormatado = `${paciente.nome} | CPF: ${formatCPFDisplay(paciente.cpf)}`;
     setValue('pacienteId', paciente.id.toString(), { shouldValidate: true, shouldDirty: true, shouldTouch: true });
@@ -164,7 +172,7 @@ const SelecaoEntidadesStep: React.FC = () => {
       <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-sm relative" ref={suggestionsRef}>
         <Controller
             name="pacienteNomeFormatado" control={control}
-            render={() => ( // field não é usado diretamente para value/onChange do Input principal
+            render={() => (
                 <Input
                     label="Buscar Paciente por Nome ou CPF*"
                     placeholder="Digite nome ou CPF para buscar..."
@@ -199,9 +207,9 @@ const SelecaoEntidadesStep: React.FC = () => {
           render={({ field }) => (
             <Select
               label="Médico Responsável Inicial*"
-              options={[{value: "", label: "Selecione um médico"}, ...medicoOptions]} 
+              options={[{value: "", label: "Selecione um médico"}, ...medicoOptions]}
               {...field}
-              value={String(field.value || "")} // Garante que o valor seja string
+              value={String(field.value || "")}
               onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
               error={errors.medicoId?.message} leftAddon={<Stethoscope className="h-5 w-5 text-gray-400" />}
             />
@@ -217,9 +225,10 @@ const TipoRegistroStep: React.FC = () => {
   const { control, formState: { errors } } = useFormContext<ProntuarioWizardFormData>();
   const tiposRegistroOpcoes: { value: TipoPrimeiroRegistro; label: string; icon: React.ReactNode }[] = [
     { value: 'CONSULTA', label: 'Registrar Consulta', icon: <Activity className="h-5 w-5 mr-2" /> },
-    { value: 'INTERNACAO', label: 'Registrar Internação', icon: <BedDouble className="h-5 w-5 mr-2" /> },
-    // { value: 'EXAME', label: 'Registrar Exame', icon: <Microscope className="h-5 w-5 mr-2" /> },
-    // { value: 'CIRURGIA', label: 'Registrar Cirurgia', icon: <Scissors className="h-5 w-5 mr-2" /> },
+    // { value: 'INTERNACAO', label: 'Registrar Internação', icon: <BedDouble className="h-5 w-5 mr-2" /> }, // Removido
+    { value: 'EXAME', label: 'Registrar Exame', icon: <Microscope className="h-5 w-5 mr-2" /> },
+    { value: 'PROCEDIMENTO', label: 'Registrar Procedimento', icon: <ClipboardPlus className="h-5 w-5 mr-2" /> },
+    { value: 'ENCAMINHAMENTO', label: 'Registrar Encaminhamento Médico', icon: <Send className="h-5 w-5 mr-2" /> }, // Adicionado
     // { value: 'ANOTACAO_GERAL', label: 'Adicionar Anotação Geral', icon: <FileText className="h-5 w-5 mr-2" /> },
   ];
 
@@ -276,13 +285,8 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
 
   const handleEventoSubmit = async (dadosDoEventoEspecifico: any) => {
     const wizardData = getValues();
-    // Certifique-se de que pacienteId e medicoId são passados.
-    // Eles devem ter sido validados nos passos anteriores.
     if (!wizardData.pacienteId || wizardData.medicoId === undefined) {
         console.error("Paciente ou Médico não selecionado antes de submeter evento.");
-        // Idealmente, mostrar um erro para o usuário ou forçar a volta para o passo anterior.
-        // Para este exemplo, vamos logar e tentar submeter.
-        // Em um cenário real, você pode querer setar um erro no formulário ou impedir a submissão.
         alert("Erro: Paciente ou Médico não selecionado. Volte aos passos anteriores.");
         return;
     }
@@ -295,28 +299,31 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
   const renderEventoForm = () => {
     const commonEventFormProps = {
         onSubmitEvento: handleEventoSubmit,
-        onCancel: () => setCurrentStep(1), 
+        onCancel: () => setCurrentStep(1),
         isLoading: isLoading,
     };
-    // Verifique se os componentes ConsultaForm e InternacaoForm estão sendo importados corretamente
-    // e se eles existem no caminho especificado.
     if (tipoRegistroSelecionado === 'CONSULTA') {
         return <ConsultaForm {...commonEventFormProps} />;
     }
-    if (tipoRegistroSelecionado === 'INTERNACAO') {
-        return <InternacaoForm {...commonEventFormProps} />;
-    }
-    // Adicionar outros casos aqui se necessário
-    // if (tipoRegistroSelecionado === 'EXAME') {
-    //   return <ExameForm {...commonEventFormProps} />;
+    // if (tipoRegistroSelecionado === 'INTERNACAO') { // Removido
+    //     return <InternacaoForm {...commonEventFormProps} />;
     // }
+    if (tipoRegistroSelecionado === 'EXAME') {
+      return <ExameForm {...commonEventFormProps} />;
+    }
+    if (tipoRegistroSelecionado === 'PROCEDIMENTO') {
+      return <ProcedimentoForm {...commonEventFormProps} />;
+    }
+    if (tipoRegistroSelecionado === 'ENCAMINHAMENTO') { // Adicionado
+      return <EncaminhamentoForm {...commonEventFormProps} />;
+    }
 
-    return ( // Este é o JSX que será renderizado se nenhum tipo for selecionado ou implementado
+    return (
         <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-md text-center">
             <AlertCircle className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
             <p className="text-neutral-600">
-                {currentStep === 2 && !tipoRegistroSelecionado ? 
-                    'Por favor, volte e selecione um tipo de registro para continuar.' : 
+                {currentStep === 2 && !tipoRegistroSelecionado ?
+                    'Por favor, volte e selecione um tipo de registro para continuar.' :
                     `Formulário para '${tipoRegistroSelecionado}' ainda não implementado ou tipo não selecionado.`
                 }
             </p>
@@ -324,33 +331,28 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
     );
   };
 
-
   const steps = [
     { title: 'Paciente e Médico', icon: <Users className="h-4 w-4" />, component: <SelecaoEntidadesStep /> },
     { title: 'Tipo de Registro', icon: <FileText className="h-4 w-4" />, component: <TipoRegistroStep /> },
-    // Atualizado para chamar a função renderEventoForm diretamente aqui para que o componente seja recriado quando tipoRegistroSelecionado mudar
     { title: 'Detalhes do Registro', icon: <Activity className="h-4 w-4" />, component: renderEventoForm() },
   ];
-  
+
   const nextStep = async () => {
     let isValid = false;
     if (currentStep === 0) isValid = await trigger(['pacienteId', 'medicoId']);
     else if (currentStep === 1) isValid = await trigger(['tipoPrimeiroRegistro']);
-    
+
     if (isValid && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
-    } else if (currentStep === steps.length -1) {
-        // No último passo, o botão de submit do sub-formulário (ConsultaForm, InternacaoForm)
-        // deve chamar handleEventoSubmit.
-        console.log("Tentando submeter o formulário do evento específico.");
     }
   };
-  
-  const prevStep = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
-    else navigate(-1); 
+
+  const wizardGlobalPrevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
-  
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={(e) => e.preventDefault()}>
@@ -372,36 +374,35 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
             ))}
           </div>
         </div>
-        
-        {/* A chave no div força a remontagem do componente do passo quando currentStep muda, o que é bom.
-            E, crucialmente, quando `tipoRegistroSelecionado` muda, o `renderEventoForm()` dentro de `steps[currentStep].component`
-            também precisa ser reavaliado. Colocar `tipoRegistroSelecionado` na chave do div do passo 2
-            garante que o componente do passo 2 (que é `renderEventoForm()`) seja remontado.
-        */}
+
         <div className="mb-8 min-h-[350px]" key={`${currentStep}-${tipoRegistroSelecionado}`}>
             {steps[currentStep].component}
         </div>
-        
-        <div className="flex justify-between items-center gap-3 pt-6 border-t border-neutral-300 mt-8">
-          <Button
-            type="button" variant="secondary" onClick={prevStep}
-            disabled={isLoading && currentStep === 0}
-            leftIcon={<ArrowLeft className="h-4 w-4" />}
-          >
-            {currentStep === 0 ? 'Voltar' : 'Voltar'} 
-          </Button>
-          
-          {currentStep < steps.length - 1 && ( // Mostrar "Próximo" apenas se não for o último passo
+
+        {currentStep < steps.length - 1 && (
+          <div className="flex justify-end items-center gap-3 pt-8">
+            {(currentStep === 0 || currentStep === 1) && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={currentStep === 0 ? () => navigate(-1) : wizardGlobalPrevStep}
+                disabled={isLoading && currentStep === 0} // Só desabilita o cancelar do passo 0 se estiver carregando
+                leftIcon={<ArrowLeft className="h-4 w-4" />}
+              >
+                {currentStep === 0 ? 'Voltar' : 'Voltar'}
+              </Button>
+            )}
             <Button
-              type="button" variant="primary" onClick={nextStep}
+              type="button"
+              variant="primary"
+              onClick={nextStep}
               disabled={isLoading || (currentStep === 1 && !tipoRegistroSelecionado)}
               rightIcon={<ChevronRight className="h-4 w-4" />}
             >
               {currentStep === steps.length - 2 ? 'Continuar para Detalhes' : 'Próximo'}
             </Button>
-          )}
-          {/* O botão de "Salvar" final estará DENTRO de cada formulário de evento */}
-        </div>
+          </div>
+        )}
       </form>
     </FormProvider>
   );

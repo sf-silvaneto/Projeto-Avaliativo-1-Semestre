@@ -4,13 +4,13 @@ import { useForm } from 'react-hook-form';
 import { Search, Filter, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Select from '../ui/Select';
-import { StatusProntuario } from '../../types/prontuario'; // Importa o enum StatusProntuario atualizado
+// import Select from '../ui/Select'; // Select não é mais necessário aqui
+// import { StatusProntuario } from '../../types/prontuario'; // StatusProntuario não é mais necessário aqui
 
 interface SearchFormData {
   termo?: string;
   numeroProntuario?: string;
-  status?: StatusProntuario | ''; // Permite string vazia para "Todos os Status"
+  // status?: StatusProntuario | ''; // REMOVIDO o campo status
 }
 
 interface ProntuarioSearchFormProps {
@@ -26,7 +26,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
     defaultValues: {
       termo: '',
       numeroProntuario: '',
-      status: '', // Default para string vazia, que corresponde a "Todos os Status"
+      // status: '', // REMOVIDO
     },
   });
 
@@ -37,18 +37,17 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
     reset({
         termo: '',
         numeroProntuario: '',
-        status: '',
+        // status: '', // REMOVIDO
     });
     onSearch({}); // Submete a busca com filtros limpos
   };
 
-  // ===== OPÇÕES DE STATUS CORRIGIDAS PARA O FILTRO =====
-  const statusOptions = [
-    { value: '', label: 'Todos os Status' },
-    { value: StatusProntuario.INTERNADO, label: 'Internado' },
-    { value: StatusProntuario.ARQUIVADO, label: 'Arquivado' },
-  ];
-  // =====================================================
+  // REMOVIDO statusOptions
+  // const statusOptions = [
+  //   { value: '', label: 'Todos os Status' },
+  //   { value: StatusProntuario.INTERNADO, label: 'Internado' },
+  //   { value: StatusProntuario.ARQUIVADO, label: 'Arquivado' },
+  // ];
 
   const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
 
@@ -87,17 +86,21 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
 
         {showAdvancedSearch && (
           <div id="advanced-search-filters" className="border-t border-gray-200 pt-4 animate-slide-down">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Layout ajustado para md:grid-cols-1 já que só tem um campo */}
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <Input
                 label="Número do Prontuário Específico"
                 placeholder="Digite o número exato..."
                 {...register('numeroProntuario')}
               />
+              {/* REMOVIDO o Select para StatusProntuario */}
+              {/*
               <Select
                 label="Status do Prontuário"
-                options={statusOptions} // Utiliza as opções corrigidas
+                options={statusOptions}
                 {...register('status')}
               />
+              */}
             </div>
           </div>
         )}
@@ -112,7 +115,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
               onClick={handleReset}
               className="text-gray-600 hover:text-red-600"
             >
-              Limpar filtrosss
+              Limpar filtros
             </Button>
           </div>
         )}

@@ -7,141 +7,126 @@ export interface AnexoDetalhado {
   tipoConteudo: string;
   tamanhoBytes?: number;
   dataUpload?: string; // ISOString
-  urlVisualizacao?: string; 
+  urlVisualizacao?: string;
 }
 
-// --- Consulta (Adaptado de Entrada Médica) ---
+// --- Consulta ---
 export interface NovaConsultaRequest {
   dataHoraConsulta: string; // ISOString (ex: "2024-05-31T14:30:00")
-  motivoConsulta: string; 
-  queixasPrincipais: string; 
-  
+  motivoConsulta: string;
+  queixasPrincipais: string;
   pressaoArterial?: string;
   temperatura?: string;
   frequenciaCardiaca?: string;
   saturacao?: string;
-  
   exameFisico?: string;
   hipoteseDiagnostica?: string;
   condutaPlanoTerapeutico?: string;
-
-  // NOVOS CAMPOS ADICIONADOS
   detalhesConsulta?: string;
-  observacoesConsulta?: string; 
+  observacoesConsulta?: string;
 }
 
 export interface ConsultaDetalhada {
   id: string;
   prontuarioId: string;
-  dataHoraConsulta: string; 
-  motivoConsulta?: string; 
+  dataHoraConsulta: string;
+  motivoConsulta?: string;
   queixasPrincipais?: string;
-  
   pressaoArterial?: string;
   temperatura?: string;
   frequenciaCardiaca?: string;
   saturacao?: string;
-  
   exameFisico?: string;
   hipoteseDiagnostica?: string;
   condutaPlanoTerapeutico?: string;
-
-  // NOVOS CAMPOS ADICIONADOS
   detalhesConsulta?: string;
   observacoesConsulta?: string;
-
   tipoResponsavel?: "MEDICO" | "ADMINISTRADOR" | string;
   responsavelId?: string | number;
   responsavelNomeCompleto?: string;
   responsavelEspecialidade?: string;
   responsavelCRM?: string;
-
   anexos?: AnexoDetalhado[];
   createdAt: string;
   updatedAt: string;
 }
 
-// --- Internação ---
-export interface NovaInternacaoRequest {
-  pacienteId: string;
-  medicoResponsavelAdmissaoId: number;
-  dataAdmissao: string; 
-  motivoInternacao: string; 
-  historiaDoencaAtual?: string; 
-  dataAltaPrevista?: string; 
-}
+// --- Internação (REMOVIDO) ---
+// REMOVIDO: NovaInternacaoRequest
+// REMOVIDO: InternacaoDetalhada
+// REMOVIDO: RegistrarAltaInternacaoRequest
 
-export interface InternacaoDetalhada {
-  id: string;
-  prontuarioId: string;
-  dataAdmissao: string;
-  motivoInternacao?: string;
-  historiaDoencaAtual?: string;
-  tipoResponsavelAdmissao?: "MEDICO" | "ADMINISTRADOR" | string;
-  responsavelAdmissaoId?: string | number;
-  responsavelAdmissaoNomeCompleto?: string;
-  responsavelAdmissaoEspecialidade?: string; 
-  responsavelAdmissaoCRM?: string;
-  dataAltaPrevista?: string;
-  dataAltaEfetiva?: string;
-  resumoAlta?: string;
-  medicoResponsavelAltaId?: number;
-  medicoResponsavelAltaNome?: string;
-  anexos?: AnexoDetalhado[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface RegistrarAltaInternacaoRequest {
-    dataAltaEfetiva: string; 
-    resumoAlta: string;
-    medicoResponsavelAltaId: number;
-}
-
-// --- Exame (Mantido para referência) ---
-export interface AdicionarExameRequest { 
+// --- Exame ---
+export interface AdicionarExameRequest {
   nome: string;
-  data: string; 
+  data: string;
   resultado: string;
   observacoes?: string;
-  arquivo?: File; 
+  arquivo?: File;
 }
-export type ExameDetalhado = import('./prontuario').Exame; // Assumindo que Exame de prontuario.ts é o detalhado
+export type ExameDetalhado = import('./prontuario').Exame & { prontuarioId: string };
 
-// --- Cirurgia (Exemplo, se for implementar) ---
-export interface NovaCirurgiaRequest {
-  dataCirurgia: string; 
-  descricaoCirurgia: string;
-  relatorioCirurgico?: string;
-  medicoCirurgiaoId: number;
+
+// --- Encaminhamento Médico (NOVO) ---
+export interface NovaEncaminhamentoRequest {
+  dataEncaminhamento: string; // ISOString (ex: "2024-05-31T14:30:00")
+  especialidadeDestino: string;
+  motivoEncaminhamento: string;
+  medicoSolicitanteId: number; // ID do médico que está fazendo o encaminhamento
+  observacoes?: string;
 }
 
-export interface CirurgiaDetalhada {
+export interface EncaminhamentoDetalhado {
   id: string;
   prontuarioId: string;
-  dataCirurgia: string;
-  descricaoCirurgia: string;
-  relatorioCirurgico?: string;
-  medicoCirurgiaoId?: number;
-  medicoCirurgiaoNome?: string;
+  dataEncaminhamento: string;
+  especialidadeDestino: string;
+  motivoEncaminhamento: string;
+  medicoSolicitanteId?: number;
+  medicoSolicitanteNome?: string;
+  medicoSolicitanteCRM?: string;
+  observacoes?: string;
   anexos?: AnexoDetalhado[];
   createdAt: string;
   updatedAt: string;
 }
 
-// --- Anotação Geral (Mantida) ---
-export interface AdicionarAnotacaoRequest { 
+
+// --- Procedimento ---
+export interface NovaProcedimentoRequest {
+  dataProcedimento: string;
+  descricaoProcedimento: string;
+  relatorioProcedimento?: string;
+  medicoExecutorId: number;
+}
+
+export interface ProcedimentoDetalhado {
+  id: string;
+  prontuarioId: string;
+  dataProcedimento: string;
+  descricaoProcedimento: string;
+  relatorioProcedimento?: string;
+  medicoExecutorId?: number;
+  medicoExecutorNome?: string;
+  anexos?: AnexoDetalhado[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- Anotação Geral ---
+export interface AdicionarAnotacaoRequest {
   texto: string;
 }
-export type AnotacaoGeralDetalhada = import('./prontuario').Anotacao;
+export type AnotacaoGeralDetalhada = import('./prontuario').Anotacao & { prontuarioId: string };
 
 // --- Tipos para o Wizard de Criação de Prontuário ---
-export type TipoPrimeiroRegistro = 'CONSULTA' | 'INTERNACAO' | 'EXAME' | 'CIRURGIA' | 'ANOTACAO_GERAL';
+export type TipoPrimeiroRegistro = 'CONSULTA' | 'EXAME' | 'PROCEDIMENTO' | 'ENCAMINHAMENTO' | 'ANOTACAO_GERAL'; // 'INTERNACAO' removido, 'ENCAMINHAMENTO' adicionado
 
-export interface PrimeiroRegistroData { // Usado pelo ProntuarioForm.tsx
+export interface PrimeiroRegistroData {
     tipo: TipoPrimeiroRegistro;
-    // Os dados específicos serão coletados nos formulários subsequentes
     dadosConsulta?: NovaConsultaRequest;
-    dadosInternacao?: NovaInternacaoRequest;
-    // ... outros tipos
+    // dadosInternacao?: NovaInternacaoRequest; // Removido
+    dadosExame?: AdicionarExameRequest;
+    dadosProcedimento?: NovaProcedimentoRequest;
+    dadosEncaminhamento?: NovaEncaminhamentoRequest; // Adicionado
 }
