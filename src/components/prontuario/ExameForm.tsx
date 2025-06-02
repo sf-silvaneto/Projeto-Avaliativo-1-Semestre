@@ -1,4 +1,4 @@
-// src/components/prontuario/ExameForm.tsx
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ExameForm.tsx
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,19 +7,19 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { AdicionarExameRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, Microscope as MicroscopeIcon } from 'lucide-react';
+import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft } from 'lucide-react'; // Ícone ArrowLeft adicionado
 
 // Schema Zod para validação do formulário de Exame
 const exameSchema = z.object({
   nome: z.string().min(3, { message: "Nome do exame é obrigatório (mín. 3 caracteres)." }).max(200, "Nome do exame muito longo (máx. 200)."),
-  data: z.string().datetime({ message: "Data e hora do exame inválidas." })
+  data: z.string().datetime({ message: "Data e hora do exame inválidas." }) // Mantido datetime para consistência, pode ser date se o backend esperar só data
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do exame não podem ser no futuro." }),
   resultado: z.string().min(5, { message: "Resultado do exame é obrigatório (mín. 5 caracteres)." }).max(5000, "Resultado muito longo (máx. 5000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
-  // arquivo: z.instanceof(File).optional(), // Validação de arquivo pode ser mais complexa
+  // arquivo não faz mais parte do schema aqui, pois foi removido de AdicionarExameRequest
 });
 
-type ExameFormData = Omit<AdicionarExameRequest, 'arquivo'>; // O arquivo é tratado separadamente
+type ExameFormData = AdicionarExameRequest; // AdicionarExameRequest já não tem 'arquivo'
 
 interface ExameFormProps {
   onSubmitEvento: (data: AdicionarExameRequest) => void;
@@ -55,12 +55,10 @@ const ExameForm: React.FC<ExameFormProps> = ({
   });
 
   const handleFormSubmit = (data: ExameFormData) => {
-    // Lógica para lidar com o arquivo (se houver) precisaria ser adicionada aqui,
-    // possivelmente pegando o arquivo de um <input type="file" /> separado.
     const submissionData: AdicionarExameRequest = {
         ...data,
         observacoes: data.observacoes?.trim() || undefined,
-        // arquivo: (opcional, viria de um input de arquivo)
+        // Não há mais campo 'arquivo' para tratar
     };
     onSubmitEvento(submissionData);
   };
@@ -78,8 +76,8 @@ const ExameForm: React.FC<ExameFormProps> = ({
       />
 
       <Input
-        label="Data e Hora do Exame*"
-        type="datetime-local"
+        label="Data e Hora do Exame*" // Ou apenas "Data do Exame" se o backend aceitar apenas data
+        type="datetime-local" // Mudar para "date" se o backend e o tipo AdicionarExameRequest.data forem apenas data
         leftAddon={<Calendar size={18} className="text-gray-500"/>}
         {...register('data')}
         error={errors.data?.message}
@@ -101,12 +99,18 @@ const ExameForm: React.FC<ExameFormProps> = ({
         error={errors.observacoes?.message}
       />
 
-      {/* TODO: Adicionar input para upload de arquivo se necessário */}
-      {/* <Input label="Anexar Arquivo (Opcional)" type="file" {...register('arquivo')} /> */}
+      {/* REMOVIDO: Input para upload de arquivo */}
+      {/* <Input label="Anexar Arquivo (Opcional)" type="file" /> */}
 
 
       <div className="flex justify-end space-x-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+        <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onCancel} 
+            disabled={isLoading}
+            leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+        >
           Voltar
         </Button>
         <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18}/>}>

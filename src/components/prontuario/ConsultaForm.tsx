@@ -9,7 +9,8 @@ import Button from '../ui/Button';
 import { NovaConsultaRequest } from '../../types/prontuarioRegistros';
 import {
     Save, Calendar, Activity, Thermometer, Heart, Percent,
-    BookOpen, Brain, ClipboardPlus, FileText as FileTextIcon, Edit3 as EditIcon
+    BookOpen, Brain, ClipboardPlus, FileText as FileTextIcon, Edit3 as EditIcon,
+    ArrowLeft // Ícone adicionado à importação
 } from 'lucide-react';
 
 // --- Funções Auxiliares para Máscara (mantidas como antes) ---
@@ -84,7 +85,7 @@ interface ConsultaFormProps {
     initialData?: Partial<NovaConsultaRequest>;
 }
 
-// Função para obter a string no formato YYYY-MM-DDTHH:mm para o fuso horário local
+// Função para obter a string no formato yyyy-MM-ddTHH:mm para o fuso horário local
 const getLocalDateTimeString = (date: Date): string => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Meses são 0-indexed
@@ -249,10 +250,21 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
             </fieldset>
 
             <div className="flex justify-end space-x-3 pt-4">
-                <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+                <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={onCancel} 
+                    disabled={isLoading}
+                    leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+                >
                     Voltar
                 </Button>
-                <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18} />}>
+                <Button 
+                    type="submit" 
+                    variant="primary" 
+                    isLoading={isLoading} 
+                    leftIcon={<Save size={18} />}
+                >
                     Salvar Consulta
                 </Button>
             </div>

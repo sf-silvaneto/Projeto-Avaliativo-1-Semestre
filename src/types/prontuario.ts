@@ -1,6 +1,6 @@
-// src/types/prontuario.ts
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/types/prontuario.ts
 
-import { ConsultaDetalhada, InternacaoDetalhada } from './prontuarioRegistros';
+import { ConsultaDetalhada } from './prontuarioRegistros'; 
 
 export interface Paciente {
   id: string;
@@ -42,13 +42,6 @@ export enum Genero {
   NAO_INFORMADO = 'NAO_INFORMADO'
 }
 
-// StatusProntuario ATUALIZADO
-export enum StatusProntuario {
-  EM_ELABORACAO = 'EM_ELABORACAO', // Status inicial antes do primeiro evento (opcional)
-  INTERNADO = 'INTERNADO',
-  ARQUIVADO = 'ARQUIVADO'
-}
-
 export interface HistoricoMedico {
   id: string;
   data: string; 
@@ -70,22 +63,13 @@ export interface Medicacao {
   updatedAt: string;
 }
 
-export interface AnexoSimples {
-    id: string;
-    nomeOriginalArquivo: string;
-    urlVisualizacao?: string; 
-    tipoConteudo?: string;
-}
-
 export interface Exame { 
   id: string;
   nome: string;
-  data: string;
+  data: string; 
   resultado: string;
-  arquivoUrl?: string; 
-  anexos?: AnexoSimples[]; 
   observacoes?: string;
-  createdAt: string;
+  createdAt: string; 
   updatedAt: string;
 }
 
@@ -106,24 +90,20 @@ export interface Prontuario {
   administradorCriador?: { id: string; nome: string; email: string; }; 
   dataInicio: string; 
   dataUltimaAtualizacao: string; 
-  status: StatusProntuario;
   
   historicoGeral?: HistoricoMedico[]; 
   consultas?: ConsultaDetalhada[]; 
-  internacoes?: InternacaoDetalhada[]; 
   examesRegistrados?: Exame[]; 
   medicacoes?: Medicacao[]; 
   anotacoesGerais?: Anotacao[]; 
 
   createdAt: string; 
   updatedAt: string; 
-  dataAltaAdministrativa?: string; 
 }
 
 export interface BuscaProntuarioParams {
   termo?: string;
-  numeroProntuario?: string;
-  status?: StatusProntuario | ''; 
+  // numeroProntuario?: string; // REMOVIDO
   pagina: number;
   tamanho: number;
   sort?: string;

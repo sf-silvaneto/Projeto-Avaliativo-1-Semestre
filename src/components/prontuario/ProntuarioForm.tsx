@@ -1,4 +1,4 @@
-// src/components/prontuario/ProntuarioForm.tsx
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioForm.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm, FormProvider, Controller, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,11 +9,11 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import {
     NovaConsultaRequest,
-    // NovaInternacaoRequest, // Removido
+    // NovaInternacaoRequest, // Mantido comentado pois já estava
     AdicionarExameRequest,
     NovaProcedimentoRequest,
-    NovaEncaminhamentoRequest, // Adicionado
-    TipoPrimeiroRegistro
+    NovaEncaminhamentoRequest,
+    TipoPrimeiroRegistro // Este tipo já foi atualizado em prontuarioRegistros.ts
 } from '../../types/prontuarioRegistros';
 import { Medico, StatusMedico } from '../../types/medico';
 import { Paciente, BuscaPacienteParams } from '../../types/paciente';
@@ -21,20 +21,21 @@ import { buscarMedicos } from '../../services/medicoService';
 import { buscarPacientes } from '../../services/pacienteService';
 import {
   ChevronRight, User, Stethoscope, FileText,
-  ArrowLeft, Search, Loader2, Users, Activity, Microscope, // BedDouble removido
-  ClipboardPlus, Send, // Send para encaminhamento, ClipboardPlus para Procedimento
+  ArrowLeft, Search, Loader2, Users, Activity, Microscope,
+  ClipboardPlus, Send,
   AlertCircle
+  // BedDouble REMOVIDO dos imports de Lucide
 } from 'lucide-react';
 
 // Importar os sub-formulários de evento
 import ConsultaForm from './ConsultaForm';
-// import InternacaoForm from './InternacaoForm'; // Removido
+// import InternacaoForm from './InternacaoForm'; // Mantido comentado
 import ExameForm from './ExameForm';
 import ProcedimentoForm from './ProcedimentoForm';
-import EncaminhamentoForm from './EncaminhamentoForm'; // Adicionado (será criado como placeholder)
+import EncaminhamentoForm from './EncaminhamentoForm';
 
 
-// Schemas Zod:
+// Schemas Zod (sem alterações aqui, já que não lidavam com o tipo de evento diretamente)
 const selecaoEntidadeSchema = z.object({
   pacienteId: z.string().min(1, 'Paciente é obrigatório. Realize a busca e selecione um paciente.'),
   medicoId: z.preprocess(
@@ -46,8 +47,7 @@ const selecaoEntidadeSchema = z.object({
 type SelecaoEntidadeFormData = z.infer<typeof selecaoEntidadeSchema>;
 
 const tipoRegistroSchema = z.object({
-  // 'INTERNACAO' removido, 'ENCAMINHAMENTO' adicionado
-  tipoPrimeiroRegistro: z.enum(['CONSULTA', 'EXAME', 'PROCEDIMENTO', 'ENCAMINHAMENTO', 'ANOTACAO_GERAL'], {
+  tipoPrimeiroRegistro: z.enum(['CONSULTA', 'EXAME', 'PROCEDIMENTO', 'ENCAMINHAMENTO', 'ANOTACAO_GERAL'], { // 'INTERNACAO' já foi removido do enum no tipo
     required_error: "Selecione o tipo de registro a ser criado.",
     invalid_type_error: "Tipo de registro inválido.",
   }),
@@ -56,7 +56,7 @@ type TipoRegistroFormData = z.infer<typeof tipoRegistroSchema>;
 
 export interface ProntuarioWizardFormData extends SelecaoEntidadeFormData, TipoRegistroFormData {}
 
-// --- COMPONENTE SelecaoEntidadesStep ---
+// --- COMPONENTE SelecaoEntidadesStep (Permanece o mesmo) ---
 const SelecaoEntidadesStep: React.FC = () => {
   const { control, formState: { errors }, setValue, watch, getValues } = useFormContext<ProntuarioWizardFormData>();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -220,16 +220,17 @@ const SelecaoEntidadesStep: React.FC = () => {
   );
 };
 
+
 // --- COMPONENTE TipoRegistroStep ---
 const TipoRegistroStep: React.FC = () => {
   const { control, formState: { errors } } = useFormContext<ProntuarioWizardFormData>();
   const tiposRegistroOpcoes: { value: TipoPrimeiroRegistro; label: string; icon: React.ReactNode }[] = [
     { value: 'CONSULTA', label: 'Registrar Consulta', icon: <Activity className="h-5 w-5 mr-2" /> },
-    // { value: 'INTERNACAO', label: 'Registrar Internação', icon: <BedDouble className="h-5 w-5 mr-2" /> }, // Removido
+    // { value: 'INTERNACAO', label: 'Registrar Internação', icon: <BedDouble className="h-5 w-5 mr-2" /> }, // REMOVIDO
     { value: 'EXAME', label: 'Registrar Exame', icon: <Microscope className="h-5 w-5 mr-2" /> },
     { value: 'PROCEDIMENTO', label: 'Registrar Procedimento', icon: <ClipboardPlus className="h-5 w-5 mr-2" /> },
-    { value: 'ENCAMINHAMENTO', label: 'Registrar Encaminhamento Médico', icon: <Send className="h-5 w-5 mr-2" /> }, // Adicionado
-    // { value: 'ANOTACAO_GERAL', label: 'Adicionar Anotação Geral', icon: <FileText className="h-5 w-5 mr-2" /> },
+    { value: 'ENCAMINHAMENTO', label: 'Registrar Encaminhamento Médico', icon: <Send className="h-5 w-5 mr-2" /> },
+    // { value: 'ANOTACAO_GERAL', label: 'Adicionar Anotação Geral', icon: <FileText className="h-5 w-5 mr-2" /> }, // Mantido comentado
   ];
 
   return (
@@ -305,8 +306,8 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
     if (tipoRegistroSelecionado === 'CONSULTA') {
         return <ConsultaForm {...commonEventFormProps} />;
     }
-    // if (tipoRegistroSelecionado === 'INTERNACAO') { // Removido
-    //     return <InternacaoForm {...commonEventFormProps} />;
+    // if (tipoRegistroSelecionado === 'INTERNACAO') { // REMOVIDO
+    //     return <InternacaoForm {...commonEventFormProps} />; // Este componente seria deletado se existisse
     // }
     if (tipoRegistroSelecionado === 'EXAME') {
       return <ExameForm {...commonEventFormProps} />;
@@ -314,7 +315,7 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
     if (tipoRegistroSelecionado === 'PROCEDIMENTO') {
       return <ProcedimentoForm {...commonEventFormProps} />;
     }
-    if (tipoRegistroSelecionado === 'ENCAMINHAMENTO') { // Adicionado
+    if (tipoRegistroSelecionado === 'ENCAMINHAMENTO') {
       return <EncaminhamentoForm {...commonEventFormProps} />;
     }
 
@@ -386,7 +387,7 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
                 type="button"
                 variant="secondary"
                 onClick={currentStep === 0 ? () => navigate(-1) : wizardGlobalPrevStep}
-                disabled={isLoading && currentStep === 0} // Só desabilita o cancelar do passo 0 se estiver carregando
+                disabled={isLoading && currentStep === 0}
                 leftIcon={<ArrowLeft className="h-4 w-4" />}
               >
                 {currentStep === 0 ? 'Voltar' : 'Voltar'}

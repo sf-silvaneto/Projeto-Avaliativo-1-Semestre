@@ -161,7 +161,7 @@ const PacienteDetailPage: React.FC = () => {
         />
         <div className="mt-4">
           <Button variant="secondary" onClick={() => navigate('/pacientes')} leftIcon={<ArrowLeft className="h-4 w-4" />}>
-            Voltar para Lista
+            Voltar
           </Button>
         </div>
       </div>
@@ -193,7 +193,7 @@ const PacienteDetailPage: React.FC = () => {
         </h1>
         <div className="flex items-center space-x-2 mt-4 md:mt-0">
             <Button variant="secondary" onClick={() => navigate('/pacientes')} leftIcon={<ArrowLeft className="h-4 w-4" />}>
-                Voltar para Lista
+                Voltar
             </Button>
             <Button variant="primary" onClick={() => navigate(`/pacientes/${id}/editar`)} leftIcon={<EditIcon className="h-4 w-4" />}>
                 Editar Paciente

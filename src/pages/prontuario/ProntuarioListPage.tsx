@@ -1,101 +1,139 @@
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/pages/prontuario/ProntuarioListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
+import Card from '../../components/ui/Card';
 import ProntuarioSearchForm from '../../components/prontuario/ProntuarioSearchForm';
 import ProntuarioTable from '../../components/prontuario/ProntuarioTable';
 import { buscarProntuarios } from '../../services/prontuarioService';
-import { BuscaProntuarioParams, Prontuario, ResultadoBusca, StatusProntuario } from '../../types/prontuario';
+import { BuscaProntuarioParams, ResultadoBuscaProntuarios as ResultadoBusca } from '../../types/prontuario';
+
+interface ProntuarioSearchFormData {
+  termo?: string;
+}
 
 const ProntuarioListPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useState<BuscaProntuarioParams>({
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [apiSearchParams, setApiSearchParams] = useState<BuscaProntuarioParams>({
     pagina: 0,
     tamanho: 10,
-    sort: 'dataUltimaAtualizacao,desc', 
+    sort: 'dataUltimaAtualizacao,desc',
+    termo: undefined,
   });
+  
+  const [initialFormFilters] = useState<ProntuarioSearchFormData>({ termo: '' });
 
   const [resultado, setResultado] = useState<ResultadoBusca | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchProntuarios = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      console.log("Fetching prontuarios com params:", searchParams); 
-      const result = await buscarProntuarios(searchParams);
+      console.log("Fetching prontuarios com params:", apiSearchParams); 
+      const result = await buscarProntuarios(apiSearchParams);
       setResultado(result);
-    } catch (error: any) {
-      console.error('Erro ao buscar prontuários:', error);
+    } catch (err: any) {
+      console.error('Erro ao buscar prontuários:', err);
       setError(
-        error.response?.data?.message || 'Erro ao buscar prontuários. Tente novamente mais tarde.'
+        err.response?.data?.message || 'Erro ao buscar prontuários. Tente novamente mais tarde.'
       );
     } finally {
       setIsLoading(false);
     }
-  }, [searchParams]); 
+  }, [apiSearchParams]);
 
   useEffect(() => {
     fetchProntuarios();
-  }, [fetchProntuarios]); 
+  }, [fetchProntuarios]);
 
-  const handleSearch = (formData: { termo?: string; numeroProntuario?: string; status?: StatusProntuario}) => {
-    setSearchParams(prevParams => ({
+  useEffect(() => {
+    const state = location.state as { prontuarioSuccess?: boolean, message?: string };
+    if (state?.prontuarioSuccess && state?.message) {
+      setSuccessMessage(state.message);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  const handleSearch = (formData: ProntuarioSearchFormData) => {
+    setApiSearchParams(prevParams => ({
       ...prevParams,
-      pagina: 0, 
+      pagina: 0,
       termo: formData.termo || undefined,
-      numeroProntuario: formData.numeroProntuario || undefined,
-      status: formData.status || undefined,
     }));
   };
 
-  const handlePageChange = (page: number) => {
-    setSearchParams(prevParams => ({
+  const handlePageChange = (newPage: number) => {
+    setApiSearchParams(prevParams => ({
       ...prevParams,
-      pagina: page - 1, 
+      pagina: newPage - 1, 
     }));
   };
+
+  const totalPages = resultado?.pageable.totalPages || 0;
 
   return (
-    <div className="container-wide">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-4 md:mb-0">Gerenciar Prontuários</h1>
+    <div className="container-wide py-8"> {/* Este div terá o fundo bg-neutral-50 vindo do body */}
+      <div className="flex items-center mb-6">
+        <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Prontuários</h1>
       </div>
 
-      <ProntuarioSearchForm onSearch={handleSearch} isLoading={isLoading} />
+      {successMessage && (
+        <Alert type="success" message={successMessage} className="mb-4" onClose={() => setSuccessMessage(null)} />
+      )}
+      {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
+
+      {/* ProntuarioSearchForm já tem seu Card interno com bg-white */}
+      <ProntuarioSearchForm 
+        onSearch={handleSearch} 
+        initialFilters={initialFormFilters} 
+        isLoading={isLoading}
+      />
 
       <div className="flex justify-end items-center space-x-2 mb-4">
-        <Link to="/painel-de-controle">
-          <Button variant="secondary" leftIcon={<ArrowLeft className="h-4 w-4" />}>
-            Voltar
-          </Button>
-        </Link>
+        <Button
+          variant="secondary"
+          onClick={() => navigate('/painel-de-controle')}
+          leftIcon={<ArrowLeft className="h-4 w-4" />}
+        >
+          Voltar
+        </Button>
         <Link to="/prontuarios/novo">
           <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
             Novo Prontuário
           </Button>
         </Link>
       </div>
-
-      {error && (
-        <Alert
-          type="error"
-          message={error}
-          className="mb-6"
-          onClose={() => setError(null)}
-        />
+      
+      {/* Card da Tabela com bg-white */}
+      <Card>
+        {isLoading && !resultado?.content?.length ? (
+          <div className="text-center p-6"> {/* O texto "Carregando..." aqui estará sobre bg-white */}
+            <p>Carregando prontuários...</p>
+          </div>
+        ) : (
+          <ProntuarioTable 
+            prontuarios={resultado?.content || []}
+            totalItems={resultado?.pageable.totalElements || 0}
+            currentPage={(apiSearchParams.pagina || 0) + 1}
+            pageSize={apiSearchParams.tamanho || 10}
+            onPageChange={handlePageChange}
+            isLoading={isLoading && !!resultado?.content?.length} 
+          />
+        )}
+      </Card>
+      
+      {totalPages > 1 && !isLoading && (
+        <div className="mt-6 flex justify-center">
+          {/* Paginação (se ProntuarioTable não a incluir) */}
+        </div>
       )}
-
-      <ProntuarioTable
-        prontuarios={resultado?.content || []}
-        totalItems={resultado?.pageable.totalElements || 0}
-        currentPage={(searchParams.pagina || 0) + 1}
-        pageSize={searchParams.tamanho || 10}
-        onPageChange={handlePageChange}
-        isLoading={isLoading}
-      />
     </div>
   );
 };

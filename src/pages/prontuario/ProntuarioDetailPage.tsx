@@ -1,33 +1,38 @@
-// src/pages/prontuario/ProntuarioDetailPage.tsx
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/pages/prontuario/ProntuarioDetailPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   FileEdit, ArrowLeft, Calendar, User, Phone, Mail, MapPin, FilePlus,
-  FileText as FileTextIcon, Activity, Pill, FileImage, MessageSquare, Loader2,
-  BedDouble, Microscope, Scissors, Users as UsersIcon, Stethoscope as StethoscopeIcon, ShieldCheck, Briefcase
+  FileText as FileTextIcon, Activity, Pill, /* FileImage, */ MessageSquare, Loader2,
+  /*BedDouble, */ Microscope, Scissors, Users as UsersIcon, Stethoscope as StethoscopeIcon, ShieldCheck, Briefcase
+  // BedDouble e FileImage removidos se não usados para outros fins. AnexoDetalhado removido.
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { buscarProntuarioPorId, registrarAltaInternacao } from '../../services/prontuarioService';
-import { Prontuario, StatusProntuario, Genero, HistoricoMedico, Anotacao, Exame as ExameProntuario } from '../../types/prontuario'; // Adicionado HistoricoMedico, Anotacao, ExameProntuario
-import { InternacaoDetalhada, ConsultaDetalhada, AnexoDetalhado, RegistrarAltaInternacaoRequest } from '../../types/prontuarioRegistros';
-import Input from '../../components/ui/Input';
-import Textarea from '../../components/ui/Textarea';
+import { buscarProntuarioPorId } from '../../services/prontuarioService'; // registrarAltaInternacao REMOVIDO
+import { Prontuario, Genero, HistoricoMedico, Anotacao, Exame as ExameProntuario } from '../../types/prontuario';
+// InternacaoDetalhada, AnexoDetalhado, RegistrarAltaInternacaoRequest REMOVIDOS
+import { ConsultaDetalhada } from '../../types/prontuarioRegistros';
+// Input e Textarea podem não ser mais necessários aqui se o modal de alta foi removido
+// import Input from '../../components/ui/Input';
+// import Textarea from '../../components/ui/Textarea';
 
 
 const ProntuarioDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [prontuario, setProntuario] = useState<Prontuario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'consultas' | 'internacoes' | 'exames' | 'historicoGeral' | 'anotacoes'>('consultas');
+  // Aba de internações será removida.
+  const [activeTab, setActiveTab] = useState<'consultas' | 'exames' | 'historicoGeral' | 'anotacoes'>('consultas');
 
-  const [showAltaModal, setShowAltaModal] = useState(false);
-  const [internacaoParaAlta, setInternacaoParaAlta] = useState<InternacaoDetalhada | null>(null);
-  const [isSubmittingAlta, setIsSubmittingAlta] = useState(false);
+  // REMOVIDO estado relacionado à alta de internação
+  // const [showAltaModal, setShowAltaModal] = useState(false);
+  // const [internacaoParaAlta, setInternacaoParaAlta] = useState<InternacaoDetalhada | null>(null);
+  // const [isSubmittingAlta, setIsSubmittingAlta] = useState(false);
 
   const fetchProntuario = async () => {
     if (!id) {
@@ -50,7 +55,7 @@ const ProntuarioDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchProntuario();
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const formatDateTime = (dataString?: string): string => {
     if (!dataString) return 'Data inválida';
@@ -68,7 +73,7 @@ const ProntuarioDetailPage: React.FC = () => {
   const formatDate = (dataString?: string): string => {
     if (!dataString) return 'Data inválida';
     try {
-      const dateToParse = /^\d{4}-\d{2}-\d{2}$/.test(dataString) ? `${dataString}T00:00:00Z` : dataString; // Adicionado Z para UTC
+      const dateToParse = /^\d{4}-\d{2}-\d{2}$/.test(dataString) ? `${dataString}T00:00:00Z` : dataString;
       const date = new Date(dateToParse);
       if (isNaN(date.getTime())) return 'Data inválida';
       return date.toLocaleDateString('pt-BR', {
@@ -89,61 +94,9 @@ const ProntuarioDetailPage: React.FC = () => {
     return generos[genero] || genero;
   };
 
-  const renderStatusProntuario = (status?: StatusProntuario) => {
-    if (!status) return null;
-    const statusClasses = {
-      [StatusProntuario.EM_ELABORACAO]: 'bg-blue-100 text-blue-800',
-      [StatusProntuario.INTERNADO]: 'bg-red-100 text-red-800 animate-pulse',
-      [StatusProntuario.ARQUIVADO]: 'bg-neutral-100 text-neutral-800',
-    };
-    const statusLabels = {
-      [StatusProntuario.EM_ELABORACAO]: 'Em Elaboração',
-      [StatusProntuario.INTERNADO]: 'Internado',
-      [StatusProntuario.ARQUIVADO]: 'Arquivado',
-    };
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>
-        {statusLabels[status] || status}
-      </span>
-    );
-  };
-
-  const handleRegistrarAlta = async (dadosAlta: RegistrarAltaInternacaoRequest) => {
-    if (!internacaoParaAlta || !internacaoParaAlta.id) return;
-    setIsSubmittingAlta(true);
-    setError(null);
-    try {
-        await registrarAltaInternacao(internacaoParaAlta.id.toString(), dadosAlta);
-        setShowAltaModal(false);
-        setInternacaoParaAlta(null);
-        fetchProntuario();
-    } catch (err: any) {
-        setError(err.response?.data?.mensagem || "Erro ao registrar alta.");
-    } finally {
-        setIsSubmittingAlta(false);
-    }
-  };
-
-  const renderAnexos = (anexos?: AnexoDetalhado[]) => {
-    if (!anexos || anexos.length === 0) return <p className="text-xs text-neutral-500 italic">Nenhum anexo.</p>;
-    return (
-      <ul className="list-disc list-inside space-y-1 mt-1">
-        {anexos.map(anexo => (
-          <li key={anexo.id} className="text-xs">
-            <a
-              href={anexo.urlVisualizacao || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-600 hover:underline"
-              onClick={(e) => { if (!anexo.urlVisualizacao) {e.preventDefault(); alert("Lógica de download/visualização para: " + anexo.nomeOriginalArquivo);}}}
-            >
-              {anexo.nomeOriginalArquivo} ({anexo.tipoConteudo}, {anexo.tamanhoBytes ? (anexo.tamanhoBytes / 1024).toFixed(1) + ' KB' : 'Tamanho desconhecido'})
-            </a>
-          </li>
-        ))}
-      </ul>
-    );
-  };
+  // REMOVIDO: renderStatusProntuario
+  // REMOVIDO: handleRegistrarAlta
+  // REMOVIDO: renderAnexos
 
   if (isLoading) {
     return (
@@ -182,7 +135,7 @@ const ProntuarioDetailPage: React.FC = () => {
     );
   }
 
-  const internacaoAtiva = prontuario.internacoes?.find(inter => !inter.dataAltaEfetiva);
+  // REMOVIDO: internacaoAtiva
 
   return (
     <div className="container-wide py-8">
@@ -200,7 +153,7 @@ const ProntuarioDetailPage: React.FC = () => {
           <div className="flex items-center space-x-3 text-sm text-neutral-600 ml-7">
             <span>Início: {formatDate(prontuario.dataInicio)}</span>
             <span>Últ. Atualização: {formatDateTime(prontuario.dataUltimaAtualizacao)}</span>
-            {renderStatusProntuario(prontuario.status)}
+            {/* REMOVIDO: renderStatusProntuario(prontuario.status) */}
           </div>
         </div>
         
@@ -252,20 +205,8 @@ const ProntuarioDetailPage: React.FC = () => {
           <h2 className="text-lg font-semibold text-neutral-800 mb-3">Informações do Prontuário</h2>
             <DetailItem icon={<StethoscopeIcon size={16}/>} label="Médico Responsável Principal" value={`${prontuario.medicoResponsavel?.nomeCompleto || 'N/A'} (CRM: ${prontuario.medicoResponsavel?.crm || 'N/A'})`} />
             <DetailItem icon={<ShieldCheck size={16}/>} label="Criado por (Admin)" value={prontuario.administradorCriador?.nome || 'N/A'} />
-            {prontuario.dataAltaAdministrativa && (
-                 <DetailItem icon={<Calendar size={16}/>} label="Data de Arquivamento Adm." value={formatDate(prontuario.dataAltaAdministrativa)} />
-            )}
-            {internacaoAtiva && (
-                <Button 
-                    variant="success" 
-                    size="sm" 
-                    fullWidth 
-                    className="mt-4"
-                    onClick={() => { setInternacaoParaAlta(internacaoAtiva); setShowAltaModal(true); }}
-                >
-                    Registrar Alta da Internação Atual
-                </Button>
-            )}
+            {/* REMOVIDO: dataAltaAdministrativa */}
+            {/* REMOVIDO: Botão de Registrar Alta da Internação Atual */}
         </Card>
       </div>
       
@@ -273,7 +214,8 @@ const ProntuarioDetailPage: React.FC = () => {
         <div className="border-b border-neutral-200">
           <nav className="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tipos de Registro">
             <TabButton isActive={activeTab === 'consultas'} onClick={() => setActiveTab('consultas')} icon={<Activity />} label="Consultas" count={prontuario.consultas?.length} />
-            <TabButton isActive={activeTab === 'internacoes'} onClick={() => setActiveTab('internacoes')} icon={<BedDouble />} label="Internações" count={prontuario.internacoes?.length} />
+            {/* REMOVIDO: Aba Internações */}
+            {/* <TabButton isActive={activeTab === 'internacoes'} onClick={() => setActiveTab('internacoes')} icon={<BedDouble />} label="Internações" count={prontuario.internacoes?.length} /> */}
             <TabButton isActive={activeTab === 'exames'} onClick={() => setActiveTab('exames')} icon={<Microscope />} label="Exames" count={prontuario.examesRegistrados?.length} />
             <TabButton isActive={activeTab === 'historicoGeral'} onClick={() => setActiveTab('historicoGeral')} icon={<FileTextIcon />} label="Histórico Geral" count={prontuario.historicoGeral?.length} />
             <TabButton isActive={activeTab === 'anotacoes'} onClick={() => setActiveTab('anotacoes')} icon={<MessageSquare />} label="Anotações Gerais" count={prontuario.anotacoesGerais?.length} />
@@ -283,13 +225,14 @@ const ProntuarioDetailPage: React.FC = () => {
       
       <div className="animate-fade-in">
         {activeTab === 'consultas' && (
-            <ListaDeConsultas consultas={prontuario.consultas || []} renderAnexos={renderAnexos} formatDateTime={formatDateTime} />
+            <ListaDeConsultas consultas={prontuario.consultas || []} formatDateTime={formatDateTime} />
         )}
-        {activeTab === 'internacoes' && (
-            <ListaDeInternacoes internacoes={prontuario.internacoes || []} onAbrirModalAlta={(internacao) => {setInternacaoParaAlta(internacao); setShowAltaModal(true);}} renderAnexos={renderAnexos} formatDateTime={formatDateTime}/>
-        )}
+        {/* REMOVIDO: ListaDeInternacoes */}
+        {/* {activeTab === 'internacoes' && (
+            <ListaDeInternacoes internacoes={prontuario.internacoes || []} onAbrirModalAlta={() => {}} renderAnexosNaoUtilizado={renderAnexosNaoUtilizado} formatDateTime={formatDateTime}/>
+        )} */}
         {activeTab === 'exames' && (
-            <ListaDeExames exames={prontuario.examesRegistrados || []} formatDate={formatDate} renderAnexos={renderAnexos} />
+            <ListaDeExames exames={prontuario.examesRegistrados || []} formatDate={formatDate} />
         )}
         {activeTab === 'historicoGeral' && (
             <ListaDeHistoricoGeral historicos={prontuario.historicoGeral || []} formatDateTime={formatDateTime} />
@@ -299,41 +242,7 @@ const ProntuarioDetailPage: React.FC = () => {
         )}
       </div>
 
-      {showAltaModal && internacaoParaAlta && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-70 p-4 overflow-y-auto">
-          <Card className="w-full max-w-lg bg-white my-8">
-            <h3 className="text-lg font-medium mb-4 text-neutral-800">Registrar Alta para Internação de {formatDateTime(internacaoParaAlta.dataAdmissao)}</h3>
-            <form onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target as HTMLFormElement);
-                const medicoIdInput = formData.get('medicoResponsavelAltaId');
-
-                if (!medicoIdInput || medicoIdInput.toString().trim() === '') {
-                    setError("ID do Médico responsável pela alta é obrigatório.");
-                    return;
-                }
-                const dados: RegistrarAltaInternacaoRequest = {
-                    dataAltaEfetiva: formData.get('dataAltaEfetiva') as string,
-                    resumoAlta: formData.get('resumoAlta') as string,
-                    medicoResponsavelAltaId: Number(medicoIdInput),
-                };
-                if (!dados.dataAltaEfetiva || !dados.resumoAlta) {
-                     setError("Data da alta e resumo são obrigatórios.");
-                     return;
-                }
-                await handleRegistrarAlta(dados);
-            }}>
-                <Input label="Data e Hora da Alta Efetiva*" name="dataAltaEfetiva" type="datetime-local" required defaultValue={new Date().toISOString().slice(0,16)} />
-                <Textarea label="Resumo da Alta*" name="resumoAlta" rows={4} required />
-                <Input label="ID do Médico Responsável pela Alta*" name="medicoResponsavelAltaId" type="number" required placeholder="Digite o ID do médico"/>
-                <div className="mt-6 flex justify-end space-x-2">
-                    <Button type="button" variant="secondary" onClick={() => setShowAltaModal(false)} disabled={isSubmittingAlta}>Voltar</Button>
-                    <Button type="submit" variant="primary" isLoading={isSubmittingAlta}>Salvar Alta</Button>
-                </div>
-            </form>
-          </Card>
-        </div>
-      )}
+      {/* REMOVIDO: Modal de Registrar Alta */}
     </div>
   );
 };
@@ -359,7 +268,8 @@ const TabButton: React.FC<{isActive: boolean, onClick: () => void, icon: React.R
     </button>
 );
 
-const ListaDeConsultas: React.FC<{consultas: ConsultaDetalhada[], renderAnexos: (anexos?: AnexoDetalhado[]) => JSX.Element | null, formatDateTime: (dateStr?: string) => string}> = ({consultas, renderAnexos, formatDateTime}) => {
+// A função renderAnexos foi removida, então o parâmetro para ela também é removido de ListaDeConsultas
+const ListaDeConsultas: React.FC<{consultas: ConsultaDetalhada[], formatDateTime: (dateStr?: string) => string}> = ({consultas, formatDateTime}) => {
     if (!consultas || consultas.length === 0) return <Card><p className="text-neutral-500 italic">Nenhuma consulta registrada.</p></Card>;
     return (
         <div className="space-y-4">
@@ -396,40 +306,17 @@ const ListaDeConsultas: React.FC<{consultas: ConsultaDetalhada[], renderAnexos: 
                         {c.saturacao && <DetailItem label="Sat O₂" value={`${c.saturacao}%`}/>}
                     </div>
                     
-                    {c.anexos && c.anexos.length > 0 && <div className="mt-3 pt-2 border-t border-neutral-100"><h5 className="text-xs font-medium text-neutral-600">Anexos da Consulta:</h5>{renderAnexos(c.anexos)}</div>}
+                    {/* REMOVIDO: c.anexos */}
                 </Card>
             ))}
         </div>
     );
 };
 
-const ListaDeInternacoes: React.FC<{internacoes: InternacaoDetalhada[], onAbrirModalAlta: (i: InternacaoDetalhada) => void, renderAnexos: (anexos?: AnexoDetalhado[]) => JSX.Element | null, formatDateTime: (dateStr?: string) => string}> = ({internacoes, onAbrirModalAlta, renderAnexos, formatDateTime}) => {
-    if (!internacoes || internacoes.length === 0) return <Card><p className="text-neutral-500 italic">Nenhuma internação registrada.</p></Card>;
-    return (
-        <div className="space-y-4">
-            {internacoes.sort((a,b) => new Date(b.dataAdmissao).getTime() - new Date(a.dataAdmissao).getTime()).map(i => (
-                <Card key={i.id} className={`shadow-sm hover:shadow-md transition-shadow ${!i.dataAltaEfetiva ? "border-l-4 border-red-500" : "border-l-4 border-green-500"}`}>
-                    <h4 className="font-semibold text-primary-700">
-                        Internação: {formatDateTime(i.dataAdmissao)}
-                        {i.dataAltaEfetiva ? ` - Alta em: ${formatDateTime(i.dataAltaEfetiva)}` : <span className="text-red-600 font-bold"> (ATIVA)</span>}
-                    </h4>
-                    <p className="text-xs text-neutral-500 mb-2">Admissão por: {i.responsavelAdmissaoNomeCompleto} {i.responsavelAdmissaoCRM && `(CRM: ${i.responsavelAdmissaoCRM})`}</p>
-                    {i.motivoInternacao && <DetailItem label="Motivo da Internação" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2 rounded">{i.motivoInternacao}</pre>} />}
-                    {i.historiaDoencaAtual && <DetailItem label="História da Doença Atual" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2 rounded">{i.historiaDoencaAtual}</pre>} />}
-                    {i.dataAltaPrevista && <DetailItem label="Alta Prevista" value={formatDateTime(i.dataAltaPrevista)} />}
-                    {i.resumoAlta && <DetailItem label="Resumo da Alta" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2 rounded">{i.resumoAlta}</pre>} />}
-                    {i.medicoResponsavelAltaNome && <DetailItem label="Médico da Alta" value={i.medicoResponsavelAltaNome} />}
-                    {!i.dataAltaEfetiva && (
-                        <Button variant='link' size='sm' onClick={() => onAbrirModalAlta(i)} className="mt-3 text-red-600 hover:text-red-700 p-0 font-medium">Registrar Alta desta Internação</Button>
-                    )}
-                     {i.anexos && i.anexos.length > 0 && <div className="mt-2"><h5 className="text-xs font-medium text-neutral-600">Anexos da Internação:</h5>{renderAnexos(i.anexos)}</div>}
-                </Card>
-            ))}
-        </div>
-    );
-};
+// REMOVIDO: const ListaDeInternacoes: React.FC<{...}>
 
-const ListaDeExames: React.FC<{exames: ExameProntuario[], formatDate: (dateStr?: string) => string, renderAnexos: (anexos?: AnexoDetalhado[]) => JSX.Element | null}> = ({exames, formatDate, renderAnexos}) => {
+// A função renderAnexos foi removida, então o parâmetro para ela também é removido de ListaDeExames
+const ListaDeExames: React.FC<{exames: ExameProntuario[], formatDate: (dateStr?: string) => string}> = ({exames, formatDate}) => {
     if (!exames || exames.length === 0) return <Card><p className="text-neutral-500 italic">Nenhum exame registrado.</p></Card>;
     return (
         <div className="space-y-4">
@@ -438,13 +325,7 @@ const ListaDeExames: React.FC<{exames: ExameProntuario[], formatDate: (dateStr?:
                     <h4 className="font-semibold text-primary-700">{ex.nome} - {formatDate(ex.data)}</h4>
                     <DetailItem label="Resultado" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2 rounded">{ex.resultado}</pre>} />
                     {ex.observacoes && <DetailItem label="Observações" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2 rounded">{ex.observacoes}</pre>} />}
-                    {ex.anexos && ex.anexos.length > 0 && <div className="mt-2"><h5 className="text-xs font-medium text-neutral-600">Anexos do Exame:</h5>{renderAnexos(ex.anexos as AnexoDetalhado[])}</div>}
-                     {ex.arquivoUrl && (!ex.anexos || ex.anexos.length === 0) && 
-                        <div className="mt-2">
-                            <h5 className="text-xs font-medium text-neutral-600">Anexo (Legado):</h5>
-                            <a href={ex.arquivoUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-xs">{ex.arquivoUrl.split('/').pop()}</a>
-                        </div>
-                     }
+                    {/* REMOVIDO: ex.anexos e ex.arquivoUrl */}
                 </Card>
             ))}
         </div>

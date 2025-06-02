@@ -1,112 +1,90 @@
-// src/components/prontuario/ProntuarioSearchForm.tsx
-import React from 'react';
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioSearchForm.tsx
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-// import Select from '../ui/Select'; // Select não é mais necessário aqui
-// import { StatusProntuario } from '../../types/prontuario'; // StatusProntuario não é mais necessário aqui
+import Card from '../ui/Card'; // RE-ADICIONAR IMPORT DO CARD
 
 interface SearchFormData {
   termo?: string;
-  numeroProntuario?: string;
-  // status?: StatusProntuario | ''; // REMOVIDO o campo status
 }
 
 interface ProntuarioSearchFormProps {
   onSearch: (data: SearchFormData) => void;
   isLoading?: boolean;
+  initialFilters?: SearchFormData;
 }
+
+const DEBOUNCE_DELAY = 500;
 
 const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
   onSearch,
   isLoading = false,
+  initialFilters = { termo: '' },
 }) => {
   const { register, handleSubmit, reset, watch } = useForm<SearchFormData>({
-    defaultValues: {
-      termo: '',
-      numeroProntuario: '',
-      // status: '', // REMOVIDO
-    },
+    defaultValues: initialFilters,
   });
 
-  const watchFields = watch();
-  const hasFilters = Object.values(watchFields).some(value => value && value !== '');
+  const termoValue = watch('termo');
+  const lastSearchedTermRef = useRef<string | undefined>(initialFilters.termo);
 
-  const handleReset = () => {
-    reset({
-        termo: '',
-        numeroProntuario: '',
-        // status: '', // REMOVIDO
-    });
-    onSearch({}); // Submete a busca com filtros limpos
+  const triggerSearch = useCallback((data: SearchFormData) => {
+    const searchTerm = data.termo?.trim() ? data.termo.trim() : undefined;
+    const hasEffectiveValueChanged = searchTerm !== lastSearchedTermRef.current;
+    const wasPreviouslyFilled = lastSearchedTermRef.current !== undefined && lastSearchedTermRef.current !== '';
+    const isNowEmpty = searchTerm === undefined || searchTerm === '';
+
+    if (hasEffectiveValueChanged || (isNowEmpty && wasPreviouslyFilled)) {
+      onSearch({ termo: searchTerm });
+      lastSearchedTermRef.current = searchTerm;
+    }
+  }, [onSearch]);
+
+  useEffect(() => {
+    const currentValues = { termo: termoValue };
+    const handler = setTimeout(() => {
+      triggerSearch(currentValues);
+    }, DEBOUNCE_DELAY);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [termoValue, triggerSearch]);
+
+  const handleFormSubmit = (data: SearchFormData) => {
+    triggerSearch(data);
   };
 
-  // REMOVIDO statusOptions
-  // const statusOptions = [
-  //   { value: '', label: 'Todos os Status' },
-  //   { value: StatusProntuario.INTERNADO, label: 'Internado' },
-  //   { value: StatusProntuario.ARQUIVADO, label: 'Arquivado' },
-  // ];
-
-  const [showAdvancedSearch, setShowAdvancedSearch] = React.useState(false);
+  const handleReset = () => {
+    reset({ termo: '' });
+    onSearch({ termo: undefined });
+    lastSearchedTermRef.current = undefined;
+  };
+  
+  const hasAnyFilterValue = watch('termo')?.trim();
 
   return (
-    <div className="card mb-6">
-      <form onSubmit={handleSubmit(onSearch)}>
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
+    // Card RE-ADICIONADO aqui, envolvendo o formulário
+    <Card className="mb-6"> 
+      {/* Removido o padding do form, pois o Card já o fornece */}
+      <form onSubmit={handleSubmit(handleFormSubmit)} noValidate> 
+        <div className="flex flex-col md:flex-row gap-4 mb-1">
           <div className="flex-1">
             <Input
-              placeholder="Buscar por nome do paciente, nº prontuário ou CPF..."
-              leftAddon={<Search className="h-5 w-5 text-gray-400" />}
+              label="Buscar por Nome do Paciente, Nº Prontuário ou CPF"
+              placeholder="Digite para buscar..."
+              leftAddon={<Search className="h-4 w-4 text-gray-500" />}
               {...register('termo')}
               aria-label="Buscar prontuários"
+              disabled={isLoading}
             />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              leftIcon={<Filter className="h-4 w-4" />}
-              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              aria-expanded={showAdvancedSearch}
-              aria-controls="advanced-search-filters"
-            >
-              Filtros Avançados
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              isLoading={isLoading}
-            >
-              Buscar
-            </Button>
           </div>
         </div>
 
-        {showAdvancedSearch && (
-          <div id="advanced-search-filters" className="border-t border-gray-200 pt-4 animate-slide-down">
-            {/* Layout ajustado para md:grid-cols-1 já que só tem um campo */}
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-              <Input
-                label="Número do Prontuário Específico"
-                placeholder="Digite o número exato..."
-                {...register('numeroProntuario')}
-              />
-              {/* REMOVIDO o Select para StatusProntuario */}
-              {/*
-              <Select
-                label="Status do Prontuário"
-                options={statusOptions}
-                {...register('status')}
-              />
-              */}
-            </div>
-          </div>
-        )}
-
-        {hasFilters && (
-          <div className="flex justify-end mt-4">
+        {hasAnyFilterValue && (
+          <div className="flex justify-end mt-2">
             <Button
               type="button"
               variant="link"
@@ -114,13 +92,14 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
               leftIcon={<X className="h-4 w-4" />}
               onClick={handleReset}
               className="text-gray-600 hover:text-red-600"
+              disabled={isLoading}
             >
-              Limpar filtros
+              Limpar filtro
             </Button>
           </div>
         )}
       </form>
-    </div>
+    </Card>
   );
 };
 

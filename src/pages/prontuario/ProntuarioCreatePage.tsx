@@ -1,26 +1,26 @@
-// src/pages/prontuario/ProntuarioCreatePage.tsx
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/pages/prontuario/ProntuarioCreatePage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProntuarioForm, { ProntuarioWizardFormData } from '../../components/prontuario/ProntuarioForm';
 import Alert from '../../components/ui/Alert';
 import {
     adicionarConsultaComNovoProntuario,
-    // adicionarInternacaoComNovoProntuario, // Removido
+    // adicionarInternacaoComNovoProntuario, // REMOVIDO
     adicionarExameComNovoProntuario,
     adicionarProcedimentoComNovoProntuario,
-    adicionarEncaminhamentoComNovoProntuario // Adicionado
+    adicionarEncaminhamentoComNovoProntuario
 } from '../../services/prontuarioService';
 import {
     NovaConsultaRequest,
-    // NovaInternacaoRequest, // Removido
+    // NovaInternacaoRequest, // REMOVIDO
     AdicionarExameRequest,
     NovaProcedimentoRequest,
-    NovaEncaminhamentoRequest, // Adicionado
+    NovaEncaminhamentoRequest,
     ConsultaDetalhada,
-    // InternacaoDetalhada, // Removido
+    // InternacaoDetalhada, // REMOVIDO
     ExameDetalhado,
     ProcedimentoDetalhado,
-    EncaminhamentoDetalhado // Adicionado
+    EncaminhamentoDetalhado
 } from '../../types/prontuarioRegistros';
 
 const ProntuarioCreatePage: React.FC = () => {
@@ -41,6 +41,7 @@ const ProntuarioCreatePage: React.FC = () => {
     }
 
     try {
+      // Ajustado o tipo para aceitar qualquer um dos DTOs de detalhe
       let prontuarioOuEventoCriado: ConsultaDetalhada | ExameDetalhado | ProcedimentoDetalhado | EncaminhamentoDetalhado | any;
 
       switch (tipoPrimeiroRegistro) {
@@ -51,19 +52,13 @@ const ProntuarioCreatePage: React.FC = () => {
             dadosEvento as NovaConsultaRequest
           );
           break;
-        // case 'INTERNACAO': // Removido
-        //   const dadosInternacaoComIds: NovaInternacaoRequest = {
-        //     ...(dadosEvento as Omit<NovaInternacaoRequest, 'pacienteId' | 'medicoResponsavelAdmissaoId'>),
-        //     pacienteId: pacienteId,
-        //     medicoResponsavelAdmissaoId: medicoId,
-        //   };
-        //   prontuarioOuEventoCriado = await adicionarInternacaoComNovoProntuario(dadosInternacaoComIds);
+        // case 'INTERNACAO': // Bloco INTEIRO REMOVIDO
         //   break;
         case 'EXAME':
           prontuarioOuEventoCriado = await adicionarExameComNovoProntuario(
             pacienteId,
             medicoId,
-            dadosEvento as AdicionarExameRequest
+            dadosEvento as AdicionarExameRequest // Não tem mais 'arquivo'
           );
           break;
         case 'PROCEDIMENTO':
@@ -76,10 +71,10 @@ const ProntuarioCreatePage: React.FC = () => {
             dadosProcedimentoComExecutor
           );
           break;
-        case 'ENCAMINHAMENTO': // Adicionado
+        case 'ENCAMINHAMENTO':
           const dadosEncaminhamentoComSolicitante: NovaEncaminhamentoRequest = {
             ...(dadosEvento as Omit<NovaEncaminhamentoRequest, 'medicoSolicitanteId'>),
-            medicoSolicitanteId: medicoId, // Médico do wizard é o solicitante
+            medicoSolicitanteId: medicoId,
           };
           prontuarioOuEventoCriado = await adicionarEncaminhamentoComNovoProntuario(
             pacienteId,
@@ -92,7 +87,8 @@ const ProntuarioCreatePage: React.FC = () => {
 
       let prontuarioIdParaNavegacao: string | undefined;
 
-      if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuarioId) {
+      // Verifica se a resposta tem a propriedade prontuarioId (comum a todos os DTOs de detalhe de registro)
+      if (prontuarioOuEventoCriado && typeof prontuarioOuEventoCriado.prontuarioId === 'string') {
         prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuarioId;
       } else {
          console.warn("Não foi possível determinar o ID do prontuário para navegação a partir da resposta da API.", prontuarioOuEventoCriado);

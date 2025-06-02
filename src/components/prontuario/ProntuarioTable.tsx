@@ -1,9 +1,9 @@
-// src/components/prontuario/ProntuarioTable.tsx
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioTable.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, Edit, FileText } from 'lucide-react';
 import Button from '../ui/Button';
-import { Prontuario, StatusProntuario } from '../../types/prontuario'; // TipoTratamento removido
+import { Prontuario } from '../../types/prontuario'; // StatusProntuario removido da importação
 
 interface ProntuarioTableProps {
   prontuarios: Prontuario[];
@@ -26,11 +26,10 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
 
   const formatDate = (dataString?: string) => {
     if (!dataString) return '-';
-     // Se a string já for apenas data (YYYY-MM-DD), adicione T00:00:00 para evitar problemas de fuso
      const dateToParse = /^\d{4}-\d{2}-\d{2}$/.test(dataString) ? `${dataString}T00:00:00Z` : dataString;
     const data = new Date(dateToParse);
     if (isNaN(data.getTime())) return '-';
-    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // UTC para consistência com datas do backend
+    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
   };
   
   const formatDateTime = (dataString?: string) => {
@@ -40,25 +39,7 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
     return data.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const renderStatus = (status: StatusProntuario) => {
-    const statusClasses = {
-      [StatusProntuario.EM_ELABORACAO]: 'bg-blue-100 text-blue-800',
-      [StatusProntuario.INTERNADO]: 'bg-error-100 text-error-800 animate-pulse',
-      [StatusProntuario.ARQUIVADO]: 'bg-neutral-200 text-neutral-800', // Cor ajustada para Arquivado
-    };
-
-    const statusLabels = {
-      [StatusProntuario.EM_ELABORACAO]: 'Em Elaboração',
-      [StatusProntuario.INTERNADO]: 'Internado',
-      [StatusProntuario.ARQUIVADO]: 'Arquivado',
-    };
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[status] || 'bg-neutral-100 text-neutral-800'}`}>
-        {statusLabels[status] || status}
-      </span>
-    );
-  };
+  // REMOVIDO: renderStatus
 
   return (
     <div className="bg-white rounded-lg shadow-soft overflow-hidden">
@@ -78,9 +59,10 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Últ. Atualização
               </th>
-              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              {/* REMOVIDA: Coluna Status */}
+              {/* <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Status
-              </th>
+              </th> */}
               <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Ações
               </th>
@@ -88,9 +70,9 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
           </thead>
           <tbody className="bg-white divide-y divide-neutral-200">
             {isLoading ? (
-              <tr><td colSpan={6} className="px-4 py-4 text-center text-neutral-500">Carregando...</td></tr>
+              <tr><td colSpan={5} className="px-4 py-4 text-center text-neutral-500">Carregando...</td></tr> // Ajustado colSpan
             ) : prontuarios.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-4 text-center text-neutral-500">Nenhum prontuário encontrado.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-4 text-center text-neutral-500">Nenhum prontuário encontrado.</td></tr> // Ajustado colSpan
             ) : (
               prontuarios.map((prontuario) => (
                 <tr key={prontuario.id} className="hover:bg-neutral-50">
@@ -112,9 +94,10 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
                     {formatDateTime(prontuario.dataUltimaAtualizacao)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  {/* REMOVIDO: Coluna Status */}
+                  {/* <td className="px-4 py-3 whitespace-nowrap">
                     {renderStatus(prontuario.status)}
-                  </td>
+                  </td> */}
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                     <div className="flex justify-end space-x-2">
                       <Link to={`/prontuarios/${prontuario.id}`}>
@@ -134,7 +117,6 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
 
       {totalPages > 1 && (
         <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-neutral-200 sm:px-6">
-          {/* ... (Paginação mantida como antes, pode necessitar de ajustes se o total de itens mudar muito) ... */}
            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-neutral-700">
@@ -154,7 +136,6 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                 >
                   <ChevronLeft className="h-5 w-5" /> <span className="sr-only">Voltar</span>
                 </button>
-                {/* Paginação simplificada */}
                 {Array.from({ length: totalPages > 5 ? 5 : totalPages }, (_, i) => {
                     let pageNumber;
                     if (totalPages <= 5) {

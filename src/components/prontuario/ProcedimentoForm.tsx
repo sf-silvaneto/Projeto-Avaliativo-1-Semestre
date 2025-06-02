@@ -7,7 +7,7 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaProcedimentoRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, ClipboardPlus as ProcedimentoIcon } from 'lucide-react';
+import { Save, Calendar, ClipboardPlus as ProcedimentoIcon, ArrowLeft } from 'lucide-react'; // Ícone ArrowLeft adicionado
 
 // Schema Zod para validação do formulário de Procedimento
 const procedimentoSchema = z.object({
@@ -91,7 +91,13 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
       {/* TODO: Adicionar input para upload de arquivo se necessário */}
 
       <div className="flex justify-end space-x-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+        <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onCancel} 
+            disabled={isLoading}
+            leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+        >
           Voltar
         </Button>
         <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18}/>}>

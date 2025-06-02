@@ -1,4 +1,4 @@
-// src/components/prontuario/EncaminhamentoForm.tsx
+// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/EncaminhamentoForm.tsx
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +7,7 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaEncaminhamentoRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, Send as EncaminhamentoIcon, Edit3 } from 'lucide-react';
+import { Save, Calendar, Send as EncaminhamentoIcon, Edit3, ArrowLeft } from 'lucide-react'; // Ícone ArrowLeft adicionado
 
 const encaminhamentoSchema = z.object({
   dataEncaminhamento: z.string().datetime({ message: "Data e hora do encaminhamento inválidas." })
@@ -101,7 +101,13 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
       {/* TODO: Adicionar input para upload de arquivo se necessário */}
 
       <div className="flex justify-end space-x-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+        <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onCancel} 
+            disabled={isLoading}
+            leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+        >
           Voltar
         </Button>
         <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18}/>}>
