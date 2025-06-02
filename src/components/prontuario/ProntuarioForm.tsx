@@ -1,19 +1,19 @@
 // sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioForm.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useForm, FormProvider, Controller, useFormContext } from 'react-hook-form';
+import { useForm, FormProvider, Controller, useFormContext, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
+import Alert from '../ui/Alert';
 import {
     NovaConsultaRequest,
-    // NovaInternacaoRequest, // Mantido comentado pois já estava
     AdicionarExameRequest,
     NovaProcedimentoRequest,
     NovaEncaminhamentoRequest,
-    TipoPrimeiroRegistro // Este tipo já foi atualizado em prontuarioRegistros.ts
+    TipoPrimeiroRegistro
 } from '../../types/prontuarioRegistros';
 import { Medico, StatusMedico } from '../../types/medico';
 import { Paciente, BuscaPacienteParams } from '../../types/paciente';
@@ -24,30 +24,25 @@ import {
   ArrowLeft, Search, Loader2, Users, Activity, Microscope,
   ClipboardPlus, Send,
   AlertCircle
-  // BedDouble REMOVIDO dos imports de Lucide
 } from 'lucide-react';
 
-// Importar os sub-formulários de evento
 import ConsultaForm from './ConsultaForm';
-// import InternacaoForm from './InternacaoForm'; // Mantido comentado
 import ExameForm from './ExameForm';
 import ProcedimentoForm from './ProcedimentoForm';
 import EncaminhamentoForm from './EncaminhamentoForm';
 
-
-// Schemas Zod (sem alterações aqui, já que não lidavam com o tipo de evento diretamente)
 const selecaoEntidadeSchema = z.object({
   pacienteId: z.string().min(1, 'Paciente é obrigatório. Realize a busca e selecione um paciente.'),
   medicoId: z.preprocess(
     (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
-    z.number({ required_error: "Selecione um médico responsável inicial." }).positive("Médico responsável é obrigatório.")
+    z.number({ required_error: "Selecione um médico responsável inicial para o prontuário." }).positive("Médico responsável pelo prontuário é obrigatório.")
   ),
   pacienteNomeFormatado: z.string().optional(),
 });
 type SelecaoEntidadeFormData = z.infer<typeof selecaoEntidadeSchema>;
 
 const tipoRegistroSchema = z.object({
-  tipoPrimeiroRegistro: z.enum(['CONSULTA', 'EXAME', 'PROCEDIMENTO', 'ENCAMINHAMENTO', 'ANOTACAO_GERAL'], { // 'INTERNACAO' já foi removido do enum no tipo
+  tipoPrimeiroRegistro: z.enum(['CONSULTA', 'EXAME', 'PROCEDIMENTO', 'ENCAMINHAMENTO'], {
     required_error: "Selecione o tipo de registro a ser criado.",
     invalid_type_error: "Tipo de registro inválido.",
   }),
@@ -56,15 +51,15 @@ type TipoRegistroFormData = z.infer<typeof tipoRegistroSchema>;
 
 export interface ProntuarioWizardFormData extends SelecaoEntidadeFormData, TipoRegistroFormData {}
 
-// --- COMPONENTE SelecaoEntidadesStep (Permanece o mesmo) ---
-const SelecaoEntidadesStep: React.FC = () => {
-  const { control, formState: { errors }, setValue, watch, getValues } = useFormContext<ProntuarioWizardFormData>();
+const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void}> = ({ onError }) => {
+  const { control, formState: { errors }, setValue, watch, trigger, getValues } = useFormContext<ProntuarioWizardFormData>();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [medicos, setMedicos] = useState<Medico[]>([]);
   const [searchTermPaciente, setSearchTermPaciente] = useState(watch('pacienteNomeFormatado') || '');
   const [isSearchingPacientes, setIsSearchingPacientes] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [showPacienteSuggestions, setShowPacienteSuggestions] = useState(false);
+  const [medicosError, setMedicosError] = useState<string | null>(null);
 
   const pacienteIdAtual = watch('pacienteId');
   const nomePacienteFormatadoAtual = watch('pacienteNomeFormatado');
@@ -72,15 +67,22 @@ const SelecaoEntidadesStep: React.FC = () => {
 
   useEffect(() => {
     const carregarMedicos = async () => {
+      setMedicosError(null);
       try {
-        const response = await buscarMedicos({ status: StatusMedico.ATIVO, tamanho: 200, pagina: 0 });
+        const response = await buscarMedicos({ status: StatusMedico.ATIVO, tamanho: 200, pagina: 0, sort: 'nomeCompleto,asc' });
+        if (response.content.length === 0) {
+            setMedicosError("Nenhum médico ativo encontrado para seleção.");
+            if(onError) onError("Não há médicos ativos cadastrados para iniciar um prontuário.");
+        }
         setMedicos(response.content);
       } catch (error) {
         console.error("Erro ao buscar médicos:", error);
+        setMedicosError("Falha ao carregar lista de médicos.");
+        if(onError) onError("Falha ao carregar lista de médicos.");
       }
     };
     carregarMedicos();
-  }, []);
+  }, [onError]);
 
   const formatCPFDisplay = (cpf: string): string => {
     if (!cpf) return '';
@@ -103,10 +105,17 @@ const SelecaoEntidadesStep: React.FC = () => {
       setPacientes([]); setShowPacienteSuggestions(false); setSearchAttempted(false); return;
     }
     setIsSearchingPacientes(true); setSearchAttempted(true);
-    const params: BuscaPacienteParams = { tamanho: 10, pagina: 0 };
+    const params: BuscaPacienteParams = { tamanho: 10, pagina: 0, sort: 'nome,asc' };
     const justDigitsInTerm = term.replace(/\D/g, '');
     const isPotentiallyCpf = /^\d+$/.test(justDigitsInTerm) && justDigitsInTerm.length >= 3 && justDigitsInTerm.length <= 11;
-    if (isPotentiallyCpf) params.cpf = justDigitsInTerm; else params.nome = term;
+
+    if (isPotentiallyCpf) {
+        params.cpf = justDigitsInTerm;
+        delete params.nome;
+    } else {
+        params.nome = term;
+        delete params.cpf;
+    }
 
     try {
       const response = await buscarPacientes(params);
@@ -121,11 +130,15 @@ const SelecaoEntidadesStep: React.FC = () => {
   useEffect(() => {
     if (searchTermPaciente !== nomePacienteFormatadoAtual && pacienteIdAtual) {
         setValue('pacienteId', '', { shouldValidate: true });
+        trigger('pacienteId');
     }
     const trimmedSearchTerm = searchTermPaciente.trim();
     if (trimmedSearchTerm.length === 0) {
         setPacientes([]); setShowPacienteSuggestions(false); setSearchAttempted(false);
-        if (pacienteIdAtual) setValue('pacienteId', '', { shouldValidate: true });
+        if (pacienteIdAtual) {
+          setValue('pacienteId', '', { shouldValidate: true });
+          trigger('pacienteId');
+        }
         return;
     }
     const currentFormPacienteId = getValues('pacienteId');
@@ -139,7 +152,7 @@ const SelecaoEntidadesStep: React.FC = () => {
     } else {
         setShowPacienteSuggestions(false); setPacientes([]);
     }
-  }, [searchTermPaciente, performSearch, nomePacienteFormatadoAtual, pacienteIdAtual, setValue, getValues]);
+  }, [searchTermPaciente, performSearch, nomePacienteFormatadoAtual, pacienteIdAtual, setValue, getValues, trigger]);
 
   const medicoOptions = medicos.map(medico => ({
     value: medico.id.toString(),
@@ -152,6 +165,8 @@ const SelecaoEntidadesStep: React.FC = () => {
     setValue('pacienteNomeFormatado', nomeFormatado, { shouldValidate: false });
     setSearchTermPaciente(nomeFormatado);
     setShowPacienteSuggestions(false); setPacientes([]); setSearchAttempted(false);
+    trigger('pacienteId');
+    if(onError) onError(null);
   };
 
   useEffect(() => {
@@ -169,6 +184,7 @@ const SelecaoEntidadesStep: React.FC = () => {
       <h3 className="text-xl font-semibold text-neutral-800 border-b border-neutral-300 pb-3 mb-6">
         1. Paciente e Médico Responsável Inicial
       </h3>
+      {medicosError && <Alert type="error" message={medicosError} className="mb-4" onClose={() => setMedicosError(null)} />}
       <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-sm relative" ref={suggestionsRef}>
         <Controller
             name="pacienteNomeFormatado" control={control}
@@ -180,10 +196,12 @@ const SelecaoEntidadesStep: React.FC = () => {
                     onChange={(e) => {
                         const rawValue = e.target.value;
                         let displayValue = rawValue;
-                        if (!/[a-zA-ZÀ-ú]/.test(rawValue)) displayValue = formatCPFInput(rawValue);
+                        if (!/[a-zA-ZÀ-ú]/.test(rawValue)) {
+                            displayValue = formatCPFInput(rawValue);
+                        }
                         setSearchTermPaciente(displayValue);
                     }}
-                    error={errors.pacienteId?.message}
+                    error={(errors.pacienteId as FieldErrors<ProntuarioWizardFormData>['pacienteId'])?.message}
                     helperText="Digite para buscar e clique para selecionar."
                     autoComplete="off" leftAddon={<Search className="h-5 w-5 text-gray-400" />}
                 />
@@ -200,18 +218,27 @@ const SelecaoEntidadesStep: React.FC = () => {
                 )}
             </div>
         )}
+        {errors.pacienteId && !errors.pacienteNomeFormatado && (
+            <p className="form-error">{errors.pacienteId.message}</p>
+        )}
       </div>
       <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-sm">
         <Controller
           name="medicoId" control={control}
           render={({ field }) => (
             <Select
-              label="Médico Responsável Inicial*"
+              label="Médico Responsável Inicial pelo Prontuário*"
               options={[{value: "", label: "Selecione um médico"}, ...medicoOptions]}
               {...field}
               value={String(field.value || "")}
-              onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-              error={errors.medicoId?.message} leftAddon={<Stethoscope className="h-5 w-5 text-gray-400" />}
+              onChange={e => {
+                field.onChange(e.target.value ? Number(e.target.value) : undefined);
+                trigger('medicoId');
+                if(onError) onError(null);
+              }}
+              error={(errors.medicoId as FieldErrors<ProntuarioWizardFormData>['medicoId'])?.message}
+              leftAddon={<Stethoscope className="h-5 w-5 text-gray-400" />}
+              disabled={medicos.length === 0 || !!medicosError}
             />
           )}
         />
@@ -220,17 +247,13 @@ const SelecaoEntidadesStep: React.FC = () => {
   );
 };
 
-
-// --- COMPONENTE TipoRegistroStep ---
-const TipoRegistroStep: React.FC = () => {
-  const { control, formState: { errors } } = useFormContext<ProntuarioWizardFormData>();
+const TipoRegistroStep: React.FC<{onError?: (message: string | null) => void}> = ({ onError }) => {
+  const { control, formState: { errors }, trigger } = useFormContext<ProntuarioWizardFormData>();
   const tiposRegistroOpcoes: { value: TipoPrimeiroRegistro; label: string; icon: React.ReactNode }[] = [
     { value: 'CONSULTA', label: 'Registrar Consulta', icon: <Activity className="h-5 w-5 mr-2" /> },
-    // { value: 'INTERNACAO', label: 'Registrar Internação', icon: <BedDouble className="h-5 w-5 mr-2" /> }, // REMOVIDO
     { value: 'EXAME', label: 'Registrar Exame', icon: <Microscope className="h-5 w-5 mr-2" /> },
     { value: 'PROCEDIMENTO', label: 'Registrar Procedimento', icon: <ClipboardPlus className="h-5 w-5 mr-2" /> },
     { value: 'ENCAMINHAMENTO', label: 'Registrar Encaminhamento Médico', icon: <Send className="h-5 w-5 mr-2" /> },
-    // { value: 'ANOTACAO_GERAL', label: 'Adicionar Anotação Geral', icon: <FileText className="h-5 w-5 mr-2" /> }, // Mantido comentado
   ];
 
   return (
@@ -245,7 +268,16 @@ const TipoRegistroStep: React.FC = () => {
             {tiposRegistroOpcoes.map(opcao => (
               <label key={opcao.value} htmlFor={`tipo-${opcao.value}`}
                 className={`flex items-center p-4 border rounded-md cursor-pointer hover:border-primary-500 hover:shadow-sm transition-all ${field.value === opcao.value ? 'border-primary-600 bg-primary-50 ring-1 ring-primary-500' : 'border-neutral-300 bg-white'}`}>
-                <input type="radio" id={`tipo-${opcao.value}`} {...field} value={opcao.value} checked={field.value === opcao.value} className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500 mr-3"/>
+                <input type="radio" id={`tipo-${opcao.value}`} {...field}
+                  onChange={(e) => {
+                    field.onChange(e.target.value as TipoPrimeiroRegistro);
+                    trigger('tipoPrimeiroRegistro');
+                    if(onError) onError(null);
+                  }}
+                  value={opcao.value}
+                  checked={field.value === opcao.value}
+                  className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500 mr-3"
+                />
                 {opcao.icon}
                 <span className="text-sm font-medium text-neutral-700">{opcao.label}</span>
               </label>
@@ -259,7 +291,7 @@ const TipoRegistroStep: React.FC = () => {
 };
 
 interface ProntuarioFormProps {
-  onSubmitFinal: (data: ProntuarioWizardFormData & { dadosEvento: any }) => Promise<void>;
+  onSubmitFinal: (data: ProntuarioWizardFormData & { dadosEvento: any, medicoExecutorId?: number, medicoResponsavelExameId?: number }) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -268,87 +300,153 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
   isLoading = false,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const getCurrentSchema = useCallback(() => {
+    if (currentStep === 0) return selecaoEntidadeSchema;
+    if (currentStep === 1) return tipoRegistroSchema;
+    return z.object({});
+  }, [currentStep]);
+
   const methods = useForm<ProntuarioWizardFormData>({
-    resolver: zodResolver(
-      currentStep === 0 ? selecaoEntidadeSchema :
-      currentStep === 1 ? tipoRegistroSchema : z.object({})
-    ),
+    resolver: zodResolver(getCurrentSchema()),
     defaultValues: {
-      pacienteId: '', medicoId: undefined, pacienteNomeFormatado: '', tipoPrimeiroRegistro: undefined,
+      pacienteId: '',
+      medicoId: undefined,
+      pacienteNomeFormatado: '',
+      tipoPrimeiroRegistro: undefined,
     },
     mode: "onSubmit",
+    reValidateMode: "onChange",
   });
 
   const { watch, trigger, getValues } = methods;
   const tipoRegistroSelecionado = watch('tipoPrimeiroRegistro');
 
+  useEffect(() => {
+    methods.reset(undefined, {
+        keepValues: true, keepDirty: true, keepIsSubmitted: false,
+        keepTouched: false, keepErrors: false,
+    });
+    // @ts-ignore
+    methods.resolver = zodResolver(getCurrentSchema());
+  }, [currentStep, methods, getCurrentSchema]);
+
+
   const handleEventoSubmit = async (dadosDoEventoEspecifico: any) => {
+    console.log('ProntuarioForm: handleEventoSubmit - dadosDoEventoEspecifico:', JSON.stringify(dadosDoEventoEspecifico, null, 2));
+    setGlobalError(null);
     const wizardData = getValues();
-    if (!wizardData.pacienteId || wizardData.medicoId === undefined) {
-        console.error("Paciente ou Médico não selecionado antes de submeter evento.");
-        alert("Erro: Paciente ou Médico não selecionado. Volte aos passos anteriores.");
+    console.log('ProntuarioForm: handleEventoSubmit - wizardData (passos 0 e 1):', JSON.stringify(wizardData, null, 2));
+
+    if (!wizardData.pacienteId || wizardData.medicoId === undefined || !wizardData.tipoPrimeiroRegistro) {
+        setGlobalError("Dados incompletos dos passos anteriores. Por favor, revise.");
+        setCurrentStep(0);
         return;
     }
-    await onSubmitFinal({
+    
+    let medicoIdParaEvento = wizardData.medicoId; // Médico responsável pelo prontuário
+
+    const dadosCompletosParaEnvio: ProntuarioWizardFormData & { dadosEvento: any, medicoExecutorId?: number, medicoResponsavelExameId?: number } = {
         ...wizardData,
-        dadosEvento: dadosDoEventoEspecifico
-    });
+        dadosEvento: { ...dadosDoEventoEspecifico }
+    };
+
+    // Para Consulta e Exame, o ID do médico do evento é passado como parâmetro separado para o service.
+    // Para Procedimento e Encaminhamento, o ID do médico já está em 'dadosEvento'.
+    if (wizardData.tipoPrimeiroRegistro === 'CONSULTA') {
+        dadosCompletosParaEnvio.medicoExecutorId = medicoIdParaEvento;
+    } else if (wizardData.tipoPrimeiroRegistro === 'EXAME') {
+        dadosCompletosParaEnvio.medicoResponsavelExameId = medicoIdParaEvento;
+    } else if (wizardData.tipoPrimeiroRegistro === 'PROCEDIMENTO') {
+      // Assegurar que o medicoExecutorId nos dados do evento seja o medicoId do wizard
+      (dadosCompletosParaEnvio.dadosEvento as NovaProcedimentoRequest).medicoExecutorId = medicoIdParaEvento;
+    } else if (wizardData.tipoPrimeiroRegistro === 'ENCAMINHAMENTO') {
+      // Assegurar que o medicoSolicitanteId nos dados do evento seja o medicoId do wizard
+      (dadosCompletosParaEnvio.dadosEvento as NovaEncaminhamentoRequest).medicoSolicitanteId = medicoIdParaEvento;
+    }
+    
+    console.log('ProntuarioForm: handleEventoSubmit - DADOS COMPLETOS PARA onSubmitFinal:', JSON.stringify(dadosCompletosParaEnvio, null, 2));
+    await onSubmitFinal(dadosCompletosParaEnvio);
   };
 
   const renderEventoForm = () => {
     const commonEventFormProps = {
         onSubmitEvento: handleEventoSubmit,
-        onCancel: () => setCurrentStep(1),
+        onCancel: () => {setCurrentStep(1); setGlobalError(null);},
         isLoading: isLoading,
     };
-    if (tipoRegistroSelecionado === 'CONSULTA') {
-        return <ConsultaForm {...commonEventFormProps} />;
+    switch (tipoRegistroSelecionado) {
+        case 'CONSULTA': return <ConsultaForm {...commonEventFormProps} />;
+        case 'EXAME': return <ExameForm {...commonEventFormProps} />;
+        case 'PROCEDIMENTO': return <ProcedimentoForm {...commonEventFormProps} />;
+        case 'ENCAMINHAMENTO': return <EncaminhamentoForm {...commonEventFormProps} />;
+        default:
+            return (
+                <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-md text-center">
+                    <AlertCircle className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
+                    <p className="text-neutral-600">
+                        {currentStep === 2 && !tipoRegistroSelecionado ?
+                            'Por favor, volte e selecione um tipo de registro para continuar.' :
+                            `Formulário para '${tipoRegistroSelecionado}' não implementado ou tipo não selecionado.`
+                        }
+                    </p>
+                     {currentStep === 2 && !tipoRegistroSelecionado && (
+                        <Button variant="secondary" onClick={() => setCurrentStep(1)} className="mt-4">
+                            Voltar para Seleção de Tipo
+                        </Button>
+                    )}
+                </div>
+            );
     }
-    // if (tipoRegistroSelecionado === 'INTERNACAO') { // REMOVIDO
-    //     return <InternacaoForm {...commonEventFormProps} />; // Este componente seria deletado se existisse
-    // }
-    if (tipoRegistroSelecionado === 'EXAME') {
-      return <ExameForm {...commonEventFormProps} />;
-    }
-    if (tipoRegistroSelecionado === 'PROCEDIMENTO') {
-      return <ProcedimentoForm {...commonEventFormProps} />;
-    }
-    if (tipoRegistroSelecionado === 'ENCAMINHAMENTO') {
-      return <EncaminhamentoForm {...commonEventFormProps} />;
-    }
-
-    return (
-        <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-md text-center">
-            <AlertCircle className="h-10 w-10 text-neutral-400 mx-auto mb-3" />
-            <p className="text-neutral-600">
-                {currentStep === 2 && !tipoRegistroSelecionado ?
-                    'Por favor, volte e selecione um tipo de registro para continuar.' :
-                    `Formulário para '${tipoRegistroSelecionado}' ainda não implementado ou tipo não selecionado.`
-                }
-            </p>
-        </div>
-    );
   };
 
   const steps = [
-    { title: 'Paciente e Médico', icon: <Users className="h-4 w-4" />, component: <SelecaoEntidadesStep /> },
-    { title: 'Tipo de Registro', icon: <FileText className="h-4 w-4" />, component: <TipoRegistroStep /> },
+    { title: 'Paciente e Médico', icon: <Users className="h-4 w-4" />, component: <SelecaoEntidadesStep onError={setGlobalError} /> },
+    { title: 'Tipo de Registro', icon: <FileText className="h-4 w-4" />, component: <TipoRegistroStep onError={setGlobalError} /> },
     { title: 'Detalhes do Registro', icon: <Activity className="h-4 w-4" />, component: renderEventoForm() },
   ];
 
   const nextStep = async () => {
+    setGlobalError(null);
     let isValid = false;
-    if (currentStep === 0) isValid = await trigger(['pacienteId', 'medicoId']);
-    else if (currentStep === 1) isValid = await trigger(['tipoPrimeiroRegistro']);
+    if (currentStep === 0) {
+      isValid = await trigger(['pacienteId', 'medicoId'], { shouldFocus: true });
+       if (!getValues('pacienteId')) {
+          methods.setError('pacienteId', { type: 'manual', message: 'Por favor, selecione um paciente.'});
+          isValid = false;
+      }
+      if (!getValues('medicoId')) {
+          methods.setError('medicoId', { type: 'manual', message: 'Por favor, selecione um médico.'});
+          isValid = false;
+      }
+    } else if (currentStep === 1) {
+      isValid = await trigger(['tipoPrimeiroRegistro'], { shouldFocus: true });
+       if (!getValues('tipoPrimeiroRegistro')) {
+          methods.setError('tipoPrimeiroRegistro', {type: 'manual', message: 'Por favor, selecione o tipo de registro.'});
+          isValid = false;
+      }
+    }
+
+    console.log(`ProntuarioForm: nextStep - currentStep: ${currentStep}, isValid: ${isValid}, errors:`, JSON.stringify(methods.formState.errors, null, 2));
 
     if (isValid && currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
+    } else if (currentStep < steps.length -1 && !isValid) {
+        const errors = methods.formState.errors;
+        if (Object.keys(errors).length > 0) {
+            const firstErrorKey = Object.keys(errors)[0] as keyof ProntuarioWizardFormData;
+            const errorMessage = errors[firstErrorKey]?.message;
+            setGlobalError(String(errorMessage) || "Verifique os campos obrigatórios.");
+        } else {
+            setGlobalError("Preencha os campos obrigatórios para avançar.");
+        }
     }
   };
 
   const wizardGlobalPrevStep = () => {
+    setGlobalError(null);
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
@@ -356,49 +454,53 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={(e) => e.preventDefault()}>
+      <form onSubmit={(e) => e.preventDefault()} className="bg-white p-6 sm:p-8 rounded-lg shadow-lg">
         <div className="mb-8">
           <ol className="flex items-center w-full">
             {steps.map((step, index) => (
               <React.Fragment key={index}>
                 <li className={`flex w-full items-center ${index <= currentStep ? 'text-primary-600' : 'text-neutral-500'} ${index < steps.length -1 ? `after:content-[''] after:w-full after:h-1 after:border-b ${index < currentStep ? 'after:border-primary-600' : 'after:border-neutral-200'} after:border-1 after:inline-block` : ''}`}>
-                  <div className={`flex items-center justify-center w-10 h-10 ${index <= currentStep ? 'bg-primary-100' : 'bg-neutral-100'} rounded-full lg:h-12 lg:w-12 shrink-0`}>
-                    {React.cloneElement(step.icon, { className: `w-5 h-5 lg:w-6 lg:h-6 ${index <= currentStep ? 'text-primary-600' : 'text-neutral-500'}`})}
-                  </div>
+                  <span className={`flex items-center justify-center w-8 h-8 ${index <= currentStep ? 'bg-primary-100' : 'bg-neutral-100'} rounded-full lg:h-10 lg:w-10 shrink-0`}>
+                    {React.cloneElement(step.icon, { className: `w-4 h-4 lg:w-5 lg:h-5 ${index <= currentStep ? 'text-primary-600' : 'text-neutral-500'}`})}
+                  </span>
                 </li>
               </React.Fragment>
             ))}
           </ol>
-          <div className="mt-3 flex justify-between text-sm font-medium">
+          <div className="mt-3 grid grid-cols-3 text-xs sm:text-sm font-medium">
             {steps.map((step, index) => (
-              <span key={`label-${index}`} className={`w-1/${steps.length} text-center ${index === currentStep ? 'text-primary-600 font-semibold' : index < currentStep ? 'text-primary-500' : 'text-neutral-500'}`}>{step.title}</span>
+              <span key={`label-${index}`} className={`text-center ${index === currentStep ? 'text-primary-700 font-semibold' : index < currentStep ? 'text-primary-600' : 'text-neutral-500'}`}>{step.title}</span>
             ))}
           </div>
         </div>
 
-        <div className="mb-8 min-h-[350px]" key={`${currentStep}-${tipoRegistroSelecionado}`}>
-            {steps[currentStep].component}
+        {globalError && (
+            <Alert type="error" message={globalError} className="mb-6" onClose={() => setGlobalError(null)} />
+        )}
+
+        <div className="mb-8 min-h-[300px] sm:min-h-[350px]" key={`${currentStep}-${tipoRegistroSelecionado}`}>
+            {currentStep === 2 ? renderEventoForm() : steps[currentStep].component}
         </div>
 
         {currentStep < steps.length - 1 && (
-          <div className="flex justify-end items-center gap-3 pt-8">
-            {(currentStep === 0 || currentStep === 1) && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={currentStep === 0 ? () => navigate(-1) : wizardGlobalPrevStep}
-                disabled={isLoading && currentStep === 0}
-                leftIcon={<ArrowLeft className="h-4 w-4" />}
-              >
-                {currentStep === 0 ? 'Voltar' : 'Voltar'}
-              </Button>
-            )}
+          <div className="flex flex-col-reverse sm:flex-row justify-end items-center gap-3 pt-6 border-t border-neutral-200 mt-8">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={currentStep === 0 ? () => navigate('/prontuarios') : wizardGlobalPrevStep}
+              disabled={isLoading && currentStep === 0}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+              className="w-full sm:w-auto"
+            >
+              {currentStep === 0 ? 'Cancelar e Voltar' : 'Anterior'}
+            </Button>
             <Button
               type="button"
               variant="primary"
               onClick={nextStep}
-              disabled={isLoading || (currentStep === 1 && !tipoRegistroSelecionado)}
+              disabled={isLoading}
               rightIcon={<ChevronRight className="h-4 w-4" />}
+              className="w-full sm:w-auto"
             >
               {currentStep === steps.length - 2 ? 'Continuar para Detalhes' : 'Próximo'}
             </Button>

@@ -1,22 +1,16 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/types/prontuario.ts
+// sf-silvaneto/clientehm/ClienteHM-41ecd4803ba7d3cbda97c9d43527665950953ffb/cliente-hm-front-main/src/types/prontuario.ts
 
-import { ConsultaDetalhada } from './prontuarioRegistros'; 
+import {
+  ConsultaDetalhada,
+  ExameDetalhado,
+  ProcedimentoDetalhado,
+  EncaminhamentoDetalhado
+} from './prontuarioRegistros';
+import { Paciente as PacienteCompleto, Genero as PacienteGeneroEnum, Endereco as PacienteEndereco } from './paciente'; // Importando Paciente mais completo
 
-export interface Paciente {
-  id: string;
-  nome: string;
-  dataNascimento: string;
-  cpf: string;
-  genero: Genero;
-  telefone: string;
-  email: string;
-  endereco: Endereco;
-  createdAt: string;
-  updatedAt: string;
-  alergiasDeclaradas?: string;
-  comorbidadesDeclaradas?: string;
-  medicamentosContinuos?: string;
-}
+// Medico e Endereco podem ser definidos localmente se forem mais simples ou importados se houver definições mais completas.
+// Para este exemplo, manteremos as definições locais que você já tinha,
+// mas o Paciente será o PacienteCompleto.
 
 export interface Medico {
   id: number;
@@ -25,7 +19,7 @@ export interface Medico {
   especialidade: string;
 }
 
-export interface Endereco {
+export interface Endereco { // Este Endereco é usado pelo PacienteCompleto, então está OK.
   logradouro: string;
   numero: string;
   complemento?: string;
@@ -35,41 +29,34 @@ export interface Endereco {
   cep: string;
 }
 
-export enum Genero {
-  MASCULINO = 'MASCULINO',
-  FEMININO = 'FEMININO',
-  OUTRO = 'OUTRO',
-  NAO_INFORMADO = 'NAO_INFORMADO'
-}
+// Genero local (usado por PacienteCompleto, mas PacienteCompleto tem seu próprio Enum Genero)
+// Se PacienteCompleto já importa e usa seu próprio Genero, este pode ser redundante aqui.
+// Vamos assumir que PacienteCompleto usa o Genero de 'paciente.ts'.
+// export enum Genero {
+//   MASCULINO = 'MASCULINO',
+//   FEMININO = 'FEMININO',
+//   OUTRO = 'OUTRO',
+//   NAO_INFORMADO = 'NAO_INFORMADO'
+// }
 
 export interface HistoricoMedico {
   id: string;
-  data: string; 
+  data: string;
   descricao: string;
   responsavel: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Medicacao {
+// A interface 'Exame' abaixo é o tipo simples.
+// Para a lista de exames no prontuário, usaremos ExameDetalhado de prontuarioRegistros.ts
+export interface Exame { // Este é o Exame simples, não o ExameDetalhado.
   id: string;
   nome: string;
-  dosagem: string;
-  frequencia: string;
-  dataInicio: string;
-  dataFim?: string;
-  observacoes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Exame { 
-  id: string;
-  nome: string;
-  data: string; 
+  data: string;
   resultado: string;
   observacoes?: string;
-  createdAt: string; 
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -83,33 +70,32 @@ export interface Anotacao {
 }
 
 export interface Prontuario {
-  id: string; 
+  id: string;
   numeroProntuario: string;
-  paciente: Paciente;
-  medicoResponsavel?: Medico; 
-  administradorCriador?: { id: string; nome: string; email: string; }; 
-  dataInicio: string; 
-  dataUltimaAtualizacao: string; 
-  
-  historicoGeral?: HistoricoMedico[]; 
-  consultas?: ConsultaDetalhada[]; 
-  examesRegistrados?: Exame[]; 
-  medicacoes?: Medicacao[]; 
-  anotacoesGerais?: Anotacao[]; 
+  paciente: PacienteCompleto; // Alterado para usar o tipo Paciente mais completo
+  medicoResponsavel?: Medico;
+  administradorCriador?: { id: string; nome: string; email: string; }; // Backend DTO usa Long para ID
+  dataInicio: string;
+  dataUltimaAtualizacao: string;
 
-  createdAt: string; 
-  updatedAt: string; 
+  historicoGeral?: HistoricoMedico[];
+  consultas?: ConsultaDetalhada[];
+  examesRegistrados?: ExameDetalhado[];
+  procedimentosRegistrados?: ProcedimentoDetalhado[];
+  encaminhamentosRegistrados?: EncaminhamentoDetalhado[];
+
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BuscaProntuarioParams {
   termo?: string;
-  // numeroProntuario?: string; // REMOVIDO
   pagina: number;
   tamanho: number;
   sort?: string;
 }
 
-export interface ResultadoBuscaProntuarios { 
+export interface ResultadoBuscaProntuarios {
   content: Prontuario[];
   pageable: {
     pageNumber: number;
@@ -119,9 +105,9 @@ export interface ResultadoBuscaProntuarios {
   };
 }
 
-export interface IniciarProntuarioRequest { 
-    pacienteId: string;
-    medicoId: number; 
+export interface IniciarProntuarioRequest {
+    pacienteId: string; // No frontend, IDs de paciente são strings (UUID)
+    medicoId: number;
 }
 
 export interface AdicionarHistoricoGeralRequest {

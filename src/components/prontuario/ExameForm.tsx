@@ -7,19 +7,22 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { AdicionarExameRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft } from 'lucide-react'; // Ícone ArrowLeft adicionado
+import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft } from 'lucide-react';
 
-// Schema Zod para validação do formulário de Exame
+const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
 const exameSchema = z.object({
   nome: z.string().min(3, { message: "Nome do exame é obrigatório (mín. 3 caracteres)." }).max(200, "Nome do exame muito longo (máx. 200)."),
-  data: z.string().datetime({ message: "Data e hora do exame inválidas." }) // Mantido datetime para consistência, pode ser date se o backend esperar só data
+  data: z.string()
+    .min(1, "Data e hora do exame são obrigatórias.")
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do exame inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do exame não podem ser no futuro." }),
   resultado: z.string().min(5, { message: "Resultado do exame é obrigatório (mín. 5 caracteres)." }).max(5000, "Resultado muito longo (máx. 5000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
-  // arquivo não faz mais parte do schema aqui, pois foi removido de AdicionarExameRequest
 });
 
-type ExameFormData = AdicionarExameRequest; // AdicionarExameRequest já não tem 'arquivo'
+type ExameFormData = AdicionarExameRequest;
 
 interface ExameFormProps {
   onSubmitEvento: (data: AdicionarExameRequest) => void;
@@ -37,7 +40,6 @@ const getLocalDateTimeString = (date: Date): string => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
-
 const ExameForm: React.FC<ExameFormProps> = ({
   onSubmitEvento,
   onCancel,
@@ -54,17 +56,18 @@ const ExameForm: React.FC<ExameFormProps> = ({
     },
   });
 
-  const handleFormSubmit = (data: ExameFormData) => {
+  const handleLocalSubmit = (data: ExameFormData) => {
+    console.log('ExameForm: handleLocalSubmit - DADOS DO FORMULÁRIO:', JSON.stringify(data, null, 2));
     const submissionData: AdicionarExameRequest = {
         ...data,
         observacoes: data.observacoes?.trim() || undefined,
-        // Não há mais campo 'arquivo' para tratar
     };
+    console.log('ExameForm: handleLocalSubmit - SUBMISSION DATA PARA onSubmitEvento:', JSON.stringify(submissionData, null, 2));
     onSubmitEvento(submissionData);
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-1 animate-fade-in">
+    <div className="space-y-6 p-1 animate-fade-in">
       <h4 className="text-lg font-medium text-neutral-800 mb-4">Registrar Novo Exame</h4>
 
       <Input
@@ -76,8 +79,8 @@ const ExameForm: React.FC<ExameFormProps> = ({
       />
 
       <Input
-        label="Data e Hora do Exame*" // Ou apenas "Data do Exame" se o backend aceitar apenas data
-        type="datetime-local" // Mudar para "date" se o backend e o tipo AdicionarExameRequest.data forem apenas data
+        label="Data e Hora do Exame*"
+        type="datetime-local"
         leftAddon={<Calendar size={18} className="text-gray-500"/>}
         {...register('data')}
         error={errors.data?.message}
@@ -99,25 +102,29 @@ const ExameForm: React.FC<ExameFormProps> = ({
         error={errors.observacoes?.message}
       />
 
-      {/* REMOVIDO: Input para upload de arquivo */}
-      {/* <Input label="Anexar Arquivo (Opcional)" type="file" /> */}
-
-
-      <div className="flex justify-end space-x-3 pt-4">
-        <Button 
-            type="button" 
-            variant="secondary" 
-            onClick={onCancel} 
+      <div className="flex flex-col-reverse sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+        <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
             disabled={isLoading}
-            leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            className="w-full sm:w-auto"
         >
           Voltar
         </Button>
-        <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18}/>}>
-          Salvar Exame
+        <Button
+            type="button"
+            onClick={handleSubmit(handleLocalSubmit)}
+            variant="primary"
+            isLoading={isLoading}
+            leftIcon={<Save size={18}/>}
+            className="w-full sm:w-auto"
+        >
+          Salvar Exame e Criar Prontuário
         </Button>
       </div>
-    </form>
+    </div>
   );
 };
 

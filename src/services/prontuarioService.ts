@@ -9,18 +9,15 @@ import {
 import {
     NovaConsultaRequest,
     ConsultaDetalhada,
-    // NovaInternacaoRequest, // Removido
-    // InternacaoDetalhada, // Removido
-    // RegistrarAltaInternacaoRequest, // Removido
     AdicionarExameRequest,
     ExameDetalhado,
     NovaProcedimentoRequest,
     ProcedimentoDetalhado,
-    NovaEncaminhamentoRequest, // Adicionado
-    EncaminhamentoDetalhado    // Adicionado
+    NovaEncaminhamentoRequest,
+    EncaminhamentoDetalhado
 } from '../types/prontuarioRegistros';
 
-// --- Funções de Busca e Detalhe ---
+// --- Funções de Busca e Detalhe (permanecem as mesmas) ---
 export const buscarProntuarios = async (params: BuscaProntuarioParams): Promise<ResultadoBuscaProntuarios> => {
   try {
     const response = await api.get('/prontuarios', { params });
@@ -47,46 +44,37 @@ export const adicionarConsultaComNovoProntuario = async (
     medicoExecutorId: number,
     dadosConsulta: NovaConsultaRequest
 ): Promise<ConsultaDetalhada> => {
+    console.log('prontuarioService: adicionarConsultaComNovoProntuario - pacienteId:', pacienteId, 'medicoExecutorId:', medicoExecutorId, 'dadosConsulta:', JSON.stringify(dadosConsulta, null, 2));
     try {
-        const response = await api.post(`/prontuarios/consultas`, dadosConsulta, {
+        const endpoint = `/prontuarios/consultas`;
+        console.log('prontuarioService: CHAMANDO API POST', endpoint, 'com params:', { pacienteId, medicoExecutorId });
+        const response = await api.post(endpoint, dadosConsulta, {
             params: { pacienteId, medicoExecutorId }
         });
+        console.log('prontuarioService: RESPOSTA API para consulta:', response.data);
         return response.data;
     } catch (error) {
-        console.error("Erro em adicionarConsultaComNovoProntuario:", error);
+        console.error("Erro em adicionarConsultaComNovoProntuario (SERVICE):", error);
         throw error;
     }
 };
 
-// REMOVIDO: adicionarInternacaoComNovoProntuario
-
 export const adicionarExameComNovoProntuario = async (
     pacienteId: string,
-    medicoResponsavelId: number,
+    medicoResponsavelExameId: number,
     dadosExame: AdicionarExameRequest
 ): Promise<ExameDetalhado> => {
+    console.log('prontuarioService: adicionarExameComNovoProntuario - pacienteId:', pacienteId, 'medicoResponsavelExameId:', medicoResponsavelExameId, 'dadosExame:', JSON.stringify(dadosExame, null, 2));
     try {
-        const endpoint = `/prontuarios/exames`; // Endpoint hipotético
-        let response;
-        if (dadosExame.arquivo) {
-            const formData = new FormData();
-            formData.append('nome', dadosExame.nome);
-            formData.append('data', dadosExame.data);
-            formData.append('resultado', dadosExame.resultado);
-            if (dadosExame.observacoes) formData.append('observacoes', dadosExame.observacoes);
-            formData.append('arquivo', dadosExame.arquivo);
-            response = await api.post(endpoint, formData, {
-                params: { pacienteId, medicoResponsavelId },
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-        } else {
-            response = await api.post(endpoint, dadosExame, {
-                params: { pacienteId, medicoResponsavelId },
-            });
-        }
+        const endpoint = `/prontuarios/exames`; // Endpoint NOVO no backend
+        console.log('prontuarioService: CHAMANDO API POST', endpoint, 'com params:', { pacienteId, medicoResponsavelExameId });
+        const response = await api.post(endpoint, dadosExame, {
+            params: { pacienteId, medicoResponsavelExameId },
+        });
+        console.log('prontuarioService: RESPOSTA API para exame:', response.data);
         return response.data;
     } catch (error) {
-        console.error("Erro em adicionarExameComNovoProntuario:", error);
+        console.error("Erro em adicionarExameComNovoProntuario (SERVICE):", error);
         throw error;
     }
 };
@@ -95,14 +83,17 @@ export const adicionarProcedimentoComNovoProntuario = async (
     pacienteId: string,
     dadosProcedimento: NovaProcedimentoRequest
 ): Promise<ProcedimentoDetalhado> => {
+    console.log('prontuarioService: adicionarProcedimentoComNovoProntuario - pacienteId:', pacienteId, 'dadosProcedimento:', JSON.stringify(dadosProcedimento, null, 2));
     try {
-        const endpoint = `/prontuarios/procedimentos`; // Endpoint hipotético
+        const endpoint = `/prontuarios/procedimentos`; // Endpoint NOVO no backend
+        console.log('prontuarioService: CHAMANDO API POST', endpoint, 'com params:', { pacienteId });
         const response = await api.post(endpoint, dadosProcedimento, {
-            params: { pacienteId } // medicoExecutorId já está em dadosProcedimento
+            params: { pacienteId }
         });
+        console.log('prontuarioService: RESPOSTA API para procedimento:', response.data);
         return response.data;
     } catch (error) {
-        console.error("Erro em adicionarProcedimentoComNovoProntuario:", error);
+        console.error("Erro em adicionarProcedimentoComNovoProntuario (SERVICE):", error);
         throw error;
     }
 };
@@ -111,65 +102,55 @@ export const adicionarEncaminhamentoComNovoProntuario = async (
     pacienteId: string,
     dadosEncaminhamento: NovaEncaminhamentoRequest
 ): Promise<EncaminhamentoDetalhado> => {
+    console.log('prontuarioService: adicionarEncaminhamentoComNovoProntuario - pacienteId:', pacienteId, 'dadosEncaminhamento:', JSON.stringify(dadosEncaminhamento, null, 2));
     try {
-        const endpoint = `/prontuarios/encaminhamentos`; // Endpoint hipotético
-        // medicoSolicitanteId está em dadosEncaminhamento
+        const endpoint = `/prontuarios/encaminhamentos`; // Endpoint NOVO no backend
+        console.log('prontuarioService: CHAMANDO API POST', endpoint, 'com params:', { pacienteId });
         const response = await api.post(endpoint, dadosEncaminhamento, {
             params: { pacienteId }
         });
+        console.log('prontuarioService: RESPOSTA API para encaminhamento:', response.data);
         return response.data;
     } catch (error) {
-        console.error("Erro em adicionarEncaminhamentoComNovoProntuario:", error);
+        console.error("Erro em adicionarEncaminhamentoComNovoProntuario (SERVICE):", error);
         throw error;
     }
 };
 
 
 // --- Adicionar Registros a um Prontuário Existente ---
+// (As funções abaixo são para adições futuras, não diretamente usadas pelo wizard de criação inicial,
+// mas mantidas para consistência e potencial uso futuro. Elas foram adaptadas para usar os
+// endpoints de "criação" por enquanto, pois o backend pode não ter endpoints específicos para
+// adicionar a um prontuário já existente via /prontuarios/{prontuarioId}/registros ainda.)
+
 export const adicionarConsultaAProntuarioExistente = async (
     prontuarioId: string,
     medicoExecutorId: number,
     dadosConsulta: NovaConsultaRequest
 ): Promise<ConsultaDetalhada> => {
     try {
-        const response = await api.post(`/prontuarios/${prontuarioId}/consultas`, dadosConsulta, {
-             params: { medicoExecutorId }
-        });
-        return response.data;
+        console.warn("adicionarConsultaAProntuarioExistente pode precisar de endpoint dedicado no backend: /prontuarios/{id}/consultas. Usando endpoint de criação por enquanto.");
+        const prontuario = await buscarProntuarioPorId(prontuarioId);
+        if (!prontuario.paciente) throw new Error("Paciente não encontrado para o prontuário existente.");
+        // Reutilizando a lógica de adicionar com novo prontuário, o backend faz o "findOrCreate"
+        return adicionarConsultaComNovoProntuario(prontuario.paciente.id, medicoExecutorId, dadosConsulta);
     } catch (error) {
         console.error(`Erro em adicionarConsultaAProntuarioExistente para prontuario ${prontuarioId}:`, error);
         throw error;
     }
 };
 
-// REMOVIDO: adicionarInternacaoAProntuarioExistente
-// REMOVIDO: registrarAltaInternacao
-
 export const adicionarExameAProntuarioExistente = async (
     prontuarioId: string,
-    medicoResponsavelId: number,
+    medicoResponsavelExameId: number,
     dadosExame: AdicionarExameRequest
 ): Promise<ExameDetalhado> => {
     try {
-        const endpoint = `/prontuarios/${prontuarioId}/exames`;
-        let response;
-        if (dadosExame.arquivo) {
-            const formData = new FormData();
-            formData.append('nome', dadosExame.nome);
-            formData.append('data', dadosExame.data);
-            formData.append('resultado', dadosExame.resultado);
-            if (dadosExame.observacoes) formData.append('observacoes', dadosExame.observacoes);
-            formData.append('arquivo', dadosExame.arquivo);
-            response = await api.post(endpoint, formData, {
-                params: { medicoResponsavelId },
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-        } else {
-            response = await api.post(endpoint, dadosExame, {
-                params: { medicoResponsavelId },
-            });
-        }
-        return response.data;
+        console.warn("adicionarExameAProntuarioExistente pode precisar de endpoint dedicado no backend: /prontuarios/{id}/exames. Usando endpoint de criação por enquanto.");
+        const prontuario = await buscarProntuarioPorId(prontuarioId);
+        if (!prontuario.paciente) throw new Error("Paciente não encontrado para o prontuário existente.");
+        return adicionarExameComNovoProntuario(prontuario.paciente.id, medicoResponsavelExameId, dadosExame);
     } catch (error) {
         console.error(`Erro em adicionarExameAProntuarioExistente para prontuario ${prontuarioId}:`, error);
         throw error;
@@ -181,9 +162,10 @@ export const adicionarProcedimentoAProntuarioExistente = async (
     dadosProcedimento: NovaProcedimentoRequest
 ): Promise<ProcedimentoDetalhado> => {
     try {
-        const endpoint = `/prontuarios/${prontuarioId}/procedimentos`;
-        const response = await api.post(endpoint, dadosProcedimento); // medicoExecutorId está em dadosProcedimento
-        return response.data;
+        console.warn("adicionarProcedimentoAProntuarioExistente pode precisar de endpoint dedicado no backend: /prontuarios/{id}/procedimentos. Usando endpoint de criação por enquanto.");
+        const prontuario = await buscarProntuarioPorId(prontuarioId);
+        if (!prontuario.paciente) throw new Error("Paciente não encontrado para o prontuário existente.");
+        return adicionarProcedimentoComNovoProntuario(prontuario.paciente.id, dadosProcedimento);
     } catch (error) {
         console.error(`Erro em adicionarProcedimentoAProntuarioExistente para prontuario ${prontuarioId}:`, error);
         throw error;
@@ -195,28 +177,25 @@ export const adicionarEncaminhamentoAProntuarioExistente = async (
     dadosEncaminhamento: NovaEncaminhamentoRequest
 ): Promise<EncaminhamentoDetalhado> => {
     try {
-        const endpoint = `/prontuarios/${prontuarioId}/encaminhamentos`;
-        // medicoSolicitanteId está em dadosEncaminhamento
-        const response = await api.post(endpoint, dadosEncaminhamento);
-        return response.data;
+        console.warn("adicionarEncaminhamentoAProntuarioExistente pode precisar de endpoint dedicado no backend: /prontuarios/{id}/encaminhamentos. Usando endpoint de criação por enquanto.");
+        const prontuario = await buscarProntuarioPorId(prontuarioId);
+        if (!prontuario.paciente) throw new Error("Paciente não encontrado para o prontuário existente.");
+        return adicionarEncaminhamentoComNovoProntuario(prontuario.paciente.id, dadosEncaminhamento);
     } catch (error) {
         console.error(`Erro em adicionarEncaminhamentoAProntuarioExistente para prontuario ${prontuarioId}:`, error);
         throw error;
     }
 };
 
-
-export const atualizarDadosBasicosProntuario = async (id: string, dados: Partial<Pick<Prontuario, 'medicoResponsavel' | 'status' | 'dataAltaAdministrativa'>>): Promise<Prontuario> => {
+export const atualizarDadosBasicosProntuario = async (id: string, dados: Partial<Pick<Prontuario, 'medicoResponsavel'>>) : Promise<Prontuario> => {
   try {
     const payload: any = {};
     if (dados.medicoResponsavel && dados.medicoResponsavel.id) {
         payload.medicoResponsavelId = dados.medicoResponsavel.id;
     }
-    if (dados.status) {
-        payload.status = dados.status;
-    }
-    if (dados.hasOwnProperty('dataAltaAdministrativa')) {
-        payload.dataAltaAdministrativa = dados.dataAltaAdministrativa === undefined ? null : dados.dataAltaAdministrativa;
+    if (Object.keys(payload).length === 0) {
+        console.warn("Nenhuma alteração fornecida para atualizarDadosBasicosProntuario.");
+        return buscarProntuarioPorId(id);
     }
     const response = await api.put(`/prontuarios/${id}/dados-basicos`, payload);
     return response.data;

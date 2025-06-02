@@ -10,10 +10,9 @@ import { NovaConsultaRequest } from '../../types/prontuarioRegistros';
 import {
     Save, Calendar, Activity, Thermometer, Heart, Percent,
     BookOpen, Brain, ClipboardPlus, FileText as FileTextIcon, Edit3 as EditIcon,
-    ArrowLeft // Ícone adicionado à importação
+    ArrowLeft
 } from 'lucide-react';
 
-// --- Funções Auxiliares para Máscara (mantidas como antes) ---
 const formatarPA = (value: string): string => {
     let digitos = value.replace(/\D/g, '');
     if (digitos.length > 6) { digitos = digitos.substring(0, 6); }
@@ -33,9 +32,13 @@ const formatarTemperatura = (value: string): string => {
     return formattedVal;
 };
 
-// Schema Zod (mantido como antes)
+const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
 const consultaSchema = z.object({
-    dataHoraConsulta: z.string().datetime({ message: "Data e hora inválidas. Use o formato completo." })
+    dataHoraConsulta: z.string()
+        .min(1, "Data e hora da consulta são obrigatórias.")
+        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+        .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
         .refine(val => new Date(val) <= new Date(), { message: "Data e hora da consulta não podem ser no futuro." }),
     motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
     queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta (mín. 10 caracteres)." }).max(2000, "Queixas muito longas (máx. 2000)."),
@@ -47,33 +50,33 @@ const consultaSchema = z.object({
             const sistolica = parseInt(parts[0], 10);
             const diastolica = parseInt(parts[1], 10);
             return !isNaN(sistolica) && !isNaN(diastolica) &&
-                sistolica >= 70 && sistolica <= 250 &&
-                diastolica >= 40 && diastolica <= 150;
-        }, { message: "P.A. inválida (Ex: 120/80, Sist:70-250, Diast:40-150)" }),
+                sistolica >= 70 && sistolica <= 300 &&
+                diastolica >= 40 && diastolica <= 200;
+        }, { message: "P.A. inválida (Ex: 120/80, Sist:70-300, Diast:40-200)" }),
     temperatura: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const tempStr = val.replace(',', '.');
             const temp = parseFloat(tempStr);
-            return !isNaN(temp) && temp >= 30.0 && temp <= 45.0 && /^\d{2}(\.\d{1,2})?$/.test(tempStr);
+            return !isNaN(temp) && temp >= 30.0 && temp <= 45.0 && /^\d{1,2}(\.\d{1,2})?$/.test(tempStr);
         }, { message: "Temp. inválida (Ex: 36.7 ou 37.75, entre 30.0-45.0)" }),
     frequenciaCardiaca: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const fc = parseInt(val, 10);
-            return /^\d+$/.test(val) && !isNaN(fc) && fc >= 30 && fc <= 220;
-        }, { message: "F.C. inválida (inteiro entre 30-220 bpm)" }),
+            return /^\d+$/.test(val) && !isNaN(fc) && fc >= 30 && fc <= 250;
+        }, { message: "F.C. inválida (inteiro entre 30-250 bpm)" }),
     saturacao: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const sat = parseInt(val, 10);
             return /^\d+$/.test(val) && !isNaN(sat) && sat >= 50 && sat <= 100;
         }, { message: "Sat O₂ inválida (inteiro entre 50-100%)" }),
-    exameFisico: z.string().max(5000, "Exame físico (máx. 5000).").optional(),
-    hipoteseDiagnostica: z.string().max(2000, "Hipótese (máx. 2000).").optional(),
-    condutaPlanoTerapeutico: z.string().max(5000, "Conduta/Plano (máx. 5000).").optional(),
-    detalhesConsulta: z.string().max(10000, "Detalhes da consulta (máx. 10000).").optional(),
-    observacoesConsulta: z.string().max(5000, "Observações da consulta (máx. 5000).").optional(),
+    exameFisico: z.string().max(5000, "Exame físico (máx. 5000).").optional().or(z.literal('')),
+    hipoteseDiagnostica: z.string().max(2000, "Hipótese (máx. 2000).").optional().or(z.literal('')),
+    condutaPlanoTerapeutico: z.string().max(5000, "Conduta/Plano (máx. 5000).").optional().or(z.literal('')),
+    detalhesConsulta: z.string().max(10000, "Detalhes da consulta (máx. 10000).").optional().or(z.literal('')),
+    observacoesConsulta: z.string().max(5000, "Observações da consulta (máx. 5000).").optional().or(z.literal('')),
 });
 
 type ConsultaFormData = z.infer<typeof consultaSchema>;
@@ -85,10 +88,9 @@ interface ConsultaFormProps {
     initialData?: Partial<NovaConsultaRequest>;
 }
 
-// Função para obter a string no formato yyyy-MM-ddTHH:mm para o fuso horário local
 const getLocalDateTimeString = (date: Date): string => {
     const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Meses são 0-indexed
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -119,7 +121,8 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         },
     });
 
-    const handleFormSubmit = (data: ConsultaFormData) => {
+    const handleLocalSubmit = (data: ConsultaFormData) => {
+        console.log('ConsultaForm: handleLocalSubmit - DADOS DO FORMULÁRIO:', JSON.stringify(data, null, 2));
         const submissionData: NovaConsultaRequest = {
             dataHoraConsulta: data.dataHoraConsulta,
             motivoConsulta: data.motivoConsulta,
@@ -134,11 +137,12 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
             detalhesConsulta: data.detalhesConsulta?.trim() || undefined,
             observacoesConsulta: data.observacoesConsulta?.trim() || undefined,
         };
+        console.log('ConsultaForm: handleLocalSubmit - SUBMISSION DATA PARA onSubmitEvento:', JSON.stringify(submissionData, null, 2));
         onSubmitEvento(submissionData);
     };
 
     return (
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-1 animate-fade-in">
+        <div className="space-y-6 p-1 animate-fade-in">
             <h4 className="text-lg font-medium text-neutral-800 mb-4">Registro de Consulta</h4>
 
             <Input
@@ -249,26 +253,29 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 </div>
             </fieldset>
 
-            <div className="flex justify-end space-x-3 pt-4">
-                <Button 
-                    type="button" 
-                    variant="secondary" 
-                    onClick={onCancel} 
+            <div className="flex flex-col-reverse sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={onCancel}
                     disabled={isLoading}
-                    leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+                    leftIcon={<ArrowLeft className="h-4 w-4" />}
+                    className="w-full sm:w-auto"
                 >
                     Voltar
                 </Button>
-                <Button 
-                    type="submit" 
-                    variant="primary" 
-                    isLoading={isLoading} 
+                <Button
+                    type="button"
+                    onClick={handleSubmit(handleLocalSubmit)}
+                    variant="primary"
+                    isLoading={isLoading}
                     leftIcon={<Save size={18} />}
+                    className="w-full sm:w-auto"
                 >
-                    Salvar Consulta
+                    Salvar Consulta e Criar Prontuário
                 </Button>
             </div>
-        </form>
+        </div>
     );
 };
 

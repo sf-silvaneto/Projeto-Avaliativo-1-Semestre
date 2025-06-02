@@ -7,22 +7,24 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaProcedimentoRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, ClipboardPlus as ProcedimentoIcon, ArrowLeft } from 'lucide-react'; // Ícone ArrowLeft adicionado
+import { Save, Calendar, ClipboardPlus as ProcedimentoIcon, ArrowLeft } from 'lucide-react';
 
-// Schema Zod para validação do formulário de Procedimento
+const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
 const procedimentoSchema = z.object({
-  dataProcedimento: z.string().datetime({ message: "Data e hora do procedimento inválidas." })
+  dataProcedimento: z.string()
+    .min(1, "Data e hora do procedimento são obrigatórias.")
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do procedimento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do procedimento não podem ser no futuro." }),
   descricaoProcedimento: z.string().min(10, { message: "Descrição do procedimento é obrigatória (mín. 10 caracteres)." }).max(1000, "Descrição muito longa (máx. 1000)."),
   relatorioProcedimento: z.string().max(10000, "Relatório não pode exceder 10000 caracteres.").optional().or(z.literal('')),
-  // medicoExecutorId não está no formulário, pois virá do passo anterior (medicoId do wizard)
 });
 
-// Omitir medicoExecutorId, pois será pego do wizard
 type ProcedimentoFormData = Omit<NovaProcedimentoRequest, 'medicoExecutorId'>;
 
 interface ProcedimentoFormProps {
-  onSubmitEvento: (data: ProcedimentoFormData) => void; // Ajustado para não esperar medicoExecutorId
+  onSubmitEvento: (data: NovaProcedimentoRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
   initialData?: Partial<ProcedimentoFormData>;
@@ -51,16 +53,18 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
     },
   });
 
-  const handleFormSubmit = (data: ProcedimentoFormData) => {
+  const handleLocalSubmit = (data: ProcedimentoFormData) => {
+    console.log('ProcedimentoForm: handleLocalSubmit - DADOS DO FORMULÁRIO:', JSON.stringify(data, null, 2));
     const submissionData = {
         ...data,
         relatorioProcedimento: data.relatorioProcedimento?.trim() || undefined,
     };
-    onSubmitEvento(submissionData);
+    // O medicoExecutorId será adicionado pelo ProntuarioForm
+    onSubmitEvento(submissionData as NovaProcedimentoRequest);
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-1 animate-fade-in">
+    <div className="space-y-6 p-1 animate-fade-in">
       <h4 className="text-lg font-medium text-neutral-800 mb-4">Registrar Novo Procedimento</h4>
 
       <Input
@@ -88,23 +92,29 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
         error={errors.relatorioProcedimento?.message}
       />
 
-      {/* TODO: Adicionar input para upload de arquivo se necessário */}
-
-      <div className="flex justify-end space-x-3 pt-4">
-        <Button 
-            type="button" 
-            variant="secondary" 
-            onClick={onCancel} 
+      <div className="flex flex-col-reverse sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+        <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
             disabled={isLoading}
-            leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            className="w-full sm:w-auto"
         >
           Voltar
         </Button>
-        <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18}/>}>
-          Salvar Procedimento
+        <Button
+            type="button"
+            onClick={handleSubmit(handleLocalSubmit)}
+            variant="primary"
+            isLoading={isLoading}
+            leftIcon={<Save size={18}/>}
+            className="w-full sm:w-auto"
+        >
+          Salvar Procedimento e Criar Prontuário
         </Button>
       </div>
-    </form>
+    </div>
   );
 };
 

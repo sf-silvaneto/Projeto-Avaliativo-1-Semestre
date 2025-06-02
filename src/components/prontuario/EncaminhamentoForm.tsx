@@ -7,22 +7,25 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaEncaminhamentoRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, Send as EncaminhamentoIcon, Edit3, ArrowLeft } from 'lucide-react'; // Ícone ArrowLeft adicionado
+import { Save, Calendar, Send as EncaminhamentoIcon, Edit3, ArrowLeft } from 'lucide-react';
+
+const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const encaminhamentoSchema = z.object({
-  dataEncaminhamento: z.string().datetime({ message: "Data e hora do encaminhamento inválidas." })
+  dataEncaminhamento: z.string()
+    .min(1, "Data e hora do encaminhamento são obrigatórias.")
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do encaminhamento não podem ser no futuro." }),
   especialidadeDestino: z.string().min(3, { message: "Especialidade de destino é obrigatória (mín. 3 caracteres)." }).max(200, "Especialidade muito longa (máx. 200)."),
   motivoEncaminhamento: z.string().min(10, { message: "Motivo do encaminhamento é obrigatório (mín. 10 caracteres)." }).max(1000, "Motivo muito longo (máx. 1000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
-  // medicoSolicitanteId virá do wizard (medicoId)
 });
 
-// Omitir medicoSolicitanteId, pois será pego do wizard/contexto
 type EncaminhamentoFormData = Omit<NovaEncaminhamentoRequest, 'medicoSolicitanteId'>;
 
 interface EncaminhamentoFormProps {
-  onSubmitEvento: (data: EncaminhamentoFormData) => void;
+  onSubmitEvento: (data: NovaEncaminhamentoRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
   initialData?: Partial<EncaminhamentoFormData>;
@@ -53,16 +56,19 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
     },
   });
 
-  const handleFormSubmit = (data: EncaminhamentoFormData) => {
+  const handleLocalSubmit = (data: EncaminhamentoFormData) => {
+    console.log('EncaminhamentoForm: handleLocalSubmit - DADOS DO FORMULÁRIO:', JSON.stringify(data, null, 2));
     const submissionData = {
         ...data,
         observacoes: data.observacoes?.trim() || undefined,
     };
-    onSubmitEvento(submissionData);
+    // O medicoSolicitanteId será adicionado pelo ProntuarioForm
+    onSubmitEvento(submissionData as NovaEncaminhamentoRequest);
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-1 animate-fade-in">
+    // Removida a tag <form>
+    <div className="space-y-6 p-1 animate-fade-in">
       <h4 className="text-lg font-medium text-neutral-800 mb-4">Registrar Encaminhamento Médico</h4>
 
       <Input
@@ -98,23 +104,29 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         error={errors.observacoes?.message}
       />
 
-      {/* TODO: Adicionar input para upload de arquivo se necessário */}
-
-      <div className="flex justify-end space-x-3 pt-4">
-        <Button 
-            type="button" 
-            variant="secondary" 
-            onClick={onCancel} 
+      <div className="flex flex-col-reverse sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
+        <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
             disabled={isLoading}
-            leftIcon={<ArrowLeft className="h-4 w-4" />} // Ícone adicionado aqui
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+            className="w-full sm:w-auto"
         >
           Voltar
         </Button>
-        <Button type="submit" variant="primary" isLoading={isLoading} leftIcon={<Save size={18}/>}>
-          Salvar Encaminhamento
+        <Button
+            type="button"
+            onClick={handleSubmit(handleLocalSubmit)}
+            variant="primary"
+            isLoading={isLoading}
+            leftIcon={<Save size={18}/>}
+            className="w-full sm:w-auto"
+        >
+          Salvar Encaminhamento e Criar Prontuário
         </Button>
       </div>
-    </form>
+    </div>
   );
 };
 

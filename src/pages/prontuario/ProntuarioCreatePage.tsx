@@ -5,111 +5,131 @@ import ProntuarioForm, { ProntuarioWizardFormData } from '../../components/pront
 import Alert from '../../components/ui/Alert';
 import {
     adicionarConsultaComNovoProntuario,
-    // adicionarInternacaoComNovoProntuario, // REMOVIDO
     adicionarExameComNovoProntuario,
     adicionarProcedimentoComNovoProntuario,
     adicionarEncaminhamentoComNovoProntuario
 } from '../../services/prontuarioService';
 import {
     NovaConsultaRequest,
-    // NovaInternacaoRequest, // REMOVIDO
     AdicionarExameRequest,
     NovaProcedimentoRequest,
     NovaEncaminhamentoRequest,
     ConsultaDetalhada,
-    // InternacaoDetalhada, // REMOVIDO
     ExameDetalhado,
     ProcedimentoDetalhado,
     EncaminhamentoDetalhado
 } from '../../types/prontuarioRegistros';
+
+interface WizardSubmitData extends ProntuarioWizardFormData {
+  dadosEvento: any;
+  medicoExecutorId?: number; // Para Consulta
+  medicoResponsavelExameId?: number; // Para Exame
+}
+
 
 const ProntuarioCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCreatePrimeiroRegistro = async (data: ProntuarioWizardFormData & { dadosEvento: any }) => {
+  const handleCreatePrimeiroRegistro = async (data: WizardSubmitData) => {
+    console.log('ProntuarioCreatePage: handleCreatePrimeiroRegistro DADOS RECEBIDOS DO WIZARD:', JSON.stringify(data, null, 2));
     setIsLoading(true);
     setError(null);
 
     const { pacienteId, medicoId, tipoPrimeiroRegistro, dadosEvento } = data;
 
-    if (!pacienteId || !medicoId || !tipoPrimeiroRegistro || !dadosEvento) {
+    if (!pacienteId || medicoId === undefined || !tipoPrimeiroRegistro || !dadosEvento) {
+        console.error("ProntuarioCreatePage: Dados incompletos recebidos do wizard.", data);
         setError("Dados incompletos. Por favor, preencha todas as etapas do formulário.");
         setIsLoading(false);
         return;
     }
-
+    
     try {
-      // Ajustado o tipo para aceitar qualquer um dos DTOs de detalhe
       let prontuarioOuEventoCriado: ConsultaDetalhada | ExameDetalhado | ProcedimentoDetalhado | EncaminhamentoDetalhado | any;
 
       switch (tipoPrimeiroRegistro) {
         case 'CONSULTA':
+          console.log('ProntuarioCreatePage: CHAMANDO adicionarConsultaComNovoProntuario com:', pacienteId, medicoId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarConsultaComNovoProntuario(
             pacienteId,
-            medicoId,
+            medicoId, // medicoId do wizard é o médico executor da consulta inicial e responsável pelo prontuário
             dadosEvento as NovaConsultaRequest
           );
           break;
-        // case 'INTERNACAO': // Bloco INTEIRO REMOVIDO
-        //   break;
         case 'EXAME':
+          console.log('ProntuarioCreatePage: CHAMANDO adicionarExameComNovoProntuario com:', pacienteId, medicoId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarExameComNovoProntuario(
             pacienteId,
-            medicoId,
-            dadosEvento as AdicionarExameRequest // Não tem mais 'arquivo'
+            medicoId, // medicoId do wizard é o médico responsável pelo exame inicial e pelo prontuário
+            dadosEvento as AdicionarExameRequest
           );
           break;
         case 'PROCEDIMENTO':
-          const dadosProcedimentoComExecutor: NovaProcedimentoRequest = {
-            ...(dadosEvento as Omit<NovaProcedimentoRequest, 'medicoExecutorId'>),
-            medicoExecutorId: medicoId,
-          };
+          // dadosEvento (NovaProcedimentoRequest) já deve conter medicoExecutorId (que é o medicoId do wizard)
+          console.log('ProntuarioCreatePage: CHAMANDO adicionarProcedimentoComNovoProntuario com:', pacienteId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarProcedimentoComNovoProntuario(
             pacienteId,
-            dadosProcedimentoComExecutor
+            dadosEvento as NovaProcedimentoRequest
           );
           break;
         case 'ENCAMINHAMENTO':
-          const dadosEncaminhamentoComSolicitante: NovaEncaminhamentoRequest = {
-            ...(dadosEvento as Omit<NovaEncaminhamentoRequest, 'medicoSolicitanteId'>),
-            medicoSolicitanteId: medicoId,
-          };
+          // dadosEvento (NovaEncaminhamentoRequest) já deve conter medicoSolicitanteId (que é o medicoId do wizard)
+          console.log('ProntuarioCreatePage: CHAMANDO adicionarEncaminhamentoComNovoProntuario com:', pacienteId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarEncaminhamentoComNovoProntuario(
             pacienteId,
-            dadosEncaminhamentoComSolicitante
+            dadosEvento as NovaEncaminhamentoRequest
           );
           break;
         default:
-          throw new Error(`Tipo de registro '${tipoPrimeiroRegistro}' não suportado para criação inicial.`);
+          const errorMessage = `Tipo de registro '${tipoPrimeiroRegistro}' não suportado para criação inicial.`;
+          console.error(errorMessage);
+          throw new Error(errorMessage);
       }
+
+      console.log('ProntuarioCreatePage: Resposta da API após criação:', prontuarioOuEventoCriado);
 
       let prontuarioIdParaNavegacao: string | undefined;
-
-      // Verifica se a resposta tem a propriedade prontuarioId (comum a todos os DTOs de detalhe de registro)
-      if (prontuarioOuEventoCriado && typeof prontuarioOuEventoCriado.prontuarioId === 'string') {
-        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuarioId;
-      } else {
-         console.warn("Não foi possível determinar o ID do prontuário para navegação a partir da resposta da API.", prontuarioOuEventoCriado);
-         setError("Registro criado, mas não foi possível redirecionar. Verifique a lista de prontuários.");
-         setIsLoading(false);
-         return;
+      if (prontuarioOuEventoCriado && typeof prontuarioOuEventoCriado.prontuarioId === 'number') {
+        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuarioId.toString();
+      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && typeof prontuarioOuEventoCriado.prontuario.id === 'number') { // Para ConsultaDetalhada
+        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuario.id.toString();
+      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario?.id && typeof prontuarioOuEventoCriado.prontuario.id === 'string') {
+        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuario.id;
+      }
+       // Fallback mais genérico se as estruturas acima não corresponderem e a resposta tiver um ID de prontuário
+      else if (prontuarioOuEventoCriado && typeof (prontuarioOuEventoCriado as any).prontuario === 'object' && (prontuarioOuEventoCriado as any).prontuario?.id) {
+        prontuarioIdParaNavegacao = String((prontuarioOuEventoCriado as any).prontuario.id);
+      } else if (prontuarioOuEventoCriado && (prontuarioOuEventoCriado as any).prontuarioId) { // Caso o ID do prontuário venha direto no objeto do evento
+        prontuarioIdParaNavegacao = String((prontuarioOuEventoCriado as any).prontuarioId);
       }
 
+
       if (prontuarioIdParaNavegacao) {
-        navigate(`/prontuarios/${prontuarioIdParaNavegacao}`);
+        console.log('ProntuarioCreatePage: Navegando para /prontuarios/' + prontuarioIdParaNavegacao);
+        navigate(`/prontuarios/${prontuarioIdParaNavegacao}`, {
+          state: {
+            prontuarioSuccess: true,
+            message: `Prontuário e ${tipoPrimeiroRegistro.toLowerCase().replace('_', ' ')} inicial registrados com sucesso!`
+          }
+        });
       } else {
-        console.warn("ID do prontuário para navegação não encontrado após criação.", prontuarioOuEventoCriado);
-        setError("Registro criado, mas falha ao obter ID do prontuário para redirecionamento.");
-        setIsLoading(false);
+         console.warn("ProntuarioCreatePage: Não foi possível determinar o ID do prontuário para navegação. Resposta da API:", prontuarioOuEventoCriado);
+         navigate('/prontuarios', {
+           state: {
+             prontuarioSuccess: true,
+             message: `Registro de ${tipoPrimeiroRegistro.toLowerCase().replace('_', ' ')} criado, mas falha ao obter ID do prontuário para redirecionamento direto. Verifique a lista.`
+           }
+         });
       }
 
     } catch (err: any) {
-      console.error('Erro ao criar primeiro registro do prontuário:', err);
+      console.error('ProntuarioCreatePage: Erro ao criar primeiro registro do prontuário:', err.response?.data || err.message || err);
       setError(
         err.response?.data?.mensagem || err.message || 'Erro ao criar registro. Tente novamente.'
       );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -120,17 +140,16 @@ const ProntuarioCreatePage: React.FC = () => {
       {error && (
         <Alert
           type="error"
+          title="Erro na Criação"
           message={error}
           className="mb-6"
           onClose={() => setError(null)}
         />
       )}
-      <div className="card">
-        <ProntuarioForm
-          onSubmitFinal={handleCreatePrimeiroRegistro}
-          isLoading={isLoading}
-        />
-      </div>
+      <ProntuarioForm
+        onSubmitFinal={handleCreatePrimeiroRegistro}
+        isLoading={isLoading}
+      />
     </div>
   );
 };
