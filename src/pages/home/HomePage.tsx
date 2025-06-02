@@ -9,7 +9,6 @@ const HomePage: React.FC = () => {
   
   return (
     <div>
-      {/* Hero Section */}
       <section className="bg-primary-600 text-white py-16">
         <div className="container-wide">
           <div className="max-w-3xl mx-auto text-center">
@@ -53,7 +52,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
       
-      {/* Features Section */}
       <section className="py-16 bg-white">
         <div className="container-wide">
           <h2 className="text-3xl font-bold text-center mb-12">Recursos do Sistema</h2>

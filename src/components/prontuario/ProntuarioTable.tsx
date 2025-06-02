@@ -1,9 +1,8 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioTable.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, Edit, FileText } from 'lucide-react';
 import Button from '../ui/Button';
-import { Prontuario } from '../../types/prontuario'; // StatusProntuario removido da importação
+import { Prontuario } from '../../types/prontuario';
 
 interface ProntuarioTableProps {
   prontuarios: Prontuario[];
@@ -39,8 +38,6 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
     return data.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  // REMOVIDO: renderStatus
-
   return (
     <div className="bg-white rounded-lg shadow-soft overflow-hidden">
       <div className="overflow-x-auto">
@@ -59,10 +56,6 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Últ. Atualização
               </th>
-              {/* REMOVIDA: Coluna Status */}
-              {/* <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                Status
-              </th> */}
               <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Ações
               </th>
@@ -70,9 +63,9 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
           </thead>
           <tbody className="bg-white divide-y divide-neutral-200">
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-4 text-center text-neutral-500">Carregando...</td></tr> // Ajustado colSpan
+              <tr><td colSpan={5} className="px-4 py-4 text-center text-neutral-500">Carregando...</td></tr>
             ) : prontuarios.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-4 text-center text-neutral-500">Nenhum prontuário encontrado.</td></tr> // Ajustado colSpan
+              <tr><td colSpan={5} className="px-4 py-4 text-center text-neutral-500">Nenhum prontuário encontrado.</td></tr>
             ) : (
               prontuarios.map((prontuario) => (
                 <tr key={prontuario.id} className="hover:bg-neutral-50">
@@ -94,10 +87,6 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
                     {formatDateTime(prontuario.dataUltimaAtualizacao)}
                   </td>
-                  {/* REMOVIDO: Coluna Status */}
-                  {/* <td className="px-4 py-3 whitespace-nowrap">
-                    {renderStatus(prontuario.status)}
-                  </td> */}
                   <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                     <div className="flex justify-end space-x-2">
                       <Link to={`/prontuarios/${prontuario.id}`}>

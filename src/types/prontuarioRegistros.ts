@@ -1,18 +1,15 @@
-// src/types/prontuarioRegistros.ts
-
 export interface AnexoDetalhado {
   id: string;
   nomeOriginalArquivo: string;
   nomeArquivoArmazenado: string;
   tipoConteudo: string;
   tamanhoBytes?: number;
-  dataUpload?: string; // ISOString
+  dataUpload?: string;
   urlVisualizacao?: string;
 }
 
-// --- Consulta ---
 export interface NovaConsultaRequest {
-  dataHoraConsulta: string; // ISOString (ex: "2024-05-31T14:30:00")
+  dataHoraConsulta: string;
   motivoConsulta: string;
   queixasPrincipais: string;
   pressaoArterial?: string;
@@ -51,12 +48,6 @@ export interface ConsultaDetalhada {
   updatedAt: string;
 }
 
-// --- Internação (REMOVIDO) ---
-// REMOVIDO: NovaInternacaoRequest
-// REMOVIDO: InternacaoDetalhada
-// REMOVIDO: RegistrarAltaInternacaoRequest
-
-// --- Exame ---
 export interface AdicionarExameRequest {
   nome: string;
   data: string;
@@ -66,13 +57,11 @@ export interface AdicionarExameRequest {
 }
 export type ExameDetalhado = import('./prontuario').Exame & { prontuarioId: string };
 
-
-// --- Encaminhamento Médico (NOVO) ---
 export interface NovaEncaminhamentoRequest {
-  dataEncaminhamento: string; // ISOString (ex: "2024-05-31T14:30:00")
+  dataEncaminhamento: string;
   especialidadeDestino: string;
   motivoEncaminhamento: string;
-  medicoSolicitanteId: number; // ID do médico que está fazendo o encaminhamento
+  medicoSolicitanteId: number;
   observacoes?: string;
 }
 
@@ -91,8 +80,6 @@ export interface EncaminhamentoDetalhado {
   updatedAt: string;
 }
 
-
-// --- Procedimento ---
 export interface NovaProcedimentoRequest {
   dataProcedimento: string;
   descricaoProcedimento: string;
@@ -113,20 +100,17 @@ export interface ProcedimentoDetalhado {
   updatedAt: string;
 }
 
-// --- Anotação Geral ---
 export interface AdicionarAnotacaoRequest {
   texto: string;
 }
 export type AnotacaoGeralDetalhada = import('./prontuario').Anotacao & { prontuarioId: string };
 
-// --- Tipos para o Wizard de Criação de Prontuário ---
-export type TipoPrimeiroRegistro = 'CONSULTA' | 'EXAME' | 'PROCEDIMENTO' | 'ENCAMINHAMENTO' | 'ANOTACAO_GERAL'; // 'INTERNACAO' removido, 'ENCAMINHAMENTO' adicionado
+export type TipoPrimeiroRegistro = 'CONSULTA' | 'EXAME' | 'PROCEDIMENTO' | 'ENCAMINHAMENTO' | 'ANOTACAO_GERAL';
 
 export interface PrimeiroRegistroData {
     tipo: TipoPrimeiroRegistro;
     dadosConsulta?: NovaConsultaRequest;
-    // dadosInternacao?: NovaInternacaoRequest; // Removido
     dadosExame?: AdicionarExameRequest;
     dadosProcedimento?: NovaProcedimentoRequest;
-    dadosEncaminhamento?: NovaEncaminhamentoRequest; // Adicionado
+    dadosEncaminhamento?: NovaEncaminhamentoRequest;
 }

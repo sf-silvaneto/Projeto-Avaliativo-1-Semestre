@@ -3,11 +3,11 @@ import {
   AuthState,
   LoginCredentials,
   RegisterCredentials,
-  UpdateProfileRequest, // Este DTO é para o endpoint /api/administradores/profile
+  UpdateProfileRequest,
   User,
 } from '../types/auth';
 import * as authService from '../services/authService';
-import { getAuthToken, removeAuthToken as removeTokenFromCookie } from '../services/api'; // setAuthToken é usado internamente por authService.login
+import { getAuthToken, removeAuthToken as removeTokenFromCookie } from '../services/api';
 
 const defaultAuthState: AuthState = {
   user: null,
@@ -21,11 +21,11 @@ interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (userData: RegisterCredentials) => Promise<void>;
   logout: () => void;
-  updateProfile: (data: UpdateProfileRequest) => Promise<void>; // Usa o endpoint antigo
+  updateProfile: (data: UpdateProfileRequest) => Promise<void>;
   clearError: () => void;
   verifyEmailAndKeyword: typeof authService.verifyEmailAndKeyword;
   resetPasswordAfterVerification: typeof authService.resetPasswordAfterVerification;
-  setAuthUserData: (userData: User | null) => void; // <<< NOVA FUNÇÃO ADICIONADA À INTERFACE
+  setAuthUserData: (userData: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -136,13 +136,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log("AuthContext: logout - Estado resetado para defaultAuthState.");
   };
 
-  // >>> INÍCIO DA MODIFICAÇÃO/ADIÇÃO <<<
-  // Nova função para atualizar o estado do usuário diretamente
   const setAuthUserData = (newUserData: User | null) => {
     setState(prevState => ({
       ...prevState,
       user: newUserData,
-      isAuthenticated: !!newUserData, // Atualiza com base se newUserData existe
+      isAuthenticated: !!newUserData,
       isLoading: false, 
       error: null,     
     }));
@@ -152,25 +150,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("AuthContext: setAuthUserData - Usuário removido do contexto (logout ou erro).");
     }
   };
-  // >>> FIM DA MODIFICAÇÃO/ADIÇÃO <<<
-
-  // ATENÇÃO: Esta função `updateProfile` chama `authService.updateProfile`,
-  // que usa o endpoint PUT `/api/administradores/profile`.
-  // Este endpoint foi REMOVIDO do AdministradorController.java e substituído
-  // pelo fluxo que usa `/api/administradores/profile/verified-update`.
-  // Se `updateProfile` for chamada, provavelmente resultará em erro 404 ou outro.
   const updateProfile = async (data: UpdateProfileRequest) => {
     setState(prevState => ({ ...prevState, isLoading: true, error: null }));
     try {
-      // AVISO: authService.updateProfile chama um endpoint que pode não existir mais.
       const updatedUserResponse = await authService.updateProfile(data);
-      // Assumindo que authService.updateProfile retorna { adminData: User } ou User diretamente
       const userToUpdate = updatedUserResponse.adminData || updatedUserResponse;
 
       console.log("AuthContext: updateProfile (LEGADO/PROBLEMÁTICO) - Perfil atualizado:", userToUpdate);
       setState(prevState => ({
         ...prevState,
-        user: userToUpdate, // Atualiza o usuário no estado
+        user: userToUpdate,
         isLoading: false,
       }));
     } catch (error: any) {
@@ -194,11 +183,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     register,
     logout,
-    updateProfile, // Mantida, mas com ressalvas sobre seu endpoint
+    updateProfile,
     clearError,
     verifyEmailAndKeyword: authService.verifyEmailAndKeyword,
     resetPasswordAfterVerification: authService.resetPasswordAfterVerification,
-    setAuthUserData, // <<< NOVA FUNÇÃO EXPOSTA
+    setAuthUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

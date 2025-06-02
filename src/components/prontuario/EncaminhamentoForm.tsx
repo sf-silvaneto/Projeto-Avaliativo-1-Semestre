@@ -1,4 +1,3 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/EncaminhamentoForm.tsx
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,12 +61,10 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         ...data,
         observacoes: data.observacoes?.trim() || undefined,
     };
-    // O medicoSolicitanteId será adicionado pelo ProntuarioForm
     onSubmitEvento(submissionData as NovaEncaminhamentoRequest);
   };
 
   return (
-    // Removida a tag <form>
     <div className="space-y-6 p-1 animate-fade-in">
       <h4 className="text-lg font-medium text-neutral-800 mb-4">Registrar Encaminhamento Médico</h4>
 

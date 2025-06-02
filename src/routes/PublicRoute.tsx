@@ -15,7 +15,6 @@ const PublicRoute: React.FC<PublicRouteProps> = ({
 }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
@@ -27,12 +26,10 @@ const PublicRoute: React.FC<PublicRouteProps> = ({
     );
   }
 
-  // If route is restricted and user is authenticated, redirect to dashboard
   if (restricted && isAuthenticated) {
     return <Navigate to={redirectPath} replace />;
   }
 
-  // Otherwise, render the public route
   return (
     <Layout>
       <Outlet />

@@ -1,4 +1,3 @@
-// Arquivo: src/types/paciente.ts
 export enum Genero {
   MASCULINO = 'MASCULINO',
   FEMININO = 'FEMININO',

@@ -1,10 +1,9 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioSearchForm.tsx
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { Search, X } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Card from '../ui/Card'; // RE-ADICIONAR IMPORT DO CARD
+import Card from '../ui/Card';
 
 interface SearchFormData {
   termo?: string;
@@ -66,9 +65,7 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
   const hasAnyFilterValue = watch('termo')?.trim();
 
   return (
-    // Card RE-ADICIONADO aqui, envolvendo o formulário
     <Card className="mb-6"> 
-      {/* Removido o padding do form, pois o Card já o fornece */}
       <form onSubmit={handleSubmit(handleFormSubmit)} noValidate> 
         <div className="flex flex-col md:flex-row gap-4 mb-1">
           <div className="flex-1">

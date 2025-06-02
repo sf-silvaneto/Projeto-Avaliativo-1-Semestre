@@ -1,4 +1,3 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/pages/prontuario/ProntuarioCreatePage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProntuarioForm, { ProntuarioWizardFormData } from '../../components/prontuario/ProntuarioForm';
@@ -22,8 +21,8 @@ import {
 
 interface WizardSubmitData extends ProntuarioWizardFormData {
   dadosEvento: any;
-  medicoExecutorId?: number; // Para Consulta
-  medicoResponsavelExameId?: number; // Para Exame
+  medicoExecutorId?: number;
+  medicoResponsavelExameId?: number;
 }
 
 
@@ -54,7 +53,7 @@ const ProntuarioCreatePage: React.FC = () => {
           console.log('ProntuarioCreatePage: CHAMANDO adicionarConsultaComNovoProntuario com:', pacienteId, medicoId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarConsultaComNovoProntuario(
             pacienteId,
-            medicoId, // medicoId do wizard é o médico executor da consulta inicial e responsável pelo prontuário
+            medicoId,
             dadosEvento as NovaConsultaRequest
           );
           break;
@@ -62,12 +61,11 @@ const ProntuarioCreatePage: React.FC = () => {
           console.log('ProntuarioCreatePage: CHAMANDO adicionarExameComNovoProntuario com:', pacienteId, medicoId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarExameComNovoProntuario(
             pacienteId,
-            medicoId, // medicoId do wizard é o médico responsável pelo exame inicial e pelo prontuário
+            medicoId,
             dadosEvento as AdicionarExameRequest
           );
           break;
         case 'PROCEDIMENTO':
-          // dadosEvento (NovaProcedimentoRequest) já deve conter medicoExecutorId (que é o medicoId do wizard)
           console.log('ProntuarioCreatePage: CHAMANDO adicionarProcedimentoComNovoProntuario com:', pacienteId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarProcedimentoComNovoProntuario(
             pacienteId,
@@ -75,7 +73,6 @@ const ProntuarioCreatePage: React.FC = () => {
           );
           break;
         case 'ENCAMINHAMENTO':
-          // dadosEvento (NovaEncaminhamentoRequest) já deve conter medicoSolicitanteId (que é o medicoId do wizard)
           console.log('ProntuarioCreatePage: CHAMANDO adicionarEncaminhamentoComNovoProntuario com:', pacienteId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarEncaminhamentoComNovoProntuario(
             pacienteId,

@@ -86,9 +86,9 @@ const PacienteTable: React.FC<PacienteTableProps> = ({
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => onViewDetails(paciente.id.toString())} // NOVA AÇÃO
+                      onClick={() => onViewDetails(paciente.id.toString())}
                       title="Visualizar Detalhes"
-                      className="p-1 text-blue-600 hover:text-blue-800" // Cor diferente para visualizar
+                      className="p-1 text-blue-600 hover:text-blue-800"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>

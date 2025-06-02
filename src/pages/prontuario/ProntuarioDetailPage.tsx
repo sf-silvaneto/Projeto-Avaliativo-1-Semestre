@@ -11,9 +11,6 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { buscarProntuarioPorId } from '../../services/prontuarioService';
 import { Prontuario, HistoricoMedico } from '../../types/prontuario';
-// É importante que os tipos abaixo (PacienteCompleto, ConsultaDetalhada, etc.)
-// contenham os campos de especialidade e CRM para os médicos, onde aplicável.
-// Ex: medicoResponsavel.especialidade, consulta.responsavelEspecialidade, etc.
 import { Paciente as PacienteCompleto, Genero as PacienteGeneroEnum, RacaCor, TipoSanguineo, Endereco as PacienteEndereco } from '../../types/paciente';
 import {
     ConsultaDetalhada,
@@ -22,7 +19,6 @@ import {
     EncaminhamentoDetalhado
 } from '../../types/prontuarioRegistros';
 
-// Mapa de resumos de especialidades para o tooltip (exemplo)
 const especialidadeResumos: Record<string, string> = {
   CARDIOLOGIA: "Especialidade médica que se ocupa do diagnóstico e tratamento das doenças que acometem o coração e os grandes vasos.",
   CLINICA_GERAL: "Especialidade médica que trata de pacientes adultos, com foco no diagnóstico e tratamento não cirúrgico de diversas doenças.",
@@ -31,10 +27,8 @@ const especialidadeResumos: Record<string, string> = {
   ORTOPEDIA: "Especialidade médica que cuida das doenças e deformidades dos ossos, músculos, ligamentos, articulações, enfim, elementos relacionados ao aparelho locomotor.",
   PEDIATRIA: "Especialidade médica dedicada à assistência à criança e ao adolescente, nos seus diversos aspectos, sejam eles preventivos ou curativos.",
   PSIQUIATRIA: "Especialidade da medicina que lida com a prevenção, atendimento, diagnóstico, tratamento e reabilitação das diferentes formas de sofrimentos mentais.",
-  // Adicione mais especialidades e resumos conforme necessário
-};
+  };
 
-// Função para formatar a exibição da especialidade (ex: CARDIOLOGIA -> Cardiologia)
 const formatEspecialidadeDisplay = (especialidade?: string): string => {
   if (!especialidade) return '';
   return especialidade
@@ -45,18 +39,16 @@ const formatEspecialidadeDisplay = (especialidade?: string): string => {
     .join(' ');
 };
 
-// Função para obter a chave da especialidade para buscar no mapa de resumos
 const getEspecialidadeKeyForResumo = (especialidade?: string): string => {
     if (!especialidade) return '';
     return especialidade.toUpperCase().replace(/ /g, '_');
 };
 
-// Função auxiliar para renderizar informações do médico com tooltip e CRM
 const renderMedicoInfo = (nome?: string, especialidade?: string, crm?: string): React.ReactNode => {
     if (!nome) return "Não informado";
 
     const parts: React.ReactNode[] = [];
-    parts.push(<span key={`${nome}-nome`}>{nome}</span>); // Adiciona nome como primeiro elemento
+    parts.push(<span key={`${nome}-nome`}>{nome}</span>);
 
     if (especialidade) {
         parts.push(
@@ -72,7 +64,7 @@ const renderMedicoInfo = (nome?: string, especialidade?: string, crm?: string): 
 
     return parts.reduce((acc, part, index) => {
         if (index === 0) return [part];
-        return [...acc, <span key={`sep-${nome}-${index}`} className="mx-1">|</span>, part]; // Adiciona separador com margem
+        return [...acc, <span key={`sep-${nome}-${index}`} className="mx-1">|</span>, part];
     }, [] as React.ReactNode[]);
 };
 
@@ -286,7 +278,6 @@ const ProntuarioDetailPage: React.FC = () => {
   }
   
   const medicoResp = prontuario.medicoResponsavel;
-  // Usando renderMedicoInfo para o Médico Responsável Principal
   const medicoRespDisplay = renderMedicoInfo(medicoResp?.nomeCompleto, medicoResp?.especialidade, medicoResp?.crm);
 
 
@@ -338,7 +329,7 @@ const ProntuarioDetailPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-primary-700 mb-4 border-b border-primary-200 pb-3 flex items-center">
             <FileTextIcon className="inline-block mr-2 text-primary-600" size={22}/> Informações do Prontuário
           </h2>
-          <div className="space-y-5"> {/* Mantido o espaçamento aprimorado */}
+          <div className="space-y-5">
             <DetailItem
                 icon={<StethoscopeIcon size={18}/>}
                 label="Médico Responsável Principal"
@@ -416,14 +407,10 @@ const TabButton: React.FC<{isActive: boolean, onClick: () => void, icon: React.R
 );
 
 const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTime: Function, formatDate: Function}> = ({ item, formatDateTime, formatDate }) => {
-    // A função renderMedicoInfo está definida no escopo do componente ProntuarioDetailPage
-    // ou pode ser importada se movida para um arquivo de helpers.
-
+    
     switch (item.tipo) {
         case 'CONSULTA':
             const c = item.dataOriginal as ConsultaDetalhada;
-            // NOTA: 'c.responsavelEspecialidade' é um campo hipotético.
-            // Certifique-se de que seu tipo ConsultaDetalhada e a API forneçam este dado.
             const medicoConsulta = renderMedicoInfo(c.responsavelNomeCompleto, (c as any).responsavelEspecialidade, c.responsavelCRM);
             return (
                 <div className="space-y-3">
@@ -446,9 +433,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
         case 'EXAME':
             const ex = item.dataOriginal as ExameDetalhado;
-            // NOTA: 'medicoResponsavelExameNome', 'medicoResponsavelExameEspecialidade',
-            // e 'medicoResponsavelExameCRM' são campos hipotéticos para 'ex'.
-            // Adapte conforme a estrutura real dos seus dados de exame.
             const medicoExameNome = (ex as any).medicoResponsavelExameNome;
             const medicoExameEspecialidade = (ex as any).medicoResponsavelExameEspecialidade;
             const medicoExameCRM = (ex as any).medicoResponsavelExameCRM;
@@ -464,8 +448,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
         case 'PROCEDIMENTO':
             const proc = item.dataOriginal as ProcedimentoDetalhado;
-            // NOTA: 'medicoExecutorEspecialidade' e 'medicoExecutorCRM' são campos hipotéticos para 'proc'.
-            // Adapte conforme a estrutura real dos seus dados de procedimento.
             const medicoProcedimentoNome = proc.medicoExecutorNome;
             const medicoProcedimentoEspecialidade = (proc as any).medicoExecutorEspecialidade;
             const medicoProcedimentoCRM = (proc as any).medicoExecutorCRM;
@@ -481,7 +463,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
         case 'ENCAMINHAMENTO':
             const enc = item.dataOriginal as EncaminhamentoDetalhado;
-            // 'enc.medicoSolicitanteEspecialidade' deve existir no seu tipo EncaminhamentoDetalhado.
             let labelMedicoEnc = "Médico Solicitante";
             let valorMedicoEnc;
 
@@ -503,8 +484,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
          case 'HISTORICO_GERAL':
             const hg = item.dataOriginal as HistoricoMedico;
-            // Se hg.responsavel for um nome de médico e você tiver especialidade/CRM associados em outros campos,
-            // você pode adaptar para usar renderMedicoInfo aqui também.
             return (
                  <div className="space-y-3">
                     <DetailItem label="Responsável" value={hg.responsavel} />

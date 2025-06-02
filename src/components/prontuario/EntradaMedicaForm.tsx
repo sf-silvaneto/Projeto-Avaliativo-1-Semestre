@@ -5,30 +5,28 @@ import { z } from 'zod';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import Select from '../ui/Select'; // Se necessário para campos como sim/não
-import { Save, Calendar, Activity, Thermometer, Heart, Percent, AlertTriangle as AllergyIcon, Stethoscope as ComorbidityIcon, Pill } from 'lucide-react'; // Importar ícones relevantes
+import Select from '../ui/Select';
+import { Save, Calendar, Activity, Thermometer, Heart, Percent, AlertTriangle as AllergyIcon, Stethoscope as ComorbidityIcon, Pill } from 'lucide-react';
 
-// Schema Zod para validação do formulário de Entrada Médica
 const entradaMedicaSchema = z.object({
-  dataHoraEntrada: z.string().datetime({ message: "Data e hora inválidas" }), // Pode ser default para agora
+  dataHoraEntrada: z.string().datetime({ message: "Data e hora inválidas" }),
   motivoEntrada: z.string().min(5, { message: "Motivo da entrada é muito curto." }),
   queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta." }),
-  pressaoArterial: z.string().optional().or(z.literal('')), // Ex: "120/80"
-  temperatura: z.string().optional().or(z.literal('')), // Permitir string para usuário digitar, converter para número depois
+  pressaoArterial: z.string().optional().or(z.literal('')),
+  temperatura: z.string().optional().or(z.literal('')),
   frequenciaCardiaca: z.string().optional().or(z.literal('')),
   saturacao: z.string().optional().or(z.literal('')),
   
   alergias: z.string().optional(),
   semAlergiasConhecidas: z.boolean().optional(),
 
-  temComorbidades: z.string().optional(), // 'sim' ou 'nao'
+  temComorbidades: z.string().optional(),
   comorbidadesDetalhes: z.string().optional(),
   
-  usaMedicamentosContinuos: z.string().optional(), // 'sim' ou 'nao'
+  usaMedicamentosContinuos: z.string().optional(),
   medicamentosContinuosDetalhes: z.string().optional(),
 
   historicoFamiliarRelevante: z.string().optional(),
-  // Outros campos conforme necessário
 }).superRefine((data, ctx) => {
     if (data.temComorbidades === 'sim' && (!data.comorbidadesDetalhes || data.comorbidadesDetalhes.trim().length < 3)) {
         ctx.addIssue({
@@ -45,15 +43,6 @@ const entradaMedicaSchema = z.object({
         });
     }
     if (!data.semAlergiasConhecidas && (!data.alergias || data.alergias.trim().length < 3)) {
-        // Se não marcou "sem alergias", o campo de alergias se torna obrigatório
-        // ctx.addIssue({
-        //     code: z.ZodIssueCode.custom,
-        //     message: "Descreva as alergias ou marque 'Sem alergias conhecidas'.",
-        //     path: ['alergias'],
-        // });
-        // Ajuste: Tornar alergias opcional mesmo se "sem alergias" não for marcado,
-        // A menos que a lógica de negócio exija preenchimento ou a marcação.
-        // Por ora, vamos manter opcional. A validação acima está comentada.
     }
      if (data.temperatura && Number.isNaN(parseFloat(data.temperatura.replace(',', '.')))) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Temperatura deve ser um número.", path: ["temperatura"]});
@@ -70,8 +59,8 @@ const entradaMedicaSchema = z.object({
 export type EntradaMedicaFormData = z.infer<typeof entradaMedicaSchema>;
 
 interface EntradaMedicaFormProps {
-  prontuarioId: string; // ID do prontuário ao qual esta entrada será adicionada
-  onSubmit: (data: EntradaMedicaFormData) => Promise<void>; // onSubmit agora é async
+  prontuarioId: string;
+  onSubmit: (data: EntradaMedicaFormData) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
   initialData?: Partial<EntradaMedicaFormData>;

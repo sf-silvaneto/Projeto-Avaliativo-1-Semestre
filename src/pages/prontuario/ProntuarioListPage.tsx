@@ -1,4 +1,3 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/pages/prontuario/ProntuarioListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
@@ -79,7 +78,7 @@ const ProntuarioListPage: React.FC = () => {
   const totalPages = resultado?.pageable.totalPages || 0;
 
   return (
-    <div className="container-wide py-8"> {/* Este div terá o fundo bg-neutral-50 vindo do body */}
+    <div className="container-wide py-8">
       <div className="flex items-center mb-6">
         <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Prontuários</h1>
       </div>
@@ -89,7 +88,6 @@ const ProntuarioListPage: React.FC = () => {
       )}
       {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
 
-      {/* ProntuarioSearchForm já tem seu Card interno com bg-white */}
       <ProntuarioSearchForm 
         onSearch={handleSearch} 
         initialFilters={initialFormFilters} 
@@ -111,10 +109,9 @@ const ProntuarioListPage: React.FC = () => {
         </Link>
       </div>
       
-      {/* Card da Tabela com bg-white */}
       <Card>
         {isLoading && !resultado?.content?.length ? (
-          <div className="text-center p-6"> {/* O texto "Carregando..." aqui estará sobre bg-white */}
+          <div className="text-center p-6">
             <p>Carregando prontuários...</p>
           </div>
         ) : (
@@ -131,7 +128,6 @@ const ProntuarioListPage: React.FC = () => {
       
       {totalPages > 1 && !isLoading && (
         <div className="mt-6 flex justify-center">
-          {/* Paginação (se ProntuarioTable não a incluir) */}
         </div>
       )}
     </div>

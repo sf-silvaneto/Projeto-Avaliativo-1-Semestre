@@ -14,7 +14,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
@@ -26,12 +25,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If not authenticated, redirect to login page
   if (!isAuthenticated) {
     return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
-  // If authenticated, render the protected content
   return (
     <Layout>
       <Outlet />

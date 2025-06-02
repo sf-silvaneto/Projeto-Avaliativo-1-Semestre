@@ -1,4 +1,3 @@
-// src/services/prontuarioService.ts
 import api from './api';
 import {
   BuscaProntuarioParams,
@@ -17,7 +16,6 @@ import {
     EncaminhamentoDetalhado
 } from '../types/prontuarioRegistros';
 
-// --- Funções de Busca e Detalhe (permanecem as mesmas) ---
 export const buscarProntuarios = async (params: BuscaProntuarioParams): Promise<ResultadoBuscaProntuarios> => {
   try {
     const response = await api.get('/prontuarios', { params });
@@ -38,7 +36,6 @@ export const buscarProntuarioPorId = async (id: string): Promise<Prontuario> => 
   }
 };
 
-// --- Criação de Prontuário e Primeiros Registros ---
 export const adicionarConsultaComNovoProntuario = async (
     pacienteId: string,
     medicoExecutorId: number,
@@ -117,13 +114,6 @@ export const adicionarEncaminhamentoComNovoProntuario = async (
     }
 };
 
-
-// --- Adicionar Registros a um Prontuário Existente ---
-// (As funções abaixo são para adições futuras, não diretamente usadas pelo wizard de criação inicial,
-// mas mantidas para consistência e potencial uso futuro. Elas foram adaptadas para usar os
-// endpoints de "criação" por enquanto, pois o backend pode não ter endpoints específicos para
-// adicionar a um prontuário já existente via /prontuarios/{prontuarioId}/registros ainda.)
-
 export const adicionarConsultaAProntuarioExistente = async (
     prontuarioId: string,
     medicoExecutorId: number,
@@ -133,7 +123,6 @@ export const adicionarConsultaAProntuarioExistente = async (
         console.warn("adicionarConsultaAProntuarioExistente pode precisar de endpoint dedicado no backend: /prontuarios/{id}/consultas. Usando endpoint de criação por enquanto.");
         const prontuario = await buscarProntuarioPorId(prontuarioId);
         if (!prontuario.paciente) throw new Error("Paciente não encontrado para o prontuário existente.");
-        // Reutilizando a lógica de adicionar com novo prontuário, o backend faz o "findOrCreate"
         return adicionarConsultaComNovoProntuario(prontuario.paciente.id, medicoExecutorId, dadosConsulta);
     } catch (error) {
         console.error(`Erro em adicionarConsultaAProntuarioExistente para prontuario ${prontuarioId}:`, error);

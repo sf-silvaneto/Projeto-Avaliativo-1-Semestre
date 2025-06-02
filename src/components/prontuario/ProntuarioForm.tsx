@@ -1,4 +1,3 @@
-// sf-silvaneto/clientehm/ClienteHM-057824fed8786ee29c7b4f9a2010aca3a83abc37/cliente-hm-front-main/src/components/prontuario/ProntuarioForm.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm, FormProvider, Controller, useFormContext, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -329,7 +328,6 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
         keepValues: true, keepDirty: true, keepIsSubmitted: false,
         keepTouched: false, keepErrors: false,
     });
-    // @ts-ignore
     methods.resolver = zodResolver(getCurrentSchema());
   }, [currentStep, methods, getCurrentSchema]);
 
@@ -346,24 +344,20 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
         return;
     }
     
-    let medicoIdParaEvento = wizardData.medicoId; // Médico responsável pelo prontuário
+    let medicoIdParaEvento = wizardData.medicoId;
 
     const dadosCompletosParaEnvio: ProntuarioWizardFormData & { dadosEvento: any, medicoExecutorId?: number, medicoResponsavelExameId?: number } = {
         ...wizardData,
         dadosEvento: { ...dadosDoEventoEspecifico }
     };
 
-    // Para Consulta e Exame, o ID do médico do evento é passado como parâmetro separado para o service.
-    // Para Procedimento e Encaminhamento, o ID do médico já está em 'dadosEvento'.
     if (wizardData.tipoPrimeiroRegistro === 'CONSULTA') {
         dadosCompletosParaEnvio.medicoExecutorId = medicoIdParaEvento;
     } else if (wizardData.tipoPrimeiroRegistro === 'EXAME') {
         dadosCompletosParaEnvio.medicoResponsavelExameId = medicoIdParaEvento;
     } else if (wizardData.tipoPrimeiroRegistro === 'PROCEDIMENTO') {
-      // Assegurar que o medicoExecutorId nos dados do evento seja o medicoId do wizard
       (dadosCompletosParaEnvio.dadosEvento as NovaProcedimentoRequest).medicoExecutorId = medicoIdParaEvento;
     } else if (wizardData.tipoPrimeiroRegistro === 'ENCAMINHAMENTO') {
-      // Assegurar que o medicoSolicitanteId nos dados do evento seja o medicoId do wizard
       (dadosCompletosParaEnvio.dadosEvento as NovaEncaminhamentoRequest).medicoSolicitanteId = medicoIdParaEvento;
     }
     
