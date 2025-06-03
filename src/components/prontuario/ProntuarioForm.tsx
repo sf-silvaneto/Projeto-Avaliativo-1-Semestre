@@ -486,7 +486,7 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
               leftIcon={<ArrowLeft className="h-4 w-4" />}
               className="w-full sm:w-auto"
             >
-              {currentStep === 0 ? 'Cancelar e Voltar' : 'Anterior'}
+              {currentStep === 0 ? 'Voltar' : 'Voltar'}
             </Button>
             <Button
               type="button"

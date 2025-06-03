@@ -23,6 +23,23 @@ export interface NovaConsultaRequest {
   observacoesConsulta?: string;
 }
 
+export interface AtualizarConsultaRequest {
+    id?: string;
+    dataHoraConsulta?: string;
+    motivoConsulta?: string;
+    queixasPrincipais?: string;
+    pressaoArterial?: string;
+    temperatura?: string;
+    frequenciaCardiaca?: string;
+    saturacao?: string;
+    exameFisico?: string;
+    hipoteseDiagnostica?: string;
+    condutaPlanoTerapeutico?: string;
+    detalhesConsulta?: string;
+    observacoesConsulta?: string;
+    medicoExecutorId?: number | null;
+}
+
 export interface ConsultaDetalhada {
   id: string;
   prontuarioId: string;
@@ -43,6 +60,17 @@ export interface ConsultaDetalhada {
   responsavelNomeCompleto?: string;
   responsavelEspecialidade?: string;
   responsavelCRM?: string;
+  responsavelMedico?: {
+    id: number;
+    nomeCompleto: string;
+    especialidade?: string;
+    crm?: string;
+  };
+  responsavelAdmin?: {
+    id: number;
+    nome: string;
+  };
+  nomeResponsavelDisplay?: string;
   anexos?: AnexoDetalhado[];
   createdAt: string;
   updatedAt: string;
@@ -55,7 +83,22 @@ export interface AdicionarExameRequest {
   observacoes?: string;
   arquivo?: File;
 }
-export type ExameDetalhado = import('./prontuario').Exame & { prontuarioId: string };
+
+export interface AtualizarExameRequest {
+    id?: string;
+    nome?: string;
+    data?: string;
+    resultado?: string;
+    observacoes?: string;
+    medicoResponsavelExameId?: number | null;
+}
+
+export type ExameDetalhado = import('../prontuario').Exame & { 
+    prontuarioId: string;
+    medicoResponsavelExameId?: number;
+    medicoResponsavelExameNome?: string;
+    nomeResponsavelDisplay?: string;
+};
 
 export interface NovaEncaminhamentoRequest {
   dataEncaminhamento: string;
@@ -65,20 +108,23 @@ export interface NovaEncaminhamentoRequest {
   observacoes?: string;
 }
 
-export interface EncaminhamentoDetalhado {
-  id: string;
-  prontuarioId: string;
-  dataEncaminhamento: string;
-  especialidadeDestino: string;
-  motivoEncaminhamento: string;
-  medicoSolicitanteId?: number;
-  medicoSolicitanteNome?: string;
-  medicoSolicitanteCRM?: string;
-  observacoes?: string;
-  anexos?: AnexoDetalhado[];
-  createdAt: string;
-  updatedAt: string;
+export interface AtualizarEncaminhamentoRequest {
+    id?: string;
+    dataEncaminhamento?: string;
+    especialidadeDestino?: string;
+    motivoEncaminhamento?: string;
+    medicoSolicitanteId?: number | null;
+    observacoes?: string;
 }
+
+export type EncaminhamentoDetalhado = import('../prontuario').Encaminhamento & {
+    prontuarioId: string;
+    medicoSolicitanteId?: number;
+    medicoSolicitanteNome?: string;
+    medicoSolicitanteCRM?: string;
+    medicoSolicitanteEspecialidade?: string;
+    nomeResponsavelDisplay?: string;
+};
 
 export interface NovaProcedimentoRequest {
   dataProcedimento: string;
@@ -87,25 +133,29 @@ export interface NovaProcedimentoRequest {
   medicoExecutorId: number;
 }
 
-export interface ProcedimentoDetalhado {
-  id: string;
-  prontuarioId: string;
-  dataProcedimento: string;
-  descricaoProcedimento: string;
-  relatorioProcedimento?: string;
-  medicoExecutorId?: number;
-  medicoExecutorNome?: string;
-  anexos?: AnexoDetalhado[];
-  createdAt: string;
-  updatedAt: string;
+export interface AtualizarProcedimentoRequest {
+    id?: string;
+    dataProcedimento?: string;
+    descricaoProcedimento?: string;
+    relatorioProcedimento?: string;
+    medicoExecutorId?: number | null;
 }
+
+export type ProcedimentoDetalhado = import('../prontuario').Procedimento & {
+    prontuarioId: string;
+    medicoExecutorId?: number;
+    medicoExecutorNome?: string;
+    medicoExecutorEspecialidade?: string;
+    nomeResponsavelDisplay?: string;
+};
+
 
 export interface AdicionarAnotacaoRequest {
   texto: string;
 }
-export type AnotacaoGeralDetalhada = import('./prontuario').Anotacao & { prontuarioId: string };
+export type AnotacaoGeralDetalhada = import('../prontuario').Anotacao & { prontuarioId: string };
 
-export type TipoPrimeiroRegistro = 'CONSULTA' | 'EXAME' | 'PROCEDIMENTO' | 'ENCAMINHAMENTO' | 'ANOTACAO_GERAL';
+export type TipoPrimeiroRegistro = 'CONSULTA' | 'EXAME' | 'PROCEDIMENTO' | 'ENCAMINHAMENTO';
 
 export interface PrimeiroRegistroData {
     tipo: TipoPrimeiroRegistro;
