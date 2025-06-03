@@ -21,13 +21,26 @@ import {
 
 const especialidadeResumos: Record<string, string> = {
   CARDIOLOGIA: "Especialidade médica que se ocupa do diagnóstico e tratamento das doenças que acometem o coração e os grandes vasos.",
-  CLINICA_GERAL: "Especialidade médica que trata de pacientes adultos, com foco no diagnóstico e tratamento não cirúrgico de diversas doenças.",
-  DERMATOLOGIA: "Especialidade médica que se ocupa do diagnóstico e tratamento clínico-cirúrgico das doenças que acometem a pele e seus anexos.",
-  GINECOLOGIA_OBSTETRICIA: "Especialidade médica que cuida da saúde da mulher, desde a infância até a terceira idade, e acompanha a gestação.",
-  ORTOPEDIA: "Especialidade médica que cuida das doenças e deformidades dos ossos, músculos, ligamentos, articulações, enfim, elementos relacionados ao aparelho locomotor.",
-  PEDIATRIA: "Especialidade médica dedicada à assistência à criança e ao adolescente, nos seus diversos aspectos, sejam eles preventivos ou curativos.",
-  PSIQUIATRIA: "Especialidade da medicina que lida com a prevenção, atendimento, diagnóstico, tratamento e reabilitação das diferentes formas de sofrimentos mentais.",
-  };
+  CLINICA_GERAL: "Atendimento primário e geral de pacientes adultos, focando no diagnóstico e tratamento de diversas doenças.",
+  DERMATOLOGIA: "Cuidados com a pele, cabelos e unhas, tratando doenças e realizando procedimentos estéticos.",
+  ENDOCRINOLOGIA: "Tratamento de distúrbios hormonais e metabólicos, como diabetes e problemas de tireoide.",
+  GASTROENTEROLOGIA: "Diagnóstico e tratamento de doenças do sistema digestório.",
+  GERIATRIA: "Cuidados com a saúde de idosos, prevenindo e tratando doenças comuns nessa faixa etária.",
+  GINECOLOGIA_OBSTETRICIA: "Saúde da mulher, incluindo sistema reprodutor, gravidez e parto.",
+  HEMATOLOGIA: "Estudo e tratamento de doenças do sangue e órgãos hematopoiéticos.",
+  INFECTOLOGIA: "Diagnóstico, tratamento e prevenção de doenças infecciosas e parasitárias.",
+  NEFROLOGIA: "Tratamento de doenças dos rins, como insuficiência renal e hipertensão arterial.",
+  NEUROLOGIA: "Diagnóstico e tratamento de doenças do sistema nervoso central e periférico.",
+  OFTALMOLOGIA: "Cuidados com a saúde dos olhos e da visão, tratando doenças e realizando cirurgias.",
+  ONCOLOGIA: "Diagnóstico e tratamento de câncer, utilizando quimioterapia, radioterapia e outras terapias.",
+  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).", // Chave ajustada para corresponder
+  OTORRINOLARINGOLOGIA: "Diagnóstico e tratamento de doenças do ouvido, nariz e garganta.",
+  PEDIATRIA: "Cuidados com a saúde de crianças e adolescentes, desde o nascimento até a fase adulta inicial.",
+  PNEUMOLOGIA: "Diagnóstico e tratamento de doenças do sistema respiratório, como asma e pneumonia.",
+  PSIQUIATRIA: "Diagnóstico, tratamento e prevenção de transtornos mentais, emocionais e comportamentais.",
+  REUMATOLOGIA: "Tratamento de doenças reumáticas que afetam articulações, ossos, músculos e tecido conjuntivo.",
+  UROLOGIA: "Diagnóstico e tratamento de doenças do sistema urinário de homens e mulheres, e do sistema reprodutor masculino."
+};
 
 const formatEspecialidadeDisplay = (especialidade?: string): string => {
   if (!especialidade) return '';
@@ -114,16 +127,33 @@ const ProntuarioDetailPage: React.FC = () => {
   };
 
   const formatDate = (dataString?: string): string => {
-    if (!dataString) return 'Data inválida';
+    if (!dataString || typeof dataString !== 'string') {
+      return 'Data inválida';
+    }
     try {
-      const dateToParse = /^\d{4}-\d{2}-\d{2}$/.test(dataString) ? `${dataString}T00:00:00` : dataString;
-      const date = new Date(dateToParse);
-      if (isNaN(date.getTime())) return 'Data inválida';
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        timeZone: 'UTC'
-      });
-    } catch (e) { return 'Data inválida'; }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dataString)) {
+        const date = new Date(dataString + 'T00:00:00Z');
+        if (isNaN(date.getTime())) {
+          return 'Data inválida';
+        }
+        return date.toLocaleDateString('pt-BR', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          timeZone: 'UTC',
+        });
+      } else {
+        const date = new Date(dataString);
+        if (isNaN(date.getTime())) {
+          return 'Data inválida';
+        }
+        return date.toLocaleDateString('pt-BR', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          timeZone: 'America/Sao_Paulo',
+        });
+      }
+    } catch (e) {
+      console.error("Erro ao formatar data:", dataString, e);
+      return 'Data inválida';
+    }
   };
 
   const fetchProntuario = useCallback(async () => {
@@ -309,7 +339,7 @@ const ProntuarioDetailPage: React.FC = () => {
             variant="primary"
             size="sm"
             leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => alert("TODO: Implementar navegação para /prontuarios/"+prontuario.id+"/adicionar-registro")}
+            onClick={() => navigate('/prontuarios/novo')}
             fullWidth className="w-full sm:w-auto justify-center"
           >
             Cadastrar Registro
