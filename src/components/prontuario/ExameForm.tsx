@@ -1,12 +1,15 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+// sf-silvaneto/clientehm/ClienteHM-cbef18b48718619b7cb987800e689467da84dc95/cliente-hm-front-main/src/components/prontuario/ExameForm.tsx
+import React, { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { AdicionarExameRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft } from 'lucide-react';
+import { AdicionarExameRequest, AtualizarExameRequest } from '../../types/prontuarioRegistros';
+import { Medico, StatusMedico } from '../../types/medico';
+import Select from '../ui/Select';
+import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
@@ -14,23 +17,35 @@ const exameSchema = z.object({
   nome: z.string().min(3, { message: "Nome do exame é obrigatório (mín. 3 caracteres)." }).max(200, "Nome do exame muito longo (máx. 200)."),
   data: z.string()
     .min(1, "Data e hora do exame são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." }) // Mensagem corrigida
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do exame inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do exame não podem ser no futuro." }),
   resultado: z.string().min(5, { message: "Resultado do exame é obrigatório (mín. 5 caracteres)." }).max(5000, "Resultado muito longo (máx. 5000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
+  medicoResponsavelExameId: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
+    z.number().positive("Médico responsável pelo exame é obrigatório.").optional().nullable()
+  )
 });
 
-type ExameFormData = AdicionarExameRequest;
+type ExameFormData = z.infer<typeof exameSchema>;
 
 interface ExameFormProps {
-  onSubmitEvento: (data: AdicionarExameRequest) => void;
+  onSubmitEvento: (data: AdicionarExameRequest | AtualizarExameRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<AdicionarExameRequest>;
+  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null }>;
+  isEditMode?: boolean;
+  medicosDisponiveis?: Medico[];
 }
 
-const getLocalDateTimeString = (date: Date): string => {
+const getLocalDateTimeString = (dateString?: string | Date): string => {
+    const date = dateString ? new Date(dateString) : new Date();
+    if (isNaN(date.getTime())) {
+        console.warn("getLocalDateTimeString recebeu data inválida:", dateString, "Usando data/hora atual como fallback.");
+        const now = new Date();
+        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -44,30 +59,85 @@ const ExameForm: React.FC<ExameFormProps> = ({
   onCancel,
   isLoading = false,
   initialData = {},
+  isEditMode = false,
+  medicosDisponiveis = []
 }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm<ExameFormData>({
+  const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ExameFormData>({
     resolver: zodResolver(exameSchema),
-    defaultValues: {
-      nome: initialData?.nome || '',
-      data: initialData?.data || getLocalDateTimeString(new Date()),
-      resultado: initialData?.resultado || '',
-      observacoes: initialData?.observacoes || '',
-    },
   });
 
+  useEffect(() => {
+    const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
+
+    let defaultValuesToSet: Partial<ExameFormData> = {
+        nome: '',
+        // Para CRIAÇÃO, data será a atual.
+        data: getLocalDateTimeString(new Date()),
+        resultado: '',
+        observacoes: '',
+        medicoResponsavelExameId: undefined,
+    };
+
+    if (isEditMode && initialData && Object.keys(initialData).length > 0) {
+        // No modo de EDIÇÃO, usa initialData.data (a data original do exame)
+        // A função getLocalDateTimeString irá formatá-la corretamente.
+        // Se initialData.data for por algum motivo inválido ou ausente (não deveria ser para edição),
+        // getLocalDateTimeString usará a data atual como fallback (com um aviso no console).
+        defaultValuesToSet = {
+            ...defaultValuesToSet, // Carrega os padrões para garantir todos os campos
+            ...initialData,       // Sobrescreve com os dados iniciais
+            data: getLocalDateTimeString(initialData.data), // *** CORREÇÃO PRINCIPAL AQUI ***
+            nome: ensureStringOrEmpty(initialData.nome),
+            resultado: ensureStringOrEmpty(initialData.resultado),
+            observacoes: ensureStringOrEmpty(initialData.observacoes),
+            medicoResponsavelExameId: initialData.medicoResponsavelExameId === null ? undefined : initialData.medicoResponsavelExameId,
+        };
+    }
+    reset(defaultValuesToSet);
+  }, [initialData, isEditMode, reset]);
+
   const handleLocalSubmit = (data: ExameFormData) => {
-    console.log('ExameForm: handleLocalSubmit - DADOS DO FORMULÁRIO:', JSON.stringify(data, null, 2));
-    const submissionData: AdicionarExameRequest = {
+    const submissionData: AdicionarExameRequest | AktualizarExameRequest = {
         ...data,
         observacoes: data.observacoes?.trim() || undefined,
     };
-    console.log('ExameForm: handleLocalSubmit - SUBMISSION DATA PARA onSubmitEvento:', JSON.stringify(submissionData, null, 2));
     onSubmitEvento(submissionData);
   };
 
+  const medicoOptions = medicosDisponiveis
+    .filter(m => m.status === StatusMedico.ATIVO)
+    .map(m => ({
+        value: m.id.toString(),
+        label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
+    }));
+
   return (
     <div className="space-y-6 p-1 animate-fade-in">
-      <h4 className="text-lg font-medium text-neutral-800 mb-4">Registrar Novo Exame</h4>
+      <h4 className="text-lg font-medium text-neutral-800 mb-4">
+        {isEditMode ? 'Editar Registro de Exame' : 'Registrar Novo Exame'}
+        </h4>
+
+      {isEditMode && (
+         <Controller
+            name="medicoResponsavelExameId"
+            control={control}
+            render={({ field }) => (
+                <Select
+                    label="Médico Responsável pelo Exame"
+                    options={[{ value: "", label: "Manter atual ou selecione novo" }, ...medicoOptions]}
+                    {...field}
+                    value={String(field.value ?? "")}
+                    onChange={e => {
+                        const value = e.target.value;
+                        field.onChange(value ? Number(value) : undefined);
+                    }}
+                    error={errors.medicoResponsavelExameId?.message}
+                    leftAddon={<Stethoscope className="h-5 w-5 text-gray-400" />}
+                    disabled={medicosDisponiveis.length === 0}
+                />
+            )}
+        />
+      )}
 
       <Input
         label="Nome do Exame*"
@@ -110,7 +180,7 @@ const ExameForm: React.FC<ExameFormProps> = ({
             leftIcon={<ArrowLeft className="h-4 w-4" />}
             className="w-full sm:w-auto"
         >
-          Voltar
+          {isEditMode ? 'Cancelar Edição' : 'Voltar'}
         </Button>
         <Button
             type="button"
@@ -120,7 +190,7 @@ const ExameForm: React.FC<ExameFormProps> = ({
             leftIcon={<Save size={18}/>}
             className="w-full sm:w-auto"
         >
-          Salvar Exame e Criar Prontuário
+          {isEditMode ? 'Salvar Alterações do Exame' : 'Salvar Exame'}
         </Button>
       </div>
     </div>

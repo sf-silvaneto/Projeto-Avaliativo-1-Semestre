@@ -1,36 +1,51 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
+// sf-silvaneto/clientehm/ClienteHM-cbef18b48718619b7cb987800e689467da84dc95/cliente-hm-front-main/src/components/prontuario/EncaminhamentoForm.tsx
+import React, { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { NovaEncaminhamentoRequest } from '../../types/prontuarioRegistros';
-import { Save, Calendar, Send as EncaminhamentoIcon, Edit3, ArrowLeft } from 'lucide-react';
+import { NovaEncaminhamentoRequest, AktualizarEncaminhamentoRequest } from '../../types/prontuarioRegistros';
+import { Medico, StatusMedico } from '../../types/medico';
+import Select from '../ui/Select';
+import { Save, Calendar, Send as EncaminhamentoIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const encaminhamentoSchema = z.object({
   dataEncaminhamento: z.string()
     .min(1, "Data e hora do encaminhamento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." }) // Corrigido exemplo de formato
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do encaminhamento não podem ser no futuro." }),
   especialidadeDestino: z.string().min(3, { message: "Especialidade de destino é obrigatória (mín. 3 caracteres)." }).max(200, "Especialidade muito longa (máx. 200)."),
   motivoEncaminhamento: z.string().min(10, { message: "Motivo do encaminhamento é obrigatório (mín. 10 caracteres)." }).max(1000, "Motivo muito longo (máx. 1000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
+  medicoSolicitanteId: z.preprocess(
+    (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
+    z.number().positive("Médico solicitante do encaminhamento é obrigatório.").optional().nullable()
+  )
 });
 
-type EncaminhamentoFormData = Omit<NovaEncaminhamentoRequest, 'medicoSolicitanteId'>;
+type EncaminhamentoFormData = z.infer<typeof encaminhamentoSchema>;
 
 interface EncaminhamentoFormProps {
-  onSubmitEvento: (data: NovaEncaminhamentoRequest) => void;
+  onSubmitEvento: (data: NovaEncaminhamentoRequest | AktualizarEncaminhamentoRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<EncaminhamentoFormData>;
+  initialData?: Partial<EncaminhamentoFormData & { id?: string }>;
+  isEditMode?: boolean;
+  medicosDisponiveis?: Medico[];
 }
 
-const getLocalDateTimeString = (date: Date): string => {
+const getLocalDateTimeString = (dateString?: string | Date): string => {
+    const date = dateString ? new Date(dateString) : new Date();
+    if (isNaN(date.getTime())) {
+        console.warn("getLocalDateTimeString recebeu data inválida:", dateString);
+        const now = new Date();
+        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -44,29 +59,86 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
   onCancel,
   isLoading = false,
   initialData = {},
+  isEditMode = false,
+  medicosDisponiveis = []
 }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm<EncaminhamentoFormData>({
+  const { register, handleSubmit, control, formState: { errors }, reset } = useForm<EncaminhamentoFormData>({
     resolver: zodResolver(encaminhamentoSchema),
-    defaultValues: {
-      dataEncaminhamento: initialData?.dataEncaminhamento || getLocalDateTimeString(new Date()),
-      especialidadeDestino: initialData?.especialidadeDestino || '',
-      motivoEncaminhamento: initialData?.motivoEncaminhamento || '',
-      observacoes: initialData?.observacoes || '',
-    },
   });
 
+  useEffect(() => {
+    const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
+
+    let baseDefaultValues: Partial<EncaminhamentoFormData> = {
+        especialidadeDestino: '',
+        motivoEncaminhamento: '',
+        observacoes: '',
+        medicoSolicitanteId: undefined,
+    };
+
+    if (isEditMode && initialData && Object.keys(initialData).length > 0) {
+        const populatedDefaults: Partial<EncaminhamentoFormData> = {
+            ...baseDefaultValues,
+            ...initialData,
+            dataEncaminhamento: getLocalDateTimeString(initialData.dataEncaminhamento), // MODIFICAÇÃO AQUI
+            especialidadeDestino: ensureStringOrEmpty(initialData.especialidadeDestino),
+            motivoEncaminhamento: ensureStringOrEmpty(initialData.motivoEncaminhamento),
+            observacoes: ensureStringOrEmpty(initialData.observacoes),
+            medicoSolicitanteId: initialData.medicoSolicitanteId || undefined,
+        };
+        reset(populatedDefaults);
+    } else {
+        // Modo de criação
+        baseDefaultValues.dataEncaminhamento = getLocalDateTimeString(new Date());
+        // medicoSolicitanteId não é definido aqui para criação via wizard,
+        // pois viria do ProntuarioForm. Se usado isoladamente, precisaria de lógica.
+        reset(baseDefaultValues);
+    }
+  }, [initialData, isEditMode, reset]);
+
+
   const handleLocalSubmit = (data: EncaminhamentoFormData) => {
-    console.log('EncaminhamentoForm: handleLocalSubmit - DADOS DO FORMULÁRIO:', JSON.stringify(data, null, 2));
-    const submissionData = {
-        ...data,
+    const submissionData: NovaEncaminhamentoRequest | AktualizarEncaminhamentoRequest = {
+        ...data, // Inclui medicoSolicitanteId se estiver em 'data'
         observacoes: data.observacoes?.trim() || undefined,
     };
-    onSubmitEvento(submissionData as NovaEncaminhamentoRequest);
+    onSubmitEvento(submissionData);
   };
+
+  const medicoOptions = medicosDisponiveis
+    .filter(m => m.status === StatusMedico.ATIVO)
+    .map(m => ({
+        value: m.id.toString(),
+        label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
+    }));
 
   return (
     <div className="space-y-6 p-1 animate-fade-in">
-      <h4 className="text-lg font-medium text-neutral-800 mb-4">Registrar Encaminhamento Médico</h4>
+      <h4 className="text-lg font-medium text-neutral-800 mb-4">
+        {isEditMode ? 'Editar Registro de Encaminhamento' : 'Registrar Encaminhamento Médico'}
+        </h4>
+
+      {isEditMode && (
+         <Controller
+            name="medicoSolicitanteId"
+            control={control}
+            render={({ field }) => (
+                <Select
+                    label="Médico Solicitante*"
+                    options={[{ value: "", label: "Selecione um médico" }, ...medicoOptions]}
+                    {...field}
+                    value={String(field.value ?? "")}
+                    onChange={e => {
+                        const value = e.target.value;
+                        field.onChange(value ? Number(value) : undefined);
+                    }}
+                    error={errors.medicoSolicitanteId?.message}
+                    leftAddon={<Stethoscope className="h-5 w-5 text-gray-400" />}
+                    disabled={medicosDisponiveis.length === 0}
+                />
+            )}
+        />
+      )}
 
       <Input
         label="Data e Hora do Encaminhamento*"
@@ -88,7 +160,6 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         label="Motivo do Encaminhamento*"
         rows={4}
         placeholder="Descreva o motivo para o encaminhamento..."
-        leftAddon={<Edit3 size={18} className="text-gray-500 mt-2"/>}
         {...register('motivoEncaminhamento')}
         error={errors.motivoEncaminhamento?.message}
       />
@@ -110,7 +181,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
             leftIcon={<ArrowLeft className="h-4 w-4" />}
             className="w-full sm:w-auto"
         >
-          Voltar
+          {isEditMode ? 'Cancelar Edição' : 'Voltar'}
         </Button>
         <Button
             type="button"
@@ -120,7 +191,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
             leftIcon={<Save size={18}/>}
             className="w-full sm:w-auto"
         >
-          Salvar Encaminhamento e Criar Prontuário
+          {isEditMode ? 'Salvar Alterações do Encaminhamento' : 'Salvar Encaminhamento'}
         </Button>
       </div>
     </div>

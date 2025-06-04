@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react'; // Adicionado useState
+// sf-silvaneto/clientehm/ClienteHM-cbef18b48718619b7cb987800e689467da84dc95/cliente-hm-front-main/src/components/prontuario/ConsultaForm.tsx
+
+import React, { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +10,6 @@ import Button from '../ui/Button';
 import Select from '../ui/Select';
 import { NovaConsultaRequest, AtualizarConsultaRequest } from '../../types/prontuarioRegistros';
 import { Medico, StatusMedico } from '../../types/medico';
-// import { buscarMedicos } from '../../services/medicoService'; // Não buscaremos médicos aqui, eles virão por prop
 import {
     Save, Calendar, Activity, Thermometer, Heart, Percent,
     BookOpen, Brain, ClipboardPlus, FileText as FileTextIcon, Edit3 as EditIcon,
@@ -42,16 +43,15 @@ const consultaSchema = z.object({
         .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
         .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
         .refine(val => {
-            // Permitir datas/horas ligeiramente no futuro para agendamentos, mas não muito distantes
             const dataSelecionada = new Date(val);
             const agora = new Date();
             const diffEmMinutos = (dataSelecionada.getTime() - agora.getTime()) / 60000;
-            return diffEmMinutos < (60 * 24 * 365 * 2); // Permitir até 2 anos no futuro
+            return diffEmMinutos < (60 * 24 * 365 * 2);
         }, { message: "Data da consulta muito distante no futuro." })
         .refine(val => {
              const dataSelecionada = new Date(val);
              const minDate = new Date();
-             minDate.setFullYear(minDate.getFullYear() - 120); //  Até 120 anos no passado
+             minDate.setFullYear(minDate.getFullYear() - 120);
              return dataSelecionada > minDate;
         }, {message: "Data da consulta muito antiga."}),
     motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
@@ -64,39 +64,36 @@ const consultaSchema = z.object({
             const sistolica = parseInt(parts[0], 10);
             const diastolica = parseInt(parts[1], 10);
             return !isNaN(sistolica) && !isNaN(diastolica) &&
-                sistolica >= 30 && sistolica <= 300 && // Ajuste mínimo para sistólica
-                diastolica >= 20 && diastolica <= 200; // Ajuste mínimo para diastólica
+                sistolica >= 30 && sistolica <= 300 &&
+                diastolica >= 20 && diastolica <= 200;
         }, { message: "P.A. inválida (Ex: 120/80, Sist:30-300, Diast:20-200)" }),
     temperatura: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const tempStr = val.replace(',', '.');
             const temp = parseFloat(tempStr);
-            // Permitir temperaturas de 30.0 a 45.0 e validar formato (ex: 36.7 ou 37.75)
             return !isNaN(temp) && temp >= 25.0 && temp <= 45.0 && /^\d{1,2}(\.\d{1,2})?$/.test(tempStr);
         }, { message: "Temp. inválida (Ex: 36.7 ou 37.75, entre 25.0-45.0)" }),
     frequenciaCardiaca: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const fc = parseInt(val, 10);
-            return /^\d+$/.test(val) && !isNaN(fc) && fc >= 20 && fc <= 300; // Ajuste mínimo
+            return /^\d+$/.test(val) && !isNaN(fc) && fc >= 20 && fc <= 300;
         }, { message: "F.C. inválida (inteiro entre 20-300 bpm)" }),
     saturacao: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const sat = parseInt(val, 10);
-            return /^\d+$/.test(val) && !isNaN(sat) && sat >= 30 && sat <= 100; // Ajuste mínimo
+            return /^\d+$/.test(val) && !isNaN(sat) && sat >= 30 && sat <= 100;
         }, { message: "Sat O₂ inválida (inteiro entre 30-100%)" }),
     exameFisico: z.string().max(5000, "Exame físico não pode exceder 5000 caracteres.").optional().or(z.literal('')),
     hipoteseDiagnostica: z.string().max(2000, "Hipótese diagnóstica não pode exceder 2000 caracteres.").optional().or(z.literal('')),
     condutaPlanoTerapeutico: z.string().max(5000, "Conduta/Plano terapêutico não pode exceder 5000 caracteres.").optional().or(z.literal('')),
     detalhesConsulta: z.string().max(10000, "Detalhes da consulta não podem exceder 10000 caracteres.").optional().or(z.literal('')),
     observacoesConsulta: z.string().max(5000, "Observações da consulta não podem exceder 5000 caracteres.").optional().or(z.literal('')),
-    medicoExecutorId: z.preprocess( 
+    medicoExecutorId: z.preprocess(
         (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
-        // Se for edição e houver médicoExecutorId no initialData, este campo é obrigatório.
-        // Se for criação, este campo não deve ser validado aqui, pois o médico vem de outro passo.
-        z.number().positive("Médico executor da consulta é obrigatório.").optional().nullable() 
+        z.number().positive("Médico executor da consulta é obrigatório.").optional().nullable()
     )
 });
 
@@ -106,16 +103,16 @@ interface ConsultaFormProps {
     onSubmitEvento: (data: NovaConsultaRequest | AtualizarConsultaRequest) => void;
     onCancel: () => void;
     isLoading?: boolean;
-    initialData?: Partial<ConsultaFormData & { id?: string; responsavelId?: number | string; responsavelMedico?: { id: number } }>; // Adicionado responsavelId ou responsavelMedico
+    initialData?: Partial<ConsultaFormData & { id?: string; responsavelId?: number | string; responsavelMedico?: { id: number } }>;
     isEditMode?: boolean;
     medicosDisponiveis?: Medico[];
 }
 
 const getLocalDateTimeString = (dateString?: string | Date): string => {
     const date = dateString ? new Date(dateString) : new Date();
-    if (isNaN(date.getTime())) { // Verifica se a data é válida
+    if (isNaN(date.getTime())) {
         console.warn("getLocalDateTimeString recebeu data inválida:", dateString);
-        const now = new Date(); // Fallback para data atual se a entrada for inválida
+        const now = new Date();
         return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
     const year = date.getFullYear();
@@ -135,13 +132,14 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
     isEditMode = false,
     medicosDisponiveis = []
 }) => {
-    const { register, handleSubmit, control, formState: { errors }, reset, setValue } = useForm<ConsultaFormData>({
+    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ConsultaFormData>({
         resolver: zodResolver(consultaSchema),
     });
 
     useEffect(() => {
-        let defaultValues: Partial<ConsultaFormData> = {
-            dataHoraConsulta: getLocalDateTimeString(new Date()),
+        const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
+
+        let baseDefaultValues: Partial<ConsultaFormData> = {
             motivoConsulta: '',
             queixasPrincipais: '',
             pressaoArterial: '',
@@ -157,29 +155,39 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         };
 
         if (isEditMode && initialData && Object.keys(initialData).length > 0) {
-            const medicoIdParaForm = initialData.responsavelMedico?.id || 
+            const medicoIdParaForm = initialData.responsavelMedico?.id ||
                                     (typeof initialData.responsavelId === 'number' ? initialData.responsavelId : undefined);
-            defaultValues = {
-                ...defaultValues, // Começa com os padrões para garantir todos os campos
+
+            const populatedDefaults: Partial<ConsultaFormData> = {
+                ...baseDefaultValues,
                 ...initialData,
-                dataHoraConsulta: initialData.dataHoraConsulta ? getLocalDateTimeString(initialData.dataHoraConsulta) : getLocalDateTimeString(new Date()),
+                dataHoraConsulta: getLocalDateTimeString(initialData.dataHoraConsulta), // MODIFICAÇÃO PRINCIPAL AQUI
+                pressaoArterial: ensureStringOrEmpty(initialData.pressaoArterial),
+                temperatura: ensureStringOrEmpty(initialData.temperatura),
+                frequenciaCardiaca: ensureStringOrEmpty(initialData.frequenciaCardiaca),
+                saturacao: ensureStringOrEmpty(initialData.saturacao),
+                exameFisico: ensureStringOrEmpty(initialData.exameFisico),
+                hipoteseDiagnostica: ensureStringOrEmpty(initialData.hipoteseDiagnostica),
+                condutaPlanoTerapeutico: ensureStringOrEmpty(initialData.condutaPlanoTerapeutico),
+                detalhesConsulta: ensureStringOrEmpty(initialData.detalhesConsulta),
+                observacoesConsulta: ensureStringOrEmpty(initialData.observacoesConsulta),
                 medicoExecutorId: medicoIdParaForm,
             };
+            reset(populatedDefaults);
+        } else {
+            baseDefaultValues.dataHoraConsulta = getLocalDateTimeString(new Date());
+            reset(baseDefaultValues);
         }
-        console.log(`ConsultaForm (${isEditMode ? 'Edit' : 'Create'} mode) - Resetando com defaultValues:`, defaultValues);
-        reset(defaultValues);
     }, [initialData, isEditMode, reset]);
 
 
     const handleLocalSubmit = (data: ConsultaFormData) => {
-        console.log(`ConsultaForm (${isEditMode ? 'Edit' : 'Create'}): handleLocalSubmit - DADOS DO FORMULÁRIO:`, JSON.stringify(data, null, 2));
-        
         const submissionData: NovaConsultaRequest | AtualizarConsultaRequest = {
             dataHoraConsulta: data.dataHoraConsulta,
             motivoConsulta: data.motivoConsulta,
             queixasPrincipais: data.queixasPrincipais,
             pressaoArterial: data.pressaoArterial?.trim() || undefined,
-            temperatura: data.temperatura?.trim().replace(',', '.') || undefined,
+            temperatura: data.temperatura?.trim() ? data.temperatura.trim().replace(',', '.') : undefined,
             frequenciaCardiaca: data.frequenciaCardiaca?.trim() || undefined,
             saturacao: data.saturacao?.trim() || undefined,
             exameFisico: data.exameFisico?.trim() || undefined,
@@ -190,22 +198,18 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         };
 
         if (isEditMode) {
-            // Para edição, o medicoExecutorId vem do formulário se alterado
-            if (data.medicoExecutorId !== undefined) { // Inclui 0 ou null se o usuário desmarcar
+            if (data.medicoExecutorId !== undefined) {
                  (submissionData as AtualizarConsultaRequest).medicoExecutorId = data.medicoExecutorId;
             }
         }
-        // Na criação, o medicoExecutorId é passado externamente (pelo ProntuarioForm), não por este formulário.
-
-        console.log(`ConsultaForm (${isEditMode ? 'Edit' : 'Create'}): SUBMISSION DATA PARA onSubmitEvento:`, JSON.stringify(submissionData, null, 2));
         onSubmitEvento(submissionData);
     };
-    
+
     const medicoOptions = medicosDisponiveis
-        .filter(m => m.status === StatusMedico.ATIVO) // Filtra apenas médicos ativos
-        .map(m => ({ 
-            value: m.id.toString(), 
-            label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})` 
+        .filter(m => m.status === StatusMedico.ATIVO)
+        .map(m => ({
+            value: m.id.toString(),
+            label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
         }));
 
     return (
@@ -214,16 +218,16 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 {isEditMode ? 'Editar Registro de Consulta' : 'Registrar Nova Consulta'}
             </h4>
 
-            {isEditMode && ( // Mostrar o seletor de médico apenas no modo de edição
+            {isEditMode && (
                 <Controller
                     name="medicoExecutorId"
                     control={control}
                     render={({ field }) => (
                         <Select
-                            label="Médico Executor da Consulta*"
-                            options={[{ value: "", label: "Selecione um médico" }, ...medicoOptions]}
+                            label="Médico Executor da Consulta"
+                            options={[{ value: "", label: "Manter atual ou selecione novo" }, ...medicoOptions]}
                             {...field}
-                            value={String(field.value || "")} // Garante que o valor é string ou ""
+                            value={String(field.value ?? "")}
                             onChange={e => {
                                 const value = e.target.value;
                                 field.onChange(value ? Number(value) : undefined);
@@ -243,7 +247,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 {...register('dataHoraConsulta')}
                 error={errors.dataHoraConsulta?.message}
             />
-            <Textarea
+             <Textarea
                 label="Motivo da Consulta/Queixa Principal (Resumido)*"
                 rows={3}
                 placeholder="Ex: Dor de cabeça há 3 dias..."
@@ -264,12 +268,12 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                     <Controller
                         name="pressaoArterial"
                         control={control}
-                        defaultValue=""
                         render={({ field }) => (
                             <Input
                                 label="P.A."
                                 placeholder="Ex: 120/80"
                                 {...field}
+                                value={field.value || ''}
                                 onChange={(e) => field.onChange(formatarPA(e.target.value))}
                                 error={errors.pressaoArterial?.message}
                                 leftAddon={<Activity size={18} className="text-gray-500" />}
@@ -280,16 +284,16 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                     <Controller
                         name="temperatura"
                         control={control}
-                        defaultValue=""
                         render={({ field }) => (
                             <Input
                                 label="Temp."
                                 placeholder="Ex: 36.7"
                                 {...field}
+                                value={field.value || ''}
                                 onChange={(e) => field.onChange(formatarTemperatura(e.target.value))}
                                 error={errors.temperatura?.message}
                                 leftAddon={<Thermometer size={18} className="text-gray-500" />}
-                                maxLength={5} // e.g., 36.75
+                                maxLength={5}
                             />
                         )}
                     />
@@ -299,8 +303,8 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                         {...register('frequenciaCardiaca')}
                         error={errors.frequenciaCardiaca?.message}
                         leftAddon={<Heart size={18} className="text-gray-500" />}
-                        type="text" // Use text para permitir inputMode="numeric" e maxLength
-                        inputMode="numeric" // Para teclados numéricos em mobile
+                        type="text"
+                        inputMode="numeric"
                         maxLength={3}
                     />
                     <Input
@@ -363,7 +367,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                     leftIcon={<Save size={18} />}
                     className="w-full sm:w-auto"
                 >
-                    {isEditMode ? 'Salvar Alterações da Consulta' : 'Salvar Consulta e Criar Prontuário'}
+                    {isEditMode ? 'Salvar Alterações da Consulta' : 'Salvar Consulta'}
                 </Button>
             </div>
         </div>
