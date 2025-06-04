@@ -1,6 +1,4 @@
-// sf-silvaneto/clientehm/ClienteHM-cbef18b48718619b7cb987800e689467da84dc95/cliente-hm-front-main/src/components/prontuario/ConsultaForm.tsx
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,6 +20,7 @@ const formatarPA = (value: string): string => {
     let digitos = value.replace(/\D/g, '');
     if (digitos.length > 6) { digitos = digitos.substring(0, 6); }
     if (digitos.length <= 3) { return digitos; }
+    // CORREÇÃO: Remover tags span, usar string de formatação correta
     return `${digitos.substring(0, 3)}/${digitos.substring(3, 5)}`;
 };
 
@@ -32,26 +31,26 @@ const formatarTemperatura = (value: string): string => {
     if (parts.length > 2) { val = parts[0] + '.' + parts.slice(1).join(''); }
     const [inteiro, decimal] = val.split('.');
     let formattedVal = inteiro || '';
-    if (inteiro && inteiro.length > 2) { formattedVal = inteiro.substring(0, 2); }
-    if (decimal !== undefined) { formattedVal += '.' + decimal.substring(0, 2); }
+    if (inteiro && inteiro.length > 2) { formattedVal = inteiro.substring(0, 2); } 
+    if (decimal !== undefined) { formattedVal += '.' + decimal.substring(0, 2); } 
     return formattedVal;
 };
 
 const consultaSchema = z.object({
     dataHoraConsulta: z.string()
         .min(1, "Data e hora da consulta são obrigatórias.")
-        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." }) // YYYY em vez de YYYY
         .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
         .refine(val => {
             const dataSelecionada = new Date(val);
             const agora = new Date();
             const diffEmMinutos = (dataSelecionada.getTime() - agora.getTime()) / 60000;
-            return diffEmMinutos < (60 * 24 * 365 * 2);
+            return diffEmMinutos < (60 * 24 * 365 * 2); 
         }, { message: "Data da consulta muito distante no futuro." })
         .refine(val => {
              const dataSelecionada = new Date(val);
              const minDate = new Date();
-             minDate.setFullYear(minDate.getFullYear() - 120);
+             minDate.setFullYear(minDate.getFullYear() - 120); 
              return dataSelecionada > minDate;
         }, {message: "Data da consulta muito antiga."}),
     motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
@@ -108,18 +107,24 @@ interface ConsultaFormProps {
     medicosDisponiveis?: Medico[];
 }
 
+// FUNÇÃO CORRIGIDA
 const getLocalDateTimeString = (dateString?: string | Date): string => {
-    const date = dateString ? new Date(dateString) : new Date();
-    if (isNaN(date.getTime())) {
-        console.warn("getLocalDateTimeString recebeu data inválida:", dateString);
+    const dateCandidate = dateString ? new Date(dateString) : new Date(); 
+
+    if (isNaN(dateCandidate.getTime())) {
+        console.warn("getLocalDateTimeString recebeu data inválida ou nula:", dateString, "Usando data/hora atual como fallback.");
         const now = new Date();
+        // CORREÇÃO APLICADA ABAIXO
         return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
+    
+    const date = dateCandidate; // Renomeado para evitar sombreamento
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
+    // CORREÇÃO APLICADA ABAIXO
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
@@ -128,18 +133,34 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
     onSubmitEvento,
     onCancel,
     isLoading = false,
-    initialData = {},
+    initialData, 
     isEditMode = false,
     medicosDisponiveis = []
 }) => {
-    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ConsultaFormData>({
-        resolver: zodResolver(consultaSchema),
-    });
 
-    useEffect(() => {
+    const processedInitialData = useMemo(() => {
         const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
-
-        let baseDefaultValues: Partial<ConsultaFormData> = {
+        if (isEditMode && initialData && Object.keys(initialData).length > 0) {
+            const medicoIdParaForm = initialData.responsavelMedico?.id ||
+                                    (typeof initialData.responsavelId === 'number' ? initialData.responsavelId : initialData.medicoExecutorId || undefined);
+            return {
+                dataHoraConsulta: getLocalDateTimeString(initialData.dataHoraConsulta),
+                motivoConsulta: ensureStringOrEmpty(initialData.motivoConsulta),
+                queixasPrincipais: ensureStringOrEmpty(initialData.queixasPrincipais),
+                pressaoArterial: ensureStringOrEmpty(initialData.pressaoArterial),
+                temperatura: ensureStringOrEmpty(initialData.temperatura),
+                frequenciaCardiaca: ensureStringOrEmpty(initialData.frequenciaCardiaca),
+                saturacao: ensureStringOrEmpty(initialData.saturacao),
+                exameFisico: ensureStringOrEmpty(initialData.exameFisico),
+                hipoteseDiagnostica: ensureStringOrEmpty(initialData.hipoteseDiagnostica),
+                condutaPlanoTerapeutico: ensureStringOrEmpty(initialData.condutaPlanoTerapeutico),
+                detalhesConsulta: ensureStringOrEmpty(initialData.detalhesConsulta),
+                observacoesConsulta: ensureStringOrEmpty(initialData.observacoesConsulta),
+                medicoExecutorId: medicoIdParaForm,
+            };
+        }
+        return { 
+            dataHoraConsulta: getLocalDateTimeString(new Date()),
             motivoConsulta: '',
             queixasPrincipais: '',
             pressaoArterial: '',
@@ -153,32 +174,18 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
             observacoesConsulta: '',
             medicoExecutorId: undefined,
         };
+    }, [initialData, isEditMode]);
 
-        if (isEditMode && initialData && Object.keys(initialData).length > 0) {
-            const medicoIdParaForm = initialData.responsavelMedico?.id ||
-                                    (typeof initialData.responsavelId === 'number' ? initialData.responsavelId : undefined);
+    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ConsultaFormData>({
+        resolver: zodResolver(consultaSchema),
+        mode: "onSubmit",
+        reValidateMode: "onSubmit",
+        defaultValues: processedInitialData,
+    });
 
-            const populatedDefaults: Partial<ConsultaFormData> = {
-                ...baseDefaultValues,
-                ...initialData,
-                dataHoraConsulta: getLocalDateTimeString(initialData.dataHoraConsulta), // MODIFICAÇÃO PRINCIPAL AQUI
-                pressaoArterial: ensureStringOrEmpty(initialData.pressaoArterial),
-                temperatura: ensureStringOrEmpty(initialData.temperatura),
-                frequenciaCardiaca: ensureStringOrEmpty(initialData.frequenciaCardiaca),
-                saturacao: ensureStringOrEmpty(initialData.saturacao),
-                exameFisico: ensureStringOrEmpty(initialData.exameFisico),
-                hipoteseDiagnostica: ensureStringOrEmpty(initialData.hipoteseDiagnostica),
-                condutaPlanoTerapeutico: ensureStringOrEmpty(initialData.condutaPlanoTerapeutico),
-                detalhesConsulta: ensureStringOrEmpty(initialData.detalhesConsulta),
-                observacoesConsulta: ensureStringOrEmpty(initialData.observacoesConsulta),
-                medicoExecutorId: medicoIdParaForm,
-            };
-            reset(populatedDefaults);
-        } else {
-            baseDefaultValues.dataHoraConsulta = getLocalDateTimeString(new Date());
-            reset(baseDefaultValues);
-        }
-    }, [initialData, isEditMode, reset]);
+    useEffect(() => {
+        reset(processedInitialData);
+    }, [processedInitialData, reset]);
 
 
     const handleLocalSubmit = (data: ConsultaFormData) => {
@@ -198,9 +205,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         };
 
         if (isEditMode) {
-            if (data.medicoExecutorId !== undefined) {
-                 (submissionData as AtualizarConsultaRequest).medicoExecutorId = data.medicoExecutorId;
-            }
+            (submissionData as AtualizarConsultaRequest).medicoExecutorId = data.medicoExecutorId;
         }
         onSubmitEvento(submissionData);
     };
@@ -293,7 +298,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                                 onChange={(e) => field.onChange(formatarTemperatura(e.target.value))}
                                 error={errors.temperatura?.message}
                                 leftAddon={<Thermometer size={18} className="text-gray-500" />}
-                                maxLength={5}
+                                maxLength={5} 
                             />
                         )}
                     />
@@ -303,7 +308,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                         {...register('frequenciaCardiaca')}
                         error={errors.frequenciaCardiaca?.message}
                         leftAddon={<Heart size={18} className="text-gray-500" />}
-                        type="text"
+                        type="text" 
                         inputMode="numeric"
                         maxLength={3}
                     />
@@ -361,7 +366,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 </Button>
                 <Button
                     type="button"
-                    onClick={handleSubmit(handleLocalSubmit)}
+                    onClick={handleSubmit(handleLocalSubmit)} 
                     variant="primary"
                     isLoading={isLoading}
                     leftIcon={<Save size={18} />}

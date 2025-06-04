@@ -28,9 +28,9 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
      const dateToParse = /^\d{4}-\d{2}-\d{2}$/.test(dataString) ? `${dataString}T00:00:00Z` : dataString;
     const data = new Date(dateToParse);
     if (isNaN(data.getTime())) return '-';
-    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // UTC para consistência se a data for apenas data
   };
-  
+
   const formatDateTime = (dataString?: string) => {
     if (!dataString) return '-';
     const data = new Date(dataString);
@@ -51,7 +51,7 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                 Paciente
               </th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                Início
+                Criado em {/* ALTERADO DE "Início" */}
               </th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Últ. Atualização
@@ -82,7 +82,7 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                     <div className="text-xs text-neutral-500">CPF: {prontuario.paciente.cpf}</div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
-                    {formatDate(prontuario.dataInicio)}
+                    {formatDate(prontuario.createdAt)} {/* ALTERADO DE prontuario.dataInicio */}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
                     {formatDateTime(prontuario.dataUltimaAtualizacao)}

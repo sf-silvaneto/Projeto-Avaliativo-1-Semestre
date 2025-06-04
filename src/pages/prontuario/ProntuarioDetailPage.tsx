@@ -33,7 +33,7 @@ const especialidadeResumos: Record<string, string> = {
   NEUROLOGIA: "Diagnóstico e tratamento de doenças do sistema nervoso central e periférico.",
   OFTALMOLOGIA: "Cuidados com a saúde dos olhos e da visão, tratando doenças e realizando cirurgias.",
   ONCOLOGIA: "Diagnóstico e tratamento de câncer, utilizando quimioterapia, radioterapia e outras terapias.",
-  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).", // Chave ajustada para corresponder
+  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).",
   OTORRINOLARINGOLOGIA: "Diagnóstico e tratamento de doenças do ouvido, nariz e garganta.",
   PEDIATRIA: "Cuidados com a saúde de crianças e adolescentes, desde o nascimento até a fase adulta inicial.",
   PNEUMOLOGIA: "Diagnóstico e tratamento de doenças do sistema respiratório, como asma e pneumonia.",
@@ -132,22 +132,23 @@ const ProntuarioDetailPage: React.FC = () => {
     }
     try {
       if (/^\d{4}-\d{2}-\d{2}$/.test(dataString)) {
-        const date = new Date(dataString + 'T00:00:00Z');
+        const date = new Date(dataString + 'T00:00:00Z'); // Assegura que é UTC se for apenas data
         if (isNaN(date.getTime())) {
           return 'Data inválida';
         }
         return date.toLocaleDateString('pt-BR', {
           day: '2-digit', month: '2-digit', year: 'numeric',
-          timeZone: 'UTC',
+          timeZone: 'UTC', // Mostra a data como ela é, sem conversão de fuso para este formato
         });
       } else {
+        // Se for uma string de data e hora completa (ISO 8601), converte para o fuso local
         const date = new Date(dataString);
         if (isNaN(date.getTime())) {
           return 'Data inválida';
         }
         return date.toLocaleDateString('pt-BR', {
           day: '2-digit', month: '2-digit', year: 'numeric',
-          timeZone: 'America/Sao_Paulo',
+          timeZone: 'America/Sao_Paulo', // Converte para o fuso horário de São Paulo
         });
       }
     } catch (e) {
@@ -241,6 +242,11 @@ const ProntuarioDetailPage: React.FC = () => {
     const p = pacienteData;
     const e = p.endereco || {} as PacienteEndereco;
 
+    // ***** INÍCIO DA CORREÇÃO *****
+    // Construir a string de endereço em uma variável separada
+    const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || ''}, ${e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`;
+    // ***** FIM DA CORREÇÃO *****
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
             <DetailItem icon={<User size={16}/>} label="Nome Completo" value={p.nome} />
@@ -259,7 +265,10 @@ const ProntuarioDetailPage: React.FC = () => {
             <DetailItem icon={<Building size={16}/>} label="Nacionalidade" value={p.nacionalidade} />
             <DetailItem icon={<Briefcase size={16}/>} label="Ocupação" value={p.ocupacao} />
             <div className="sm:col-span-2 lg:col-span-3">
-                 <DetailItem icon={<MapPin size={16}/>} label="Endereço" value={`${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || ''}, ${e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`} />
+                 {/* ***** INÍCIO DA CORREÇÃO ***** */}
+                 {/* Usar a variável aqui */}
+                 <DetailItem icon={<MapPin size={16}/>} label="Endereço" value={enderecoFormatado} />
+                 {/* ***** FIM DA CORREÇÃO ***** */}
             </div>
              <div className="lg:col-span-3 mt-2 space-y-3">
                 <DetailItem icon={<ShieldQuestion size={16}/>} label="Alergias Declaradas" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2.5 rounded-md border border-neutral-200">{p.alergiasDeclaradas || 'Não informado'}</pre>} />
@@ -366,7 +375,7 @@ const ProntuarioDetailPage: React.FC = () => {
                 value={medicoRespDisplay} 
             />
             <DetailItem icon={<User size={18}/>} label="Criado por (Admin)" value={prontuario.administradorCriador?.nome || 'N/A'} />
-            <DetailItem icon={<Calendar size={18}/>} label="Data de Início do Prontuário" value={formatDate(prontuario.dataInicio)} />
+            <DetailItem icon={<Calendar size={18}/>} label="Data de Criação do Prontuário" value={formatDate(prontuario.createdAt)} /> {/* Alterado de prontuario.dataInicio */}
             <DetailItem icon={<Calendar size={18}/>} label="Última Atualização" value={formatDateTime(prontuario.dataUltimaAtualizacao)} />
           </div>
         </Card>

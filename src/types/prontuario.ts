@@ -1,10 +1,10 @@
 import {
   ConsultaDetalhada,
-  ExameDetalhado,
+  ExameDetalhado, // Este tipo usa a interface Exame abaixo
   ProcedimentoDetalhado,
   EncaminhamentoDetalhado
 } from './prontuarioRegistros';
-import { Paciente as PacienteCompleto, Genero as PacienteGeneroEnum, Endereco as PacienteEndereco } from './paciente'; // Importando Paciente mais completo
+import { Paciente as PacienteCompleto, Genero as PacienteGeneroEnum, Endereco as PacienteEndereco } from './paciente';
 
 export interface Medico {
   id: number;
@@ -32,10 +32,10 @@ export interface HistoricoMedico {
   updatedAt: string;
 }
 
-export interface Exame {
+export interface Exame { // Interface usada por ExameDetalhado
   id: string;
   nome: string;
-  data: string;
+  dataExame: string; // ALTERADO DE 'data' PARA 'dataExame'
   resultado: string;
   observacoes?: string;
   createdAt: string;
@@ -57,15 +57,12 @@ export interface Prontuario {
   paciente: PacienteCompleto;
   medicoResponsavel?: Medico;
   administradorCriador?: { id: string; nome: string; email: string; };
-  dataInicio: string;
   dataUltimaAtualizacao: string;
-
   historicoGeral?: HistoricoMedico[];
   consultas?: ConsultaDetalhada[];
   examesRegistrados?: ExameDetalhado[];
   procedimentosRegistrados?: ProcedimentoDetalhado[];
   encaminhamentosRegistrados?: EncaminhamentoDetalhado[];
-
   createdAt: string;
   updatedAt: string;
 }

@@ -21,7 +21,7 @@ const NotFoundPage: React.FC = () => {
         <FileSearch className="h-16 w-16 text-primary-600 mx-auto mb-6" />
         <h1 className="text-3xl font-bold text-neutral-900 mb-2">Página não encontrada</h1>
         <p className="text-lg text-neutral-600 mb-8">
-          Desculpe, a página que você está procurando não existe ou foi movida.
+          Você não tem a permissão necessária para a Página.
         </p>
         <Button
           variant="primary"
