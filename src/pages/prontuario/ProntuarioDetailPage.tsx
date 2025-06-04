@@ -189,7 +189,7 @@ const ProntuarioDetailPage: React.FC = () => {
         id: `consulta-${c.id}`, tipo: 'CONSULTA', data: c.dataHoraConsulta, dataOriginal: c, titulo: `Consulta`, icone: <Activity className="h-5 w-5" />
     }));
     prontuario.examesRegistrados?.forEach(e => itens.push({
-        id: `exame-${e.id}`, tipo: 'EXAME', data: e.data, dataOriginal: e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />
+        id: `exame-${e.id}`, tipo: 'EXAME', data: e.dataExame, dataOriginal: e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />
     }));
     prontuario.procedimentosRegistrados?.forEach(p => itens.push({
         id: `procedimento-${p.id}`, tipo: 'PROCEDIMENTO', data: p.dataProcedimento, dataOriginal: p, titulo: `Procedimento: ${(p.descricaoProcedimento || '').substring(0,35)}${(p.descricaoProcedimento && p.descricaoProcedimento.length > 35) ? '...' : ''}`, icone: <Scissors className="h-5 w-5" />
@@ -582,7 +582,7 @@ const ListaDeConsultas: React.FC<{consultas: ConsultaDetalhada[], formatDateTime
 
 const ListaDeExames: React.FC<{exames: ExameDetalhado[], formatDate: Function, formatDateTime: Function}> = ({exames, formatDate, formatDateTime}) => {
     if (!exames || exames.length === 0) return <Card className="text-center"><p className="text-neutral-500 italic py-10">Nenhum exame registrado.</p></Card>;
-    const itens: HistoricoUnificadoItem[] = exames.map(e => ({id: `exame-list-${e.id}`, tipo: 'EXAME', data: e.data, dataOriginal:e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />}));
+    const itens: HistoricoUnificadoItem[] = exames.map(e => ({id: `exame-list-${e.id}`, tipo: 'EXAME', data: e.dataExame, dataOriginal:e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />}));
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
 };
 

@@ -332,7 +332,7 @@ const ProntuarioEditPage: React.FC = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                         <div className='flex-grow mb-2 sm:mb-0'>
                         <p className="font-medium text-neutral-800">Exame: {exame.nome}</p>
-                        <p className="text-sm text-neutral-600">Data: {new Date(exame.data).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
+                        <p className="text-sm text-neutral-600">Data: {new Date(exame.dataExame).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
                         <p className="text-sm text-neutral-600">Médico Resp.: {exame.medicoResponsavelExameNome || exame.nomeResponsavelDisplay || 'N/A'}</p>
                         </div>
                         <Button variant="secondary" size="sm" onClick={() => handleAbrirModalEdicaoExame(exame)} leftIcon={<EditIcon className="h-4 w-4"/>} className="w-full sm:w-auto">Editar Exame</Button>
