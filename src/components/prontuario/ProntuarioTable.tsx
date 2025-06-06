@@ -28,7 +28,7 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
      const dateToParse = /^\d{4}-\d{2}-\d{2}$/.test(dataString) ? `${dataString}T00:00:00Z` : dataString;
     const data = new Date(dateToParse);
     if (isNaN(data.getTime())) return '-';
-    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' }); // UTC para consistência se a data for apenas data
+    return data.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
   };
 
   const formatDateTime = (dataString?: string) => {
@@ -51,7 +51,7 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                 Paciente
               </th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                Criado em {/* ALTERADO DE "Início" */}
+                Criado em
               </th>
               <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Últ. Atualização

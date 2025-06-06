@@ -90,15 +90,14 @@ const ProntuarioCreatePage: React.FC = () => {
       let prontuarioIdParaNavegacao: string | undefined;
       if (prontuarioOuEventoCriado && typeof prontuarioOuEventoCriado.prontuarioId === 'number') {
         prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuarioId.toString();
-      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && typeof prontuarioOuEventoCriado.prontuario.id === 'number') { // Para ConsultaDetalhada
+      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && typeof prontuarioOuEventoCriado.prontuario.id === 'number') {
         prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuario.id.toString();
       } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario?.id && typeof prontuarioOuEventoCriado.prontuario.id === 'string') {
         prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuario.id;
       }
-       // Fallback mais genérico se as estruturas acima não corresponderem e a resposta tiver um ID de prontuário
       else if (prontuarioOuEventoCriado && typeof (prontuarioOuEventoCriado as any).prontuario === 'object' && (prontuarioOuEventoCriado as any).prontuario?.id) {
         prontuarioIdParaNavegacao = String((prontuarioOuEventoCriado as any).prontuario.id);
-      } else if (prontuarioOuEventoCriado && (prontuarioOuEventoCriado as any).prontuarioId) { // Caso o ID do prontuário venha direto no objeto do evento
+      } else if (prontuarioOuEventoCriado && (prontuarioOuEventoCriado as any).prontuarioId) {
         prontuarioIdParaNavegacao = String((prontuarioOuEventoCriado as any).prontuarioId);
       }
 

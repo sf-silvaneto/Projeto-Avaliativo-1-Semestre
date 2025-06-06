@@ -103,7 +103,7 @@ const EntradaMedicaForm: React.FC<EntradaMedicaFormProps> = ({
   ];
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-1"> {/* Adicionado p-1 para evitar corte de foco */}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-1">
       <h2 className="text-xl font-semibold text-neutral-700 mb-6 border-b pb-2">Registrar Nova Entrada Médica</h2>
 
       <Input

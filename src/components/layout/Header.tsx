@@ -88,7 +88,7 @@ const Header: React.FC = () => {
                   </button>
                   {profileMenuOpen && (
                     <div 
-                      className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-20 animate-fade-in" // Aumentado o z-index e largura
+                      className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-20 animate-fade-in"
                       role="menu"
                       aria-orientation="vertical"
                       aria-labelledby="user-menu-button"
@@ -105,7 +105,7 @@ const Header: React.FC = () => {
                           {item.label}
                         </Link>
                       ))}
-                      <hr className="my-1 border-neutral-200" /> {/* Separador */}
+                      <hr className="my-1 border-neutral-200" /> {}
                       <button
                         onClick={handleLogout}
                         className="flex items-center w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 hover:text-primary-600"

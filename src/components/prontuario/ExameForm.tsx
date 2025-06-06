@@ -5,17 +5,16 @@ import { z } from 'zod';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { AdicionarExameRequest, AktualizarExameRequest } from '../../types/prontuarioRegistros'; // Corrigido para AtualizarExameRequest
+import { AdicionarExameRequest, AktualizarExameRequest } from '../../types/prontuarioRegistros';
 import { Medico, StatusMedico } from '../../types/medico';
 import Select from '../ui/Select';
 import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
-// Schema Zod usando 'dataExame'
 const exameSchema = z.object({
   nome: z.string().min(3, { message: "Nome do exame é obrigatório (mín. 3 caracteres)." }).max(200, "Nome do exame muito longo (máx. 200)."),
-  dataExame: z.string() // Usando 'dataExame' para alinhar com a lógica interna do formulário
+  dataExame: z.string()
     .min(1, "Data e hora do exame são obrigatórias.")
     .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do exame inválidas (não é uma data real)." })
@@ -28,14 +27,13 @@ const exameSchema = z.object({
   )
 });
 
-// Tipo do formulário usando 'dataExame'
 type ExameFormData = z.infer<typeof exameSchema>;
 
 interface ExameFormProps {
-  onSubmitEvento: (data: AdicionarExameRequest | AktualizarExameRequest) => void; // Corrigido para AtualizarExameRequest
+  onSubmitEvento: (data: AdicionarExameRequest | AktualizarExameRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null; dataExame?: string; data?: string }>; // Permitir 'data' ou 'dataExame' em initialData por flexibilidade
+  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null; dataExame?: string; data?: string }>;
   isEditMode?: boolean;
   medicosDisponiveis?: Medico[];
 }
@@ -71,14 +69,12 @@ const ExameForm: React.FC<ExameFormProps> = ({
     if (isEditMode && initialData && Object.keys(initialData).length > 0) {
       return {
         nome: ensureStringOrEmpty(initialData.nome),
-        // Prioriza initialData.dataExame, mas usa initialData.data como fallback se o primeiro não existir
         dataExame: getLocalDateTimeString(initialData.dataExame || initialData.data), 
         resultado: ensureStringOrEmpty(initialData.resultado),
         observacoes: ensureStringOrEmpty(initialData.observacoes),
         medicoResponsavelExameId: initialData.medicoResponsavelExameId === null ? undefined : initialData.medicoResponsavelExameId,
       };
     }
-    // Modo de criação
     return { 
       nome: '',
       dataExame: getLocalDateTimeString(), 
@@ -101,9 +97,9 @@ const ExameForm: React.FC<ExameFormProps> = ({
 
   const handleLocalSubmit = (data: ExameFormData) => {
     const { dataExame, ...restOfData } = data;
-    const submissionData: AdicionarExameRequest | AktualizarExameRequest = { // Corrigido para AtualizarExameRequest
+    const submissionData: AdicionarExameRequest | AktualizarExameRequest = {
         ...restOfData,
-        data: dataExame, // Mapeia dataExame do formulário para o campo 'data' da request
+        data: dataExame,
         observacoes: data.observacoes?.trim() || undefined,
     };
     onSubmitEvento(submissionData);

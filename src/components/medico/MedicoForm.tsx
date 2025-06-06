@@ -178,7 +178,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
     if (start !== null && end !== null) {
       try {
           input.setSelectionRange(start, end);
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     }
   };
 

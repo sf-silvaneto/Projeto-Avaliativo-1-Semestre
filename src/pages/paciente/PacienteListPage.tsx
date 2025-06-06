@@ -108,7 +108,6 @@ const PacienteListPage: React.FC = () => {
 
       {isLoading && !resultadoBusca ? (
         <div className="text-center py-10">
-          {/* ... loader ... */}
         </div>
       ) : (
         <>

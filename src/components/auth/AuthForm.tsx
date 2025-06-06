@@ -21,7 +21,7 @@ const loginSchema = z.object({
 const cadastroSchema = z.object({
   nome: z.string()
         .min(3, 'O nome deve ter pelo menos 3 caracteres.')
-        .regex(apenasLetrasEspacosAcentosHifenApostrofo, 'Nome deve conter apenas letras, espaços, acentos, apóstrofos e hífens.'), // Regex adicionada
+        .regex(apenasLetrasEspacosAcentosHifenApostrofo, 'Nome deve conter apenas letras, espaços, acentos, apóstrofos e hífens.'),
   email: z.string().email('Email inválido.')
             .regex(/^[^\s@]+@hm\.com$/, 'O email deve ser do domínio @hm.com.'),
   senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.')
@@ -89,7 +89,7 @@ const AuthForm: React.FC<AuthFormProps> = ({
     if (start !== null && end !== null) {
       try {
           input.setSelectionRange(start, end);
-      } catch (e) { /* ignore */ }
+      } catch (e) {}
     }
   };
 

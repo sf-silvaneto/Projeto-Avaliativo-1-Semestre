@@ -132,23 +132,22 @@ const ProntuarioDetailPage: React.FC = () => {
     }
     try {
       if (/^\d{4}-\d{2}-\d{2}$/.test(dataString)) {
-        const date = new Date(dataString + 'T00:00:00Z'); // Assegura que é UTC se for apenas data
+        const date = new Date(dataString + 'T00:00:00Z');
         if (isNaN(date.getTime())) {
           return 'Data inválida';
         }
         return date.toLocaleDateString('pt-BR', {
           day: '2-digit', month: '2-digit', year: 'numeric',
-          timeZone: 'UTC', // Mostra a data como ela é, sem conversão de fuso para este formato
+          timeZone: 'UTC',
         });
       } else {
-        // Se for uma string de data e hora completa (ISO 8601), converte para o fuso local
         const date = new Date(dataString);
         if (isNaN(date.getTime())) {
           return 'Data inválida';
         }
         return date.toLocaleDateString('pt-BR', {
           day: '2-digit', month: '2-digit', year: 'numeric',
-          timeZone: 'America/Sao_Paulo', // Converte para o fuso horário de São Paulo
+          timeZone: 'America/Sao_Paulo',
         });
       }
     } catch (e) {
@@ -242,10 +241,7 @@ const ProntuarioDetailPage: React.FC = () => {
     const p = pacienteData;
     const e = p.endereco || {} as PacienteEndereco;
 
-    // ***** INÍCIO DA CORREÇÃO *****
-    // Construir a string de endereço em uma variável separada
     const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || ''}, ${e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`;
-    // ***** FIM DA CORREÇÃO *****
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
@@ -265,10 +261,7 @@ const ProntuarioDetailPage: React.FC = () => {
             <DetailItem icon={<Building size={16}/>} label="Nacionalidade" value={p.nacionalidade} />
             <DetailItem icon={<Briefcase size={16}/>} label="Ocupação" value={p.ocupacao} />
             <div className="sm:col-span-2 lg:col-span-3">
-                 {/* ***** INÍCIO DA CORREÇÃO ***** */}
-                 {/* Usar a variável aqui */}
                  <DetailItem icon={<MapPin size={16}/>} label="Endereço" value={enderecoFormatado} />
-                 {/* ***** FIM DA CORREÇÃO ***** */}
             </div>
              <div className="lg:col-span-3 mt-2 space-y-3">
                 <DetailItem icon={<ShieldQuestion size={16}/>} label="Alergias Declaradas" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2.5 rounded-md border border-neutral-200">{p.alergiasDeclaradas || 'Não informado'}</pre>} />
@@ -371,11 +364,11 @@ const ProntuarioDetailPage: React.FC = () => {
           <div className="space-y-5">
             <DetailItem
                 icon={<StethoscopeIcon size={18}/>}
-                label="Médico Responsável Principal"
+                label="Médico Principal Responsável"
                 value={medicoRespDisplay} 
             />
             <DetailItem icon={<User size={18}/>} label="Criado por (Admin)" value={prontuario.administradorCriador?.nome || 'N/A'} />
-            <DetailItem icon={<Calendar size={18}/>} label="Data de Criação do Prontuário" value={formatDate(prontuario.createdAt)} /> {/* Alterado de prontuario.dataInicio */}
+            <DetailItem icon={<Calendar size={18}/>} label="Data de Criação do Prontuário" value={formatDate(prontuario.createdAt)} />
             <DetailItem icon={<Calendar size={18}/>} label="Última Atualização" value={formatDateTime(prontuario.dataUltimaAtualizacao)} />
           </div>
         </Card>

@@ -15,7 +15,7 @@ const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const procedimentoSchema = z.object({
   dataProcedimento: z.string()
     .min(1, "Data e hora do procedimento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." }) // Ajustado exemplo
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do procedimento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do procedimento não podem ser no futuro." }),
   descricaoProcedimento: z.string().min(10, { message: "Descrição do procedimento é obrigatória (mín. 10 caracteres)." }).max(1000, "Descrição muito longa (máx. 1000)."),

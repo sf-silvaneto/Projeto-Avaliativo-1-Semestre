@@ -1,6 +1,6 @@
 import {
   ConsultaDetalhada,
-  ExameDetalhado, // Este tipo usa a interface Exame abaixo
+  ExameDetalhado,
   ProcedimentoDetalhado,
   EncaminhamentoDetalhado
 } from './prontuarioRegistros';
@@ -32,10 +32,10 @@ export interface HistoricoMedico {
   updatedAt: string;
 }
 
-export interface Exame { // Interface usada por ExameDetalhado
+export interface Exame {
   id: string;
   nome: string;
-  dataExame: string; // ALTERADO DE 'data' PARA 'dataExame'
+  dataExame: string;
   resultado: string;
   observacoes?: string;
   createdAt: string;

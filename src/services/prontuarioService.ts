@@ -40,7 +40,6 @@ export const buscarProntuarioPorId = async (id: string): Promise<Prontuario> => 
   }
 };
 
-// --- Funções de Criação (já existentes ou ajustadas anteriormente) ---
 export const adicionarConsultaComNovoProntuario = async (
     pacienteId: string,
     medicoExecutorId: number,
@@ -107,8 +106,6 @@ export const adicionarEncaminhamentoComNovoProntuario = async (
     }
 };
 
-
-// --- Funções de Atualização ---
 export const atualizarConsultaNoProntuario = async (
     consultaId: string,
     dadosAtualizacao: AtualizarConsultaRequest
@@ -137,7 +134,7 @@ export const atualizarExameNoProntuario = async (
 
 export const atualizarProcedimentoNoProntuario = async (
     procedimentoId: string,
-    dadosAtualizacao: AktualizarProcedimentoRequest
+    dadosAtualizacao: AtualizarProcedimentoRequest
 ): Promise<ProcedimentoDetalhado> => {
     try {
         const response = await api.put<ProcedimentoDetalhado>(`/prontuarios/procedimentos/${procedimentoId}`, dadosAtualizacao);
@@ -150,7 +147,7 @@ export const atualizarProcedimentoNoProntuario = async (
 
 export const atualizarEncaminhamentoNoProntuario = async (
     encaminhamentoId: string,
-    dadosAtualizacao: AktualizarEncaminhamentoRequest
+    dadosAtualizacao: AtualizarEncaminhamentoRequest
 ): Promise<EncaminhamentoDetalhado> => {
     try {
         const response = await api.put<EncaminhamentoDetalhado>(`/prontuarios/encaminhamentos/${encaminhamentoId}`, dadosAtualizacao);

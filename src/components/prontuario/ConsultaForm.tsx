@@ -107,24 +107,21 @@ interface ConsultaFormProps {
     medicosDisponiveis?: Medico[];
 }
 
-// FUNÇÃO CORRIGIDA
 const getLocalDateTimeString = (dateString?: string | Date): string => {
     const dateCandidate = dateString ? new Date(dateString) : new Date(); 
 
     if (isNaN(dateCandidate.getTime())) {
         console.warn("getLocalDateTimeString recebeu data inválida ou nula:", dateString, "Usando data/hora atual como fallback.");
         const now = new Date();
-        // CORREÇÃO APLICADA ABAIXO
         return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
     
-    const date = dateCandidate; // Renomeado para evitar sombreamento
+    const date = dateCandidate;
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
-    // CORREÇÃO APLICADA ABAIXO
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 

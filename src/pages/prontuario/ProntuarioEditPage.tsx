@@ -213,9 +213,9 @@ const ProntuarioEditPage: React.FC = () => {
     }
   };
 
-  if (isLoading) { /* ... (loader) ... */ }
-  if (error && !prontuario) { /* ... (error display) ... */ }
-  if (!prontuario) { /* ... (not found display) ... */ }
+  if (isLoading) {}
+  if (error && !prontuario) {}
+  if (!prontuario) {}
 
   const TabButton: React.FC<{tabKey: string, label: string, icon: React.ReactNode, count?: number}> = ({tabKey, label, icon, count}) => (
     <button

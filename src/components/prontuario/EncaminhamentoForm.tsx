@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'; // Adicionado useMemo
+import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,7 +15,7 @@ const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const encaminhamentoSchema = z.object({
   dataEncaminhamento: z.string()
     .min(1, "Data e hora do encaminhamento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." }) // Mensagem do regex
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do encaminhamento não podem ser no futuro." }),
   especialidadeDestino: z.string().min(3, { message: "Especialidade de destino é obrigatória (mín. 3 caracteres)." }).max(200, "Especialidade muito longa (máx. 200)."),
@@ -23,7 +23,7 @@ const encaminhamentoSchema = z.object({
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
   medicoSolicitanteId: z.preprocess(
     (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
-    z.number().positive("Médico solicitante do encaminhamento é obrigatório.").optional().nullable() // Mantido opcional aqui, ProntuarioForm pode garantir
+    z.number().positive("Médico solicitante do encaminhamento é obrigatório.").optional().nullable()
   )
 });
 
@@ -57,7 +57,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
   onSubmitEvento,
   onCancel,
   isLoading = false,
-  initialData, // Removido = {}
+  initialData,
   isEditMode = false,
   medicosDisponiveis = []
 }) => {
@@ -73,7 +73,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         medicoSolicitanteId: initialData.medicoSolicitanteId || undefined,
       };
     }
-    return { // Modo de criação ou initialData ausente
+    return {
       dataEncaminhamento: getLocalDateTimeString(new Date()),
       especialidadeDestino: '',
       motivoEncaminhamento: '',
@@ -84,8 +84,8 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<EncaminhamentoFormData>({
     resolver: zodResolver(encaminhamentoSchema),
-    mode: "onSubmit", // Alterado para validar apenas no submit
-    reValidateMode: "onSubmit", // Alterado para revalidar apenas no submit
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
     defaultValues: processedInitialData,
   });
 
@@ -114,7 +114,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         {isEditMode ? 'Editar Registro de Encaminhamento' : 'Registrar Encaminhamento Médico'}
         </h4>
 
-      {isEditMode && ( // Mostrar seletor de médico no modo de edição
+      {isEditMode && (
          <Controller
             name="medicoSolicitanteId"
             control={control}
@@ -181,7 +181,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         </Button>
         <Button
             type="button"
-            onClick={handleSubmit(handleLocalSubmit)} // handleSubmit do react-hook-form
+            onClick={handleSubmit(handleLocalSubmit)}
             variant="primary"
             isLoading={isLoading}
             leftIcon={<Save size={18}/>}

@@ -265,7 +265,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
     value = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, '');
     input.value = value.toUpperCase();
     if (start !== null && end !== null) {
-      try { input.setSelectionRange(start, end); } catch (e) {/* ignore */}
+      try { input.setSelectionRange(start, end); } catch (e) {}
     }
   };
   
@@ -322,7 +322,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
         newCursorPos = Math.max(0, Math.min(newCursorPos, formattedValue.length));
         try {
           input.setSelectionRange(newCursorPos, newCursorPos);
-        } catch (e) { /* ignore */ }
+        } catch (e) {}
       }
     };
   };
