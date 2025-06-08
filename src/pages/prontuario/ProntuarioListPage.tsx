@@ -28,14 +28,26 @@ const ProntuarioListPage: React.FC = () => {
 
   const [resultado, setResultado] = useState<ResultadoBusca | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [debouncedIsLoading, setDebouncedIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null); // Variável successMessage declarada aqui
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedIsLoading(isLoading);
+    }, 200);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [isLoading]);
+
 
   const fetchProntuarios = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log("Fetching prontuarios com params:", apiSearchParams); 
+      // console.log("Fetching prontuarios com params:", apiSearchParams); // Linha de log removida/comentada
       const result = await buscarProntuarios(apiSearchParams);
       setResultado(result);
     } catch (err: any) {
@@ -83,7 +95,7 @@ const ProntuarioListPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Prontuários</h1>
       </div>
 
-      {successMessage && (
+      {successMessage && ( // Uso da variável successMessage
         <Alert type="success" message={successMessage} className="mb-4" onClose={() => setSuccessMessage(null)} />
       )}
       {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
@@ -91,7 +103,7 @@ const ProntuarioListPage: React.FC = () => {
       <ProntuarioSearchForm 
         onSearch={handleSearch} 
         initialFilters={initialFormFilters} 
-        isLoading={isLoading}
+        isLoading={debouncedIsLoading}
       />
 
       <div className="flex justify-end items-center space-x-2 mb-4">
@@ -110,23 +122,17 @@ const ProntuarioListPage: React.FC = () => {
       </div>
       
       <Card>
-        {isLoading && !resultado?.content?.length ? (
-          <div className="text-center p-6">
-            <p>Carregando prontuários...</p>
-          </div>
-        ) : (
-          <ProntuarioTable 
-            prontuarios={resultado?.content || []}
-            totalItems={resultado?.pageable.totalElements || 0}
-            currentPage={(apiSearchParams.pagina || 0) + 1}
-            pageSize={apiSearchParams.tamanho || 10}
-            onPageChange={handlePageChange}
-            isLoading={isLoading && !!resultado?.content?.length} 
-          />
-        )}
+        <ProntuarioTable 
+          prontuarios={resultado?.content || []}
+          totalItems={resultado?.pageable.totalElements || 0}
+          currentPage={(apiSearchParams.pagina || 0) + 1}
+          pageSize={apiSearchParams.tamanho || 10}
+          onPageChange={handlePageChange}
+          isLoading={debouncedIsLoading}
+        />
       </Card>
       
-      {totalPages > 1 && !isLoading && (
+      {totalPages > 1 && !debouncedIsLoading && (
         <div className="mt-6 flex justify-center">
         </div>
       )}

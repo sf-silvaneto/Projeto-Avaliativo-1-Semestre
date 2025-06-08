@@ -6,13 +6,12 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import { NovaConsultaRequest, AtualizarConsultaRequest } from '../../types/prontuarioRegistros';
-// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico daqui
-import { Medico } from '../../types/medico'; // Mantenha apenas Medico
+import { NovaConsultaRequest, AtualizarConsultaRequest, SinaisVitais } from '../../types/prontuarioRegistros';
+import { Medico } from '../../types/medico';
 import {
     Save, Calendar, Activity, Thermometer, Heart, Percent,
     BookOpen, Brain, ClipboardPlus, FileText as FileTextIcon, Edit3 as EditIcon,
-    ArrowLeft, Stethoscope
+    ArrowLeft, Stethoscope, Droplet
 } from 'lucide-react';
 
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
@@ -36,25 +35,13 @@ const formatarTemperatura = (value: string): string => {
     return formattedVal;
 };
 
-const consultaSchema = z.object({
-    dataHoraConsulta: z.string()
-        .min(1, "Data e hora da consulta são obrigatórias.")
-        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
-        .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
-        .refine(val => {
-            const dataSelecionada = new Date(val);
-            const agora = new Date();
-            const diffEmMinutos = (dataSelecionada.getTime() - agora.getTime()) / 60000;
-            return diffEmMinutos < (60 * 24 * 365 * 2); 
-        }, { message: "Data da consulta muito distante no futuro." })
-        .refine(val => {
-             const dataSelecionada = new Date(val);
-             const minDate = new Date();
-             minDate.setFullYear(minDate.getFullYear() - 120); 
-             return dataSelecionada > minDate;
-        }, {message: "Data da consulta muito antiga."}),
-    motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
-    queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta (mín. 10 caracteres)." }).max(2000, "Queixas muito longas (máx. 2000)."),
+// Nova função para filtrar apenas números inteiros
+const filterNumericInput = (value: string): string => {
+    return value.replace(/\D/g, '');
+};
+
+// Esquema de validação para SinaisVitais
+const sinaisVitaisSchema = z.object({
     pressaoArterial: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
@@ -85,6 +72,34 @@ const consultaSchema = z.object({
             const sat = parseInt(val, 10);
             return /^\d+$/.test(val) && !isNaN(sat) && sat >= 30 && sat <= 100;
         }, { message: "Sat O₂ inválida (inteiro entre 30-100%)" }),
+    hgt: z.string().optional().or(z.literal('')) // Novo campo HGT
+        .refine(val => {
+            if (!val || val.trim() === '') return true;
+            const hgtVal = parseInt(val, 10);
+            return /^\d+$/.test(val) && !isNaN(hgtVal) && hgtVal >= 10 && hgtVal <= 600;
+        }, { message: "HGT inválido (inteiro entre 10-600 mg/dL)" }),
+});
+
+const consultaSchema = z.object({
+    dataHoraConsulta: z.string()
+        .min(1, "Data e hora da consulta são obrigatórias.")
+        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format Vanden-MM-DDTHH:MM." })
+        .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
+        .refine(val => {
+            const dataSelecionada = new Date(val);
+            const agora = new Date();
+            const diffEmMinutos = (dataSelecionada.getTime() - agora.getTime()) / 60000;
+            return diffEmMinutos < (60 * 24 * 365 * 2); 
+        }, { message: "Data da consulta muito distante no futuro." })
+        .refine(val => {
+             const dataSelecionada = new Date(val);
+             const minDate = new Date();
+             minDate.setFullYear(minDate.getFullYear() - 120); 
+             return dataSelecionada > minDate;
+        }, {message: "Data da consulta muito antiga."}),
+    motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
+    queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta (mín. 10 caracteres)." }).max(2000, "Queixas muito longas (máx. 2000)."),
+    sinaisVitais: sinaisVitaisSchema.optional(), // Usar o schema aninhado
     exameFisico: z.string().max(5000, "Exame físico não pode exceder 5000 caracteres.").optional().or(z.literal('')),
     hipoteseDiagnostica: z.string().max(2000, "Hipótese diagnóstica não pode exceder 2000 caracteres.").optional().or(z.literal('')),
     condutaPlanoTerapeutico: z.string().max(5000, "Conduta/Plano terapêutico não pode exceder 5000 caracteres.").optional().or(z.literal('')),
@@ -144,10 +159,13 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 dataHoraConsulta: getLocalDateTimeString(initialData.dataHoraConsulta),
                 motivoConsulta: ensureStringOrEmpty(initialData.motivoConsulta),
                 queixasPrincipais: ensureStringOrEmpty(initialData.queixasPrincipais),
-                pressaoArterial: ensureStringOrEmpty(initialData.pressaoArterial),
-                temperatura: ensureStringOrEmpty(initialData.temperatura),
-                frequenciaCardiaca: ensureStringOrEmpty(initialData.frequenciaCardiaca),
-                saturacao: ensureStringOrEmpty(initialData.saturacao),
+                sinaisVitais: { // Mapear sinais vitais aninhados
+                    pressaoArterial: ensureStringOrEmpty(initialData.sinaisVitais?.pressaoArterial),
+                    temperatura: ensureStringOrEmpty(initialData.sinaisVitais?.temperatura),
+                    frequenciaCardiaca: ensureStringOrEmpty(initialData.sinaisVitais?.frequenciaCardiaca),
+                    saturacao: ensureStringOrEmpty(initialData.sinaisVitais?.saturacao),
+                    hgt: ensureStringOrEmpty(initialData.sinaisVitais?.hgt), // Mapear HGT
+                },
                 exameFisico: ensureStringOrEmpty(initialData.exameFisico),
                 hipoteseDiagnostica: ensureStringOrEmpty(initialData.hipoteseDiagnostica),
                 condutaPlanoTerapeutico: ensureStringOrEmpty(initialData.condutaPlanoTerapeutico),
@@ -160,10 +178,13 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
             dataHoraConsulta: getLocalDateTimeString(new Date()),
             motivoConsulta: '',
             queixasPrincipais: '',
-            pressaoArterial: '',
-            temperatura: '',
-            frequenciaCardiaca: '',
-            saturacao: '',
+            sinaisVitais: { // Default para sinais vitais
+                pressaoArterial: '',
+                temperatura: '',
+                frequenciaCardiaca: '',
+                saturacao: '',
+                hgt: '', // Default para HGT
+            },
             exameFisico: '',
             hipoteseDiagnostica: '',
             condutaPlanoTerapeutico: '',
@@ -190,10 +211,13 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
             dataHoraConsulta: data.dataHoraConsulta,
             motivoConsulta: data.motivoConsulta,
             queixasPrincipais: data.queixasPrincipais,
-            pressaoArterial: data.pressaoArterial?.trim() || undefined,
-            temperatura: data.temperatura?.trim() ? data.temperatura.trim().replace(',', '.') : undefined,
-            frequenciaCardiaca: data.frequenciaCardiaca?.trim() || undefined,
-            saturacao: data.saturacao?.trim() || undefined,
+            sinaisVitais: { // Mapear sinais vitais de volta para o formato de submissão
+                pressaoArterial: data.sinaisVitais?.pressaoArterial?.trim() || undefined,
+                temperatura: data.sinaisVitais?.temperatura?.trim() ? data.sinaisVitais.temperatura.trim().replace(',', '.') : undefined,
+                frequenciaCardiaca: data.sinaisVitais?.frequenciaCardiaca?.trim() || undefined,
+                saturacao: data.sinaisVitais?.saturacao?.trim() || undefined,
+                hgt: data.sinaisVitais?.hgt?.trim() || undefined, // Mapear HGT
+            },
             exameFisico: data.exameFisico?.trim() || undefined,
             hipoteseDiagnostica: data.hipoteseDiagnostica?.trim() || undefined,
             condutaPlanoTerapeutico: data.condutaPlanoTerapeutico?.trim() || undefined,
@@ -267,9 +291,9 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
 
             <fieldset className="border p-4 rounded-md mt-4">
                 <legend className="text-sm font-medium text-neutral-700 px-1">Sinais Vitais (Opcional)</legend>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
                     <Controller
-                        name="pressaoArterial"
+                        name="sinaisVitais.pressaoArterial"
                         control={control}
                         render={({ field }) => (
                             <Input
@@ -278,14 +302,15 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                                 {...field}
                                 value={field.value || ''}
                                 onChange={(e) => field.onChange(formatarPA(e.target.value))}
-                                error={errors.pressaoArterial?.message}
+                                error={errors.sinaisVitais?.pressaoArterial?.message}
                                 leftAddon={<Activity size={18} className="text-gray-500" />}
                                 maxLength={7}
+                                inputMode="numeric"
                             />
                         )}
                     />
                     <Controller
-                        name="temperatura"
+                        name="sinaisVitais.temperatura"
                         control={control}
                         render={({ field }) => (
                             <Input
@@ -294,31 +319,69 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                                 {...field}
                                 value={field.value || ''}
                                 onChange={(e) => field.onChange(formatarTemperatura(e.target.value))}
-                                error={errors.temperatura?.message}
+                                error={errors.sinaisVitais?.temperatura?.message}
                                 leftAddon={<Thermometer size={18} className="text-gray-500" />}
                                 maxLength={5} 
+                                inputMode="decimal"
                             />
                         )}
                     />
-                    <Input
-                        label="F.C."
-                        placeholder="bpm"
-                        {...register('frequenciaCardiaca')}
-                        error={errors.frequenciaCardiaca?.message}
-                        leftAddon={<Heart size={18} className="text-gray-500" />}
-                        type="text" 
-                        inputMode="numeric"
-                        maxLength={3}
+                    <Controller // Usando Controller para F.C. para aplicar o filterNumericInput
+                        name="sinaisVitais.frequenciaCardiaca"
+                        control={control}
+                        render={({ field }) => (
+                            <Input
+                                label="F.C."
+                                placeholder="bpm"
+                                {...field}
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))} // Adicionado filtro aqui
+                                error={errors.sinaisVitais?.frequenciaCardiaca?.message}
+                                leftAddon={<Heart size={18} className="text-gray-500" />}
+                                type="text" 
+                                inputMode="numeric"
+                                pattern="\d*" 
+                                maxLength={3}
+                            />
+                        )}
                     />
-                    <Input
-                        label="Sat O₂"
-                        placeholder="%"
-                        {...register('saturacao')}
-                        error={errors.saturacao?.message}
-                        leftAddon={<Percent size={18} className="text-gray-500" />}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={3}
+                    <Controller // Usando Controller para Sat O₂ para aplicar o filterNumericInput
+                        name="sinaisVitais.saturacao"
+                        control={control}
+                        render={({ field }) => (
+                            <Input
+                                label="Sat O₂"
+                                placeholder="%"
+                                {...field}
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))} // Adicionado filtro aqui
+                                error={errors.sinaisVitais?.saturacao?.message}
+                                leftAddon={<Percent size={18} className="text-gray-500" />}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="\d*" 
+                                maxLength={3}
+                            />
+                        )}
+                    />
+                    <Controller // Usando Controller para HGT para aplicar o filterNumericInput
+                        name="sinaisVitais.hgt"
+                        control={control}
+                        render={({ field }) => (
+                            <Input // Novo campo HGT
+                                label="HGT"
+                                placeholder="mg/dL"
+                                {...field}
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))} // Adicionado filtro aqui
+                                error={errors.sinaisVitais?.hgt?.message}
+                                leftAddon={<Droplet size={18} className="text-gray-500" />}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="\d*" 
+                                maxLength={4}
+                            />
+                        )}
                     />
                 </div>
             </fieldset>

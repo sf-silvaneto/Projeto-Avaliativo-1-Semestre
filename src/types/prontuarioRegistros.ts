@@ -8,14 +8,20 @@ export interface AnexoDetalhado {
   urlVisualizacao?: string;
 }
 
-export interface NovaConsultaRequest {
-  dataHoraConsulta: string;
-  motivoConsulta: string;
-  queixasPrincipais: string;
+// Nova interface para Sinais Vitais
+export interface SinaisVitais {
   pressaoArterial?: string;
   temperatura?: string;
   frequenciaCardiaca?: string;
   saturacao?: string;
+  hgt?: string; // Novo campo
+}
+
+export interface NovaConsultaRequest {
+  dataHoraConsulta: string;
+  motivoConsulta: string;
+  queixasPrincipais: string;
+  sinaisVitais?: SinaisVitais; // Substitui os campos diretos
   exameFisico?: string;
   hipoteseDiagnostica?: string;
   condutaPlanoTerapeutico?: string;
@@ -28,10 +34,7 @@ export interface AtualizarConsultaRequest {
     dataHoraConsulta?: string;
     motivoConsulta?: string;
     queixasPrincipais?: string;
-    pressaoArterial?: string;
-    temperatura?: string;
-    frequenciaCardiaca?: string;
-    saturacao?: string;
+    sinaisVitais?: SinaisVitais; // Substitui os campos diretos
     exameFisico?: string;
     hipoteseDiagnostica?: string;
     condutaPlanoTerapeutico?: string;
@@ -46,10 +49,7 @@ export interface ConsultaDetalhada {
   dataHoraConsulta: string;
   motivoConsulta?: string;
   queixasPrincipais?: string;
-  pressaoArterial?: string;
-  temperatura?: string;
-  frequenciaCardiaca?: string;
-  saturacao?: string;
+  sinaisVitais?: SinaisVitais; // Substitui os campos diretos
   exameFisico?: string;
   hipoteseDiagnostica?: string;
   condutaPlanoTerapeutico?: string;
@@ -93,7 +93,7 @@ export interface AtualizarExameRequest {
     medicoResponsavelExameId?: number | null;
 }
 
-export type ExameDetalhado = import('../prontuario').Exame & { 
+export type ExameDetalhado = import('./prontuario').Exame & { 
     prontuarioId: string;
     medicoResponsavelExameId?: number;
     medicoResponsavelExameNome?: string;
@@ -117,7 +117,7 @@ export interface AtualizarEncaminhamentoRequest {
     observacoes?: string;
 }
 
-export type EncaminhamentoDetalhado = import('../prontuario').Encaminhamento & {
+export type EncaminhamentoDetalhado = import('./prontuario').Encaminhamento & {
     prontuarioId: string;
     medicoSolicitanteId?: number;
     medicoSolicitanteNome?: string;
@@ -141,7 +141,7 @@ export interface AtualizarProcedimentoRequest {
     medicoExecutorId?: number | null;
 }
 
-export type ProcedimentoDetalhado = import('../prontuario').Procedimento & {
+export type ProcedimentoDetalhado = import('./prontuario').Procedimento & {
     prontuarioId: string;
     medicoExecutorId?: number;
     medicoExecutorNome?: string;
@@ -153,7 +153,7 @@ export type ProcedimentoDetalhado = import('../prontuario').Procedimento & {
 export interface AdicionarAnotacaoRequest {
   texto: string;
 }
-export type AnotacaoGeralDetalhada = import('../prontuario').Anotacao & { prontuarioId: string };
+export type AnotacaoGeralDetalhada = import('./prontuario').Anotacao & { prontuarioId: string };
 
 export type TipoPrimeiroRegistro = 'CONSULTA' | 'EXAME' | 'PROCEDIMENTO' | 'ENCAMINHAMENTO';
 

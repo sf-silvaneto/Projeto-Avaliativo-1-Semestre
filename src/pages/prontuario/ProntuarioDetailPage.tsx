@@ -4,7 +4,8 @@ import {
   ArrowLeft, Calendar, User, Phone, Mail, MapPin, FilePlus, Plus,
   FileText as FileTextIcon, Activity, Pill, Loader2,
   Microscope, Scissors, Users as UsersIcon, Stethoscope as StethoscopeIcon,
-  ShieldCheck, Briefcase, Send, HeartPulse, Palette, ShieldQuestion, Building, StickyNote, CreditCard, ListFilter
+  ShieldCheck, Briefcase, Send, HeartPulse, Palette, ShieldQuestion, Building, StickyNote, CreditCard, ListFilter,
+  Droplet // Importar Droplet para HGT
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -16,7 +17,8 @@ import {
     ConsultaDetalhada,
     ExameDetalhado,
     ProcedimentoDetalhado,
-    EncaminhamentoDetalhado
+    EncaminhamentoDetalhada,
+    SinaisVitais // Importar SinaisVitais
 } from '../../types/prontuarioRegistros';
 
 const especialidadeResumos: Record<string, string> = {
@@ -33,7 +35,7 @@ const especialidadeResumos: Record<string, string> = {
   NEUROLOGIA: "Diagnóstico e tratamento de doenças do sistema nervoso central e periférico.",
   OFTALMOLOGIA: "Cuidados com a saúde dos olhos e da visão, tratando doenças e realizando cirurgias.",
   ONCOLOGIA: "Diagnóstico e tratamento de câncer, utilizando quimioterapia, radioterapia e outras terapias.",
-  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).",
+  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).", // Linha corrigida: removido o '.' extra
   OTORRINOLARINGOLOGIA: "Diagnóstico e tratamento de doenças do ouvido, nariz e garganta.",
   PEDIATRIA: "Cuidados com a saúde de crianças e adolescentes, desde o nascimento até a fase adulta inicial.",
   PNEUMOLOGIA: "Diagnóstico e tratamento de doenças do sistema respiratório, como asma e pneumonia.",
@@ -164,6 +166,7 @@ const ProntuarioDetailPage: React.FC = () => {
     }
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const result = await buscarProntuarioPorId(id);
       setProntuario(result);
@@ -180,7 +183,42 @@ const ProntuarioDetailPage: React.FC = () => {
     fetchProntuario();
   }, [fetchProntuario]);
 
-  // Função para renderizar listas de alergias, comorbidades, etc. (copiada de PacienteDetailPage.tsx e ajustada)
+  // Definição única da função formatEnum
+  const formatEnum = (value?: string, enumType?: any) => {
+    if (!value) return 'Não informado';
+    if (enumType === PacienteGeneroEnum) {
+        const generos = { MASCULINO: 'Masculino', FEMININO: 'Feminino', OUTRO: 'Outro', NAO_INFORMADO: 'Não Informado' };
+        return generos[value as keyof typeof generos] || value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, " ");
+    }
+    if (enumType === RacaCor) {
+        const racas = { BRANCA: 'Branca', PRETA: 'Preta', PARDA: 'Parda', AMARELA: 'Amarela', INDIGENA: 'Indígena', NAO_DECLARADO: 'Não Declarado'};
+        return racas[value as keyof typeof racas] || value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, " ");
+    }
+     if (enumType === TipoSanguineo) {
+        const tipos = { A_POSITIVO: 'A+', A_NEGATIVO: 'A-', B_POSITIVO: 'B+', B_NEGATIVO: 'B-', AB_POSITIVO: 'AB+', AB_NEGATIVO: 'AB-', O_POSITIVO: 'O+', O_NEGATIVO: 'O-', NAO_SABE: 'Não Sabe', NAO_INFORMADO: 'Não Informado'};
+        return tipos[value as keyof typeof tipos] || value.replace(/_/g, " ");
+    }
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, " ");
+  };
+
+  const formatCPF = (cpf?: string): string => {
+    if (!cpf) return '-';
+    const digits = cpf.replace(/\D/g, '');
+    if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    return cpf;
+  };
+
+  const formatTelefone = (telefone?: string): string => {
+    if (!telefone) return '-';
+    const digits = telefone.replace(/\D/g, '');
+    const len = digits.length;
+    if (len === 10) return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+    if (len === 11) return digits.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '($1) $2 $3-$4');
+    return telefone;
+  };
+
+  // Função para renderizar listas de alergias, comorbidades, etc.
+  // Esta função é definida uma vez e usada em `renderPacienteCompleto` e outras listas.
   const renderList = (items?: { descricao: string }[]) => {
     if (!items || items.length === 0) {
       return <span className="italic text-neutral-400">Não informado</span>;
@@ -223,39 +261,6 @@ const ProntuarioDetailPage: React.FC = () => {
     return itens.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
   }, [prontuario]);
 
-  const formatEnum = (value?: string, enumType?: any) => {
-    if (!value) return 'Não informado';
-    if (enumType === PacienteGeneroEnum) {
-        const generos = { MASCULINO: 'Masculino', FEMININO: 'Feminino', OUTRO: 'Outro', NAO_INFORMADO: 'Não Informado' };
-        return generos[value as keyof typeof generos] || value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, " ");
-    }
-    if (enumType === RacaCor) {
-        const racas = { BRANCA: 'Branca', PRETA: 'Preta', PARDA: 'Parda', AMARELA: 'Amarela', INDIGENA: 'Indígena', NAO_DECLARADO: 'Não Declarado'};
-        return racas[value as keyof typeof racas] || value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, " ");
-    }
-     if (enumType === TipoSanguineo) {
-        const tipos = { A_POSITIVO: 'A+', A_NEGATIVO: 'A-', B_POSITIVO: 'B+', B_NEGATIVO: 'B-', AB_POSITIVO: 'AB+', AB_NEGATIVO: 'AB-', O_POSITIVO: 'O+', O_NEGATIVO: 'O-', NAO_SABE: 'Não Sabe', NAO_INFORMADO: 'Não Informado'};
-        return tipos[value as keyof typeof tipos] || value.replace(/_/g, " ");
-    }
-    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase().replace(/_/g, " ");
-  };
-
-  const formatCPF = (cpf?: string): string => {
-    if (!cpf) return '-';
-    const digits = cpf.replace(/\D/g, '');
-    if (digits.length === 11) return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    return cpf;
-  };
-
-  const formatTelefone = (telefone?: string): string => {
-    if (!telefone) return '-';
-    const digits = telefone.replace(/\D/g, '');
-    const len = digits.length;
-    if (len === 10) return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-    if (len === 11) return digits.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '($1) $2 $3-$4');
-    return telefone;
-  };
-
   const renderPacienteCompleto = (pacienteData?: PacienteCompleto) => {
     if (!pacienteData) return null;
     const p = pacienteData;
@@ -274,7 +279,7 @@ const ProntuarioDetailPage: React.FC = () => {
             <DetailItem icon={<Mail size={16}/>} label="Email" value={p.email} />
             <DetailItem icon={<User size={16}/>} label="Nome da Mãe" value={p.nomeMae} />
             <DetailItem icon={<User size={16}/>} label="Nome do Pai" value={p.nomePai} />
-            <DetailItem icon={<Calendar size={16}/>} label="Data de Cadastro" value={formatDate(p.dataEntrada)} />
+            <DetailItem icon={<Calendar size={16}/>} label="Data de Cadastro Inicial" value={formatDate(p.dataEntrada)} />
             <DetailItem icon={<CreditCard size={16}/>} label="Cartão SUS" value={p.cartaoSus} />
             <DetailItem icon={<Palette size={16}/>} label="Raça/Cor" value={formatEnum(p.racaCor, RacaCor)} />
             <DetailItem icon={<HeartPulse size={16}/>} label="Tipo Sanguíneo" value={formatEnum(p.tipoSanguineo, TipoSanguineo)} />
@@ -332,7 +337,7 @@ const ProntuarioDetailPage: React.FC = () => {
   }
   
   const medicoResp = prontuario.medicoResponsavel;
-  const medicoRespDisplay = renderMedicoInfo(medicoResp?.nomeCompleto, medicoResp?.especialidade, medicoResp?.crm);
+  const medicoRespDisplay = medicoResp ? renderMedicoInfo(medicoResp.nomeCompleto, medicoResp.especialidade, medicoResp.crm) : 'Não informado';
 
 
   return (
@@ -471,13 +476,19 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
                     <DetailItem label="Responsável" value={medicoConsulta} />
                     {c.motivoConsulta && <DetailItem label="Motivo" value={c.motivoConsulta} />}
                     {c.queixasPrincipais && <DetailItem label="Queixas Principais" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{c.queixasPrincipais}</pre>} />}
-                    {(c.pressaoArterial || c.temperatura || c.frequenciaCardiaca || c.saturacao) && <h5 className="text-sm font-semibold text-neutral-700 mt-3 mb-1">Sinais Vitais:</h5>}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
-                        {c.pressaoArterial && <DetailItem label="P.A." value={c.pressaoArterial}/>}
-                        {c.temperatura && <DetailItem label="Temp." value={`${c.temperatura}°C`}/>}
-                        {c.frequenciaCardiaca && <DetailItem label="F.C." value={`${c.frequenciaCardiaca} bpm`}/>}
-                        {c.saturacao && <DetailItem label="Sat O₂" value={`${c.saturacao}%`}/>}
-                    </div>
+                    {/* Renderizar Sinais Vitais */}
+                    {(c.sinaisVitais?.pressaoArterial || c.sinaisVitais?.temperatura || c.sinaisVitais?.frequenciaCardiaca || c.sinaisVitais?.saturacao || c.sinaisVitais?.hgt) && (
+                        <>
+                            <h5 className="text-sm font-semibold text-neutral-700 mt-3 mb-1">Sinais Vitais:</h5>
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2"> {/* Aumente as colunas */}
+                                {c.sinaisVitais?.pressaoArterial && <DetailItem label="P.A." value={c.sinaisVitais.pressaoArterial}/>}
+                                {c.sinaisVitais?.temperatura && <DetailItem label="Temp." value={`${c.sinaisVitais.temperatura}°C`}/>}
+                                {c.sinaisVitais?.frequenciaCardiaca && <DetailItem label="F.C." value={`${c.sinaisVitais.frequenciaCardiaca} bpm`}/>}
+                                {c.sinaisVitais?.saturacao && <DetailItem label="Sat O₂" value={`${c.sinaisVitais.saturacao}%`}/>}
+                                {c.sinaisVitais?.hgt && <DetailItem label="HGT" value={`${c.sinaisVitais.hgt} mg/dL`}/>} {/* Novo item HGT */}
+                            </div>
+                        </>
+                    )}
                     {c.exameFisico && <DetailItem label="Exame Físico" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{c.exameFisico}</pre>} />}
                     {c.hipoteseDiagnostica && <DetailItem label="Hipótese Diagnóstica" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{c.hipoteseDiagnostica}</pre>} />}
                     {c.condutaPlanoTerapeutico && <DetailItem label="Conduta / Plano" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{c.condutaPlanoTerapeutico}</pre>} />}
@@ -516,7 +527,7 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
                 </div>
             );
         case 'ENCAMINHAMENTO':
-            const enc = item.dataOriginal as EncaminhamentoDetalhado;
+            const enc = item.dataOriginal as EncaminhamentoDetalhada;
             let labelMedicoEnc = "Médico Solicitante";
             let valorMedicoEnc;
 
@@ -607,7 +618,7 @@ const ListaDeProcedimentos: React.FC<{procedimentos: ProcedimentoDetalhado[], fo
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
 };
 
-const ListaDeEncaminhamentos: React.FC<{encaminhamentos: EncaminhamentoDetalhado[], formatDateTime: Function, formatDate: Function}> = ({encaminhamentos, formatDateTime, formatDate}) => {
+const ListaDeEncaminhamentos: React.FC<{encaminhamentos: EncaminhamentoDetalhada[], formatDateTime: Function, formatDate: Function}> = ({encaminhamentos, formatDateTime, formatDate}) => {
     if (!encaminhamentos || encaminhamentos.length === 0) return <Card className="text-center"><p className="text-neutral-500 italic py-10">Nenhum encaminhamento registrado.</p></Card>;
     const itens: HistoricoUnificadoItem[] = encaminhamentos.map(enc => ({id: `encaminhamento-list-${enc.id}`, tipo: 'ENCAMINHAMENTO', data: enc.dataEncaminhamento, dataOriginal:enc, titulo: `Encaminhamento para ${enc.especialidadeDestino || 'N/D'}`, icone: <Send className="h-5 w-5" />}));
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
