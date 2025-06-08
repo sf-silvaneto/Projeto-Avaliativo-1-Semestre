@@ -5,8 +5,9 @@ import { z } from 'zod';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { NovaEncaminhamentoRequest, AktualizarEncaminhamentoRequest } from '../../types/prontuarioRegistros';
-import { Medico, StatusMedico } from '../../types/medico';
+import { NovaEncaminhamentoRequest, AtualizarEncaminhamentoRequest } from '../../types/prontuarioRegistros';
+// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
+import { Medico } from '../../types/medico'; // Mantenha apenas Medico
 import Select from '../ui/Select';
 import { Save, Calendar, Send as EncaminhamentoIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
@@ -15,7 +16,7 @@ const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const encaminhamentoSchema = z.object({
   dataEncaminhamento: z.string()
     .min(1, "Data e hora do encaminhamento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do encaminhamento não podem ser no futuro." }),
   especialidadeDestino: z.string().min(3, { message: "Especialidade de destino é obrigatória (mín. 3 caracteres)." }).max(200, "Especialidade muito longa (máx. 200)."),
@@ -30,7 +31,7 @@ const encaminhamentoSchema = z.object({
 type EncaminhamentoFormData = z.infer<typeof encaminhamentoSchema>;
 
 interface EncaminhamentoFormProps {
-  onSubmitEvento: (data: NovaEncaminhamentoRequest | AktualizarEncaminhamentoRequest) => void;
+  onSubmitEvento: (data: NovaEncaminhamentoRequest | AtualizarEncaminhamentoRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
   initialData?: Partial<EncaminhamentoFormData & { id?: string }>;
@@ -101,8 +102,9 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
     onSubmitEvento(submissionData);
   };
 
+  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.status === StatusMedico.ATIVO)
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`

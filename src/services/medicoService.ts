@@ -3,7 +3,7 @@ import {
   Medico,
   MedicoCreateDTO,
   MedicoUpdateDTO,
-  MedicoStatusUpdateDTO,
+  // MedicoStatusUpdateDTO, // Remova este import
   ResultadoBuscaMedicos,
   BuscaMedicoParams,
 } from '../types/medico';
@@ -42,21 +42,34 @@ export const atualizarMedico = async (id: number, data: MedicoUpdateDTO): Promis
   try {
     const response = await api.put<Medico>(`/medicos/${id}`, data);
     return response.data;
-  } catch (error) {
+  }catch (error) {
     console.error(`Erro ao atualizar médico com ID ${id}:`, error);
     throw error;
   }
 };
 
-export const atualizarStatusMedico = async (id: number, data: MedicoStatusUpdateDTO): Promise<Medico> => {
+// Antigo: export const atualizarStatusMedico = async (id: number, data: MedicoStatusUpdateDTO): Promise<Medico> => {
+// NOVO: Funções para ativar/inativar
+export const ativarMedico = async (id: number): Promise<Medico> => {
   try {
-    const response = await api.patch<Medico>(`/medicos/${id}/status`, data);
+    const response = await api.patch<Medico>(`/medicos/${id}/ativar`);
     return response.data;
   } catch (error) {
-    console.error(`Erro ao atualizar status do médico com ID ${id}:`, error);
+    console.error(`Erro ao ativar médico com ID ${id}:`, error);
     throw error;
   }
 };
+
+export const inativarMedico = async (id: number): Promise<Medico> => {
+  try {
+    const response = await api.patch<Medico>(`/medicos/${id}/inativar`);
+    return response.data;
+  } catch (error) {
+    console.error(`Erro ao inativar médico com ID ${id}:`, error);
+    throw error;
+  }
+};
+
 
 export const deletarMedico = async (id: number): Promise<void> => {
   try {

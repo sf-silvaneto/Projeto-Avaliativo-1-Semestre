@@ -5,8 +5,9 @@ import { z } from 'zod';
 import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
-import { AdicionarExameRequest, AktualizarExameRequest } from '../../types/prontuarioRegistros';
-import { Medico, StatusMedico } from '../../types/medico';
+import { AdicionarExameRequest, AtualizarExameRequest } from '../../types/prontuarioRegistros';
+// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
+import { Medico } from '../../types/medico'; // Mantenha apenas Medico
 import Select from '../ui/Select';
 import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
@@ -16,7 +17,7 @@ const exameSchema = z.object({
   nome: z.string().min(3, { message: "Nome do exame é obrigatório (mín. 3 caracteres)." }).max(200, "Nome do exame muito longo (máx. 200)."),
   dataExame: z.string()
     .min(1, "Data e hora do exame são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do exame inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do exame não podem ser no futuro." }),
   resultado: z.string().min(5, { message: "Resultado do exame é obrigatório (mín. 5 caracteres)." }).max(5000, "Resultado muito longo (máx. 5000)."),
@@ -105,8 +106,9 @@ const ExameForm: React.FC<ExameFormProps> = ({
     onSubmitEvento(submissionData);
   };
 
+  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.status === StatusMedico.ATIVO)
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`

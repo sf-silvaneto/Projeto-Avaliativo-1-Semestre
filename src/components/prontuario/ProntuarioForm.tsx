@@ -14,7 +14,7 @@ import {
     NovaEncaminhamentoRequest,
     TipoPrimeiroRegistro
 } from '../../types/prontuarioRegistros';
-import { Medico, StatusMedico } from '../../types/medico';
+import { Medico } from '../../types/medico';
 import { Paciente, BuscaPacienteParams } from '../../types/paciente';
 import { buscarMedicos } from '../../services/medicoService';
 import { buscarPacientes } from '../../services/pacienteService';
@@ -58,7 +58,7 @@ const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void
   const [isSearchingPacientes, setIsSearchingPacientes] = useState(false);
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [showPacienteSuggestions, setShowPacienteSuggestions] = useState(false);
-  const [medicosError, setMedicosError] = useState<string | null>(null);
+  const [medicosError, setMedicosError] = useState<string | null>(null); // Este é o estado que controla a mensagem de erro específica
 
   const pacienteIdAtual = watch('pacienteId');
   const nomePacienteFormatadoAtual = watch('pacienteNomeFormatado');
@@ -66,22 +66,23 @@ const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void
 
   useEffect(() => {
     const carregarMedicos = async () => {
-      setMedicosError(null);
+      setMedicosError(null); // Limpa o erro antes de buscar
       try {
-        const response = await buscarMedicos({ status: StatusMedico.ATIVO, tamanho: 200, pagina: 0, sort: 'nomeCompleto,asc' });
+        const response = await buscarMedicos({ status: 'ATIVO', tamanho: 200, pagina: 0, sort: 'nomeCompleto,asc' });
         if (response.content.length === 0) {
-            setMedicosError("Nenhum médico ativo encontrado para seleção.");
-            if(onError) onError("Não há médicos ativos cadastrados para iniciar um prontuário.");
+            setMedicosError("Nenhum médico ativo encontrado para seleção."); // Mensagem específica
+            // Não chame onError aqui, pois o erro é específico deste passo e será exibido localmente
+            // if(onError) onError("Não há médicos ativos cadastrados para iniciar um prontuário."); // Removido
         }
         setMedicos(response.content);
       } catch (error) {
         console.error("Erro ao buscar médicos:", error);
-        setMedicosError("Falha ao carregar lista de médicos.");
-        if(onError) onError("Falha ao carregar lista de médicos.");
+        setMedicosError("Falha ao carregar lista de médicos."); // Mensagem específica
+        // if(onError) onError("Falha ao carregar lista de médicos."); // Removido
       }
     };
     carregarMedicos();
-  }, [onError]);
+  }, []); // Removido onError do array de dependências para evitar loop
 
   const formatCPFDisplay = (cpf: string): string => {
     if (!cpf) return '';
@@ -93,7 +94,7 @@ const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void
     if (!value) return '';
     const digits = value.replace(/\D/g, '').substring(0, 11);
     if (digits.length === 0) return '';
-    if (digits.length <= 3) return digits;
+    if (digits.length <= 3) return `${digits}`;
     if (digits.length <= 6) return `${digits.substring(0, 3)}.${digits.substring(3)}`;
     if (digits.length <= 9) return `${digits.substring(0, 3)}.${digits.substring(3, 6)}.${digits.substring(6)}`;
     return `${digits.substring(0, 3)}.${digits.substring(3, 6)}.${digits.substring(6, 9)}-${digits.substring(9)}`;
@@ -153,15 +154,17 @@ const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void
     }
   }, [searchTermPaciente, performSearch, nomePacienteFormatadoAtual, pacienteIdAtual, setValue, getValues, trigger]);
 
-  const medicoOptions = medicos.map(medico => ({
-    value: medico.id.toString(),
-    label: `${medico.nomeCompleto} | ${medico.especialidade} | CRM: ${medico.crm}`
+  const medicoOptions = medicos
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+    .map(medico => ({
+        value: medico.id.toString(),
+        label: `${medico.nomeCompleto} | ${medico.especialidade} | CRM: ${medico.crm}`
   }));
 
   const handlePacienteSelect = (paciente: Paciente) => {
     const nomeFormatado = `${paciente.nome} | CPF: ${formatCPFDisplay(paciente.cpf)}`;
     setValue('pacienteId', paciente.id.toString(), { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-    setValue('pacienteNomeFormatado', nomeFormatado, { shouldValidate: false });
+    setValue('pacienteNomeFormatado', nomeFormatado);
     setSearchTermPaciente(nomeFormatado);
     setShowPacienteSuggestions(false); setPacientes([]); setSearchAttempted(false);
     trigger('pacienteId');
@@ -183,6 +186,7 @@ const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void
       <h3 className="text-xl font-semibold text-neutral-800 border-b border-neutral-300 pb-3 mb-6">
         1. Paciente e Médico Responsável Inicial
       </h3>
+      {/* Mensagem de erro específica do passo 1 */}
       {medicosError && <Alert type="error" message={medicosError} className="mb-4" onClose={() => setMedicosError(null)} />}
       <div className="p-5 border border-neutral-200 rounded-lg bg-white shadow-sm relative" ref={suggestionsRef}>
         <Controller
@@ -299,7 +303,7 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
   isLoading = false,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null); // Mantido, mas usado para erros globais/de validação de passo
   const navigate = useNavigate();
 
   const getCurrentSchema = useCallback(() => {
@@ -432,7 +436,7 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
         if (Object.keys(errors).length > 0) {
             const firstErrorKey = Object.keys(errors)[0] as keyof ProntuarioWizardFormData;
             const errorMessage = errors[firstErrorKey]?.message;
-            setGlobalError(String(errorMessage) || "Verifique os campos obrigatórios.");
+            setGlobalError(String(errorMessage) || "Verifique os campos obrigatórios."); // Usa globalError para validações de passo
         } else {
             setGlobalError("Preencha os campos obrigatórios para avançar.");
         }
@@ -468,6 +472,11 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
           </div>
         </div>
 
+        {/* Removido o Alert global para erros de médicos aqui */}
+        {/* {globalError && (
+            <Alert type="error" message={globalError} className="mb-6" onClose={() => setGlobalError(null)} />
+        )} */}
+        {/* Mantém o Alert global para outros erros ou validações de passo */}
         {globalError && (
             <Alert type="error" message={globalError} className="mb-6" onClose={() => setGlobalError(null)} />
         )}

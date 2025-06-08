@@ -390,7 +390,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
               error={errors.alergias?.[index]?.descricao?.message}
               fullWidth
             />
-            <Button type="button" variant="danger" size="md" onClick={() => removeAlergia(index)} leftIcon={<Trash2 className="h-4 w-4" />}>
+            <Button type="button" variant="danger" size="md" onClick={() => removeAlergia(index)} leftIcon={<Trash2 className="h-10 w-4" />}>
               Remover
             </Button>
           </div>
@@ -416,7 +416,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
               error={errors.comorbidades?.[index]?.descricao?.message}
               fullWidth
             />
-            <Button type="button" variant="danger" size="md" onClick={() => removeComorbidade(index)} leftIcon={<Trash2 className="h-4 w-4" />}>
+            <Button type="button" variant="danger" size="md" onClick={() => removeComorbidade(index)} leftIcon={<Trash2 className="h-10 w-4" />}>
               Remover
             </Button>
           </div>
@@ -442,7 +442,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
               error={errors.medicamentosContinuos?.[index]?.descricao?.message}
               fullWidth
             />
-            <Button type="button" variant="danger" size="md" onClick={() => removeMedicamento(index)} leftIcon={<Trash2 className="h-4 w-4" />}>
+            <Button type="button" variant="danger" size="md" onClick={() => removeMedicamento(index)} leftIcon={<Trash2 className="h-10 w-4" />}>
               Remover
             </Button>
           </div>

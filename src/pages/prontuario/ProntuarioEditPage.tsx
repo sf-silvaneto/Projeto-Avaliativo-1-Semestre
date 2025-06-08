@@ -14,7 +14,8 @@ import Select from '../../components/ui/Select';
 import { buscarProntuarioPorId, atualizarDadosBasicosProntuario, atualizarConsultaNoProntuario, atualizarExameNoProntuario, atualizarProcedimentoNoProntuario, atualizarEncaminhamentoNoProntuario } from '../../services/prontuarioService';
 import { buscarMedicos } from '../../services/medicoService';
 import { Prontuario } from '../../types/prontuario';
-import { Medico, StatusMedico } from '../../types/medico';
+// Remova a importação StatusMedico aqui
+import { Medico } from '../../types/medico'; // Mantenha apenas Medico
 
 import ConsultaForm from '../../components/prontuario/ConsultaForm';
 import ExameForm from '../../components/prontuario/ExameForm';
@@ -23,9 +24,9 @@ import EncaminhamentoForm from '../../components/prontuario/EncaminhamentoForm';
 
 import { 
     ConsultaDetalhada, AtualizarConsultaRequest,
-    ExameDetalhado, AktualizarExameRequest,
-    ProcedimentoDetalhado, AktualizarProcedimentoRequest,
-    EncaminhamentoDetalhado, AktualizarEncaminhamentoRequest
+    ExameDetalhado, AtualizarExameRequest, // Corrigido o typo aqui de AktualizarExameRequest para AtualizarExameRequest
+    ProcedimentoDetalhado, AtualizarProcedimentoRequest, // Corrigido o typo aqui de AktualizarProcedimentoRequest para AtualizarProcedimentoRequest
+    EncaminhamentoDetalhado, AtualizarEncaminhamentoRequest // Corrigido o typo aqui de AktualizarEncaminhamentoRequest para AtualizarEncaminhamentoRequest
 } from '../../types/prontuarioRegistros';
 
 const prontuarioBasicoSchema = z.object({
@@ -59,7 +60,7 @@ const ProntuarioEditPage: React.FC = () => {
   const [showModalExame, setShowModalExame] = useState(false);
   const [procedimentoEmEdicao, setProcedimentoEmEdicao] = useState<ProcedimentoDetalhado | null>(null);
   const [showModalProcedimento, setShowModalProcedimento] = useState(false);
-  const [encaminhamentoEmEdicao, setEncaminhamentoEmEdicao] = useState<EncaminhamentoDetalhado | null>(null);
+  const [encaminhamentoEmEdicao, setEncaminhamentoEmEdicao] = useState<EncaminhamentoDetalhada | null>(null);
   const [showModalEncaminhamento, setShowModalEncaminhamento] = useState(false);
 
   const { control, handleSubmit, reset, formState: { errors: formErrorsBasicos } } = useForm<ProntuarioBasicoFormData>({
@@ -81,7 +82,8 @@ const ProntuarioEditPage: React.FC = () => {
       logger.log("Dados do prontuário recebidos:", prontuarioData);
       setProntuario(prontuarioData);
       
-      const medicosData = await buscarMedicos({ status: StatusMedico.ATIVO, tamanho: 200, pagina: 0, sort: 'nomeCompleto,asc' });
+      // A busca de médicos agora usa o parâmetro 'status' como string 'ATIVO'
+      const medicosData = await buscarMedicos({ status: 'ATIVO', tamanho: 200, pagina: 0, sort: 'nomeCompleto,asc' });
       setMedicos(medicosData.content);
 
       reset({ medicoResponsavelId: prontuarioData.medicoResponsavel?.id });
@@ -97,8 +99,9 @@ const ProntuarioEditPage: React.FC = () => {
     fetchProntuarioEListas();
   }, [fetchProntuarioEListas]);
 
+  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicos
-    .filter(m => m.status === StatusMedico.ATIVO)
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
     .map(medico => ({
         value: medico.id.toString(),
         label: `${medico.nomeCompleto} | ${medico.especialidade} | CRM: ${medico.crm}`
@@ -136,7 +139,7 @@ const ProntuarioEditPage: React.FC = () => {
       setSuccessMessage('Consulta atualizada com sucesso!');
       handleFecharModalEdicaoConsulta();
       fetchProntuarioEListas(); 
-    } catch (err: any) {
+    }catch (err: any) {
       logger.error(`Erro ao atualizar consulta ${consultaEmEdicao.id}:`, err);
       setError(err.response?.data?.mensagem || err.message || 'Falha ao atualizar consulta.');
     } finally {
@@ -150,7 +153,7 @@ const ProntuarioEditPage: React.FC = () => {
   const handleFecharModalEdicaoExame = () => {
     setShowModalExame(false); setExameEmEdicao(null);
   };
-  const handleSalvarEdicaoExame = async (dados: Omit<AktualizarExameRequest, 'id'>) => {
+  const handleSalvarEdicaoExame = async (dados: Omit<AtualizarExameRequest, 'id'>) => { // Corrigido o typo aqui
     if (!exameEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
@@ -173,7 +176,7 @@ const ProntuarioEditPage: React.FC = () => {
   const handleFecharModalEdicaoProcedimento = () => {
     setShowModalProcedimento(false); setProcedimentoEmEdicao(null);
   };
-  const handleSalvarEdicaoProcedimento = async (dados: Omit<AktualizarProcedimentoRequest, 'id'>) => {
+  const handleSalvarEdicaoProcedimento = async (dados: Omit<AtualizarProcedimentoRequest, 'id'>) => { // Corrigido o typo aqui
     if (!procedimentoEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
@@ -190,13 +193,13 @@ const ProntuarioEditPage: React.FC = () => {
     }
   };
 
-  const handleAbrirModalEdicaoEncaminhamento = (encaminhamento: EncaminhamentoDetalhado) => {
+  const handleAbrirModalEdicaoEncaminhamento = (encaminhamento: EncaminhamentoDetalhada) => {
     setEncaminhamentoEmEdicao(encaminhamento); setShowModalEncaminhamento(true); setError(null); setSuccessMessage(null);
   };
   const handleFecharModalEdicaoEncaminhamento = () => {
     setShowModalEncaminhamento(false); setEncaminhamentoEmEdicao(null);
   };
-  const handleSalvarEdicaoEncaminhamento = async (dados: Omit<AktualizarEncaminhamentoRequest, 'id'>) => {
+  const handleSalvarEdicaoEncaminhamento = async (dados: Omit<AtualizarEncaminhamentoRequest, 'id'>) => { // Corrigido o typo aqui
     if (!encaminhamentoEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
@@ -213,9 +216,9 @@ const ProntuarioEditPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {}
-  if (error && !prontuario) {}
-  if (!prontuario) {}
+  if (isLoading) { /* ... */ }
+  if (error && !prontuario) { /* ... */ }
+  if (!prontuario) { /* ... */ }
 
   const TabButton: React.FC<{tabKey: string, label: string, icon: React.ReactNode, count?: number}> = ({tabKey, label, icon, count}) => (
     <button

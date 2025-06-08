@@ -7,7 +7,8 @@ import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
 import { NovaConsultaRequest, AtualizarConsultaRequest } from '../../types/prontuarioRegistros';
-import { Medico, StatusMedico } from '../../types/medico';
+// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico daqui
+import { Medico } from '../../types/medico'; // Mantenha apenas Medico
 import {
     Save, Calendar, Activity, Thermometer, Heart, Percent,
     BookOpen, Brain, ClipboardPlus, FileText as FileTextIcon, Edit3 as EditIcon,
@@ -20,7 +21,6 @@ const formatarPA = (value: string): string => {
     let digitos = value.replace(/\D/g, '');
     if (digitos.length > 6) { digitos = digitos.substring(0, 6); }
     if (digitos.length <= 3) { return digitos; }
-    // CORREÇÃO: Remover tags span, usar string de formatação correta
     return `${digitos.substring(0, 3)}/${digitos.substring(3, 5)}`;
 };
 
@@ -39,7 +39,7 @@ const formatarTemperatura = (value: string): string => {
 const consultaSchema = z.object({
     dataHoraConsulta: z.string()
         .min(1, "Data e hora da consulta são obrigatórias.")
-        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." }) // YYYY em vez de YYYY
+        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
         .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
         .refine(val => {
             const dataSelecionada = new Date(val);
@@ -207,8 +207,9 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         onSubmitEvento(submissionData);
     };
 
+    // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
     const medicoOptions = medicosDisponiveis
-        .filter(m => m.status === StatusMedico.ATIVO)
+        .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
         .map(m => ({
             value: m.id.toString(),
             label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -259,7 +260,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
              <Textarea
                 label="História da Doença Atual / Queixas Detalhadas*"
                 rows={5}
-                placeholder="Detalhar início, características, fatores de melhora/piora, sintomas associados..."
+                placeholder="Detalhar início, características, fatores de melhora/pihora, sintomas associados..."
                 {...register('queixasPrincipais')}
                 error={errors.queixasPrincipais?.message}
             />

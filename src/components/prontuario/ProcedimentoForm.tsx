@@ -6,7 +6,8 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaProcedimentoRequest, AtualizarProcedimentoRequest } from '../../types/prontuarioRegistros';
-import { Medico, StatusMedico } from '../../types/medico';
+// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
+import { Medico } from '../../types/medico'; // Mantenha apenas Medico
 import Select from '../ui/Select';
 import { Save, Calendar, ClipboardPlus as ProcedimentoIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
@@ -15,7 +16,7 @@ const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const procedimentoSchema = z.object({
   dataProcedimento: z.string()
     .min(1, "Data e hora do procedimento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou YYYY-MM-DDTHH:MM." })
+    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
     .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do procedimento inválidas (não é uma data real)." })
     .refine(val => new Date(val) <= new Date(), { message: "Data e hora do procedimento não podem ser no futuro." }),
   descricaoProcedimento: z.string().min(10, { message: "Descrição do procedimento é obrigatória (mín. 10 caracteres)." }).max(1000, "Descrição muito longa (máx. 1000)."),
@@ -37,7 +38,6 @@ interface ProcedimentoFormProps {
   medicosDisponiveis?: Medico[];
 }
 
-// FUNÇÃO CORRIGIDA
 const getLocalDateTimeString = (dateString?: string | Date): string => {
     const dateCandidate = dateString ? new Date(dateString) : new Date(); 
 
@@ -101,8 +101,9 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
     onSubmitEvento(submissionData);
   };
 
+  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.status === StatusMedico.ATIVO)
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`

@@ -5,28 +5,37 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { buscarMedicos, atualizarStatusMedico } from '../../services/medicoService';
-import { Medico, BuscaMedicoParams, StatusMedico, ResultadoBuscaMedicos } from '../../types/medico';
+// import { buscarMedicos, atualizarStatusMedico } from '../../services/medicoService'; // Antigo
+import { buscarMedicos, ativarMedico, inativarMedico } from '../../services/medicoService'; // Novo
+// import { Medico, BuscaMedicoParams, StatusMedico, ResultadoBuscaMedicos } from '../../types/medico'; // Remova StatusMedico
+import { Medico, BuscaMedicoParams, ResultadoBuscaMedicos } from '../../types/medico'; // Novo
 import Card from '../../components/ui/Card';
 
 interface MedicoSearchFormData {
   nome?: string;
   crm?: string;
   especialidade?: string;
-  status?: StatusMedico | '';
+  // status?: StatusMedico | ''; // Antigo
+  status?: 'ATIVO' | 'INATIVO' | ''; // Novo
 }
 
 const MedicoTableComponent: React.FC<{
   medicos: Medico[];
   onEdit: (id: number) => void;
   onViewDetails: (id: number) => void;
-  onToggleStatus: (id: number, currentStatus: StatusMedico) => Promise<void>;
+  // onToggleStatus: (id: number, currentStatus: StatusMedico) => Promise<void>; // Antigo
+  onToggleStatus: (id: number, isCurrentlyActive: boolean) => Promise<void>; // Novo
   isLoadingToggleOrDelete: boolean;
   medicoInAction: number | null;
 }> = ({ medicos, onEdit, onViewDetails, onToggleStatus, isLoadingToggleOrDelete, medicoInAction }) => {
 
-  const renderStatusBadge = (status: StatusMedico) => {
-    const isActive = status === StatusMedico.ATIVO;
+  // Adaptação para o novo campo excludedAt
+  const isMedicoAtivo = (medico: Medico): boolean => {
+    return medico.excludedAt === null || medico.excludedAt === undefined;
+  };
+
+  const renderStatusBadge = (medico: Medico) => {
+    const isActive = isMedicoAtivo(medico);
     return (
       <span
         className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -65,7 +74,7 @@ const MedicoTableComponent: React.FC<{
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">{medico.crm}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">{medico.especialidade}</td>
-                <td className="px-4 py-3 whitespace-nowrap">{renderStatusBadge(medico.status)}</td>
+                <td className="px-4 py-3 whitespace-nowrap">{renderStatusBadge(medico)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-center">
                   <div className="flex justify-center items-center space-x-2">
                     <Button
@@ -89,13 +98,14 @@ const MedicoTableComponent: React.FC<{
                     <Button
                         variant="link"
                         size="sm"
-                        onClick={() => onToggleStatus(medico.id, medico.status)}
-                        title={medico.status === StatusMedico.ATIVO ? "Inativar Médico" : "Ativar Médico"}
-                        className={`p-1 ${medico.status === StatusMedico.ATIVO ? 'text-warning-600 hover:text-warning-800' : 'text-success-600 hover:text-success-800'}`}
+                        // Passar o ID e o status atual (boolean)
+                        onClick={() => onToggleStatus(medico.id, isMedicoAtivo(medico))}
+                        title={isMedicoAtivo(medico) ? "Inativar Médico" : "Ativar Médico"}
+                        className={`p-1 ${isMedicoAtivo(medico) ? 'text-warning-600 hover:text-warning-800' : 'text-success-600 hover:text-success-800'}`}
                         isLoading={isLoadingToggleOrDelete && medicoInAction === medico.id}
                         disabled={isLoadingToggleOrDelete && medicoInAction === medico.id}
                     >
-                        {medico.status === StatusMedico.ATIVO ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
+                        {isMedicoAtivo(medico) ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
                     </Button>
                   </div>
                 </td>
@@ -142,9 +152,10 @@ const MedicoListPage: React.FC = () => {
         nome: filters.nome || undefined,
         crm: filters.crm || undefined,
         especialidade: filters.especialidade || undefined,
-        status: filters.status && Object.values(StatusMedico).includes(filters.status as StatusMedico)
-                ? filters.status as StatusMedico
-                : undefined,
+        // status: filters.status && Object.values(StatusMedico).includes(filters.status as StatusMedico) // Antigo
+        //         ? filters.status as StatusMedico // Antigo
+        //         : undefined, // Antigo
+        status: filters.status || undefined, // Novo
         sort: 'nomeCompleto,asc',
       };
       const result = await buscarMedicos(params);
@@ -228,20 +239,26 @@ const MedicoListPage: React.FC = () => {
     navigate(`/medicos/${id}`);
   };
 
-  const handleToggleStatus = async (id: number, currentStatus: StatusMedico) => {
-    const newStatus = currentStatus === StatusMedico.ATIVO ? StatusMedico.INATIVO : StatusMedico.ATIVO;
-    const confirmAction = window.confirm(`Tem certeza que deseja ${newStatus === StatusMedico.ATIVO ? 'ativar' : 'inativar'} este médico?`);
+  // onToggleStatus agora recebe um boolean (isCurrentlyActive)
+  const handleToggleStatus = async (id: number, isCurrentlyActive: boolean) => {
+    const actionText = isCurrentlyActive ? 'inativar' : 'ativar';
+    const confirmAction = window.confirm(`Tem certeza que deseja ${actionText} este médico?`);
     if (confirmAction) {
       setIsLoadingAction(true);
       setMedicoInAction(id);
       setError(null);
       setSuccessMessage(null);
       try {
-        await atualizarStatusMedico(id, { status: newStatus });
-        setSuccessMessage(`Status do médico alterado para ${newStatus.toString().toLowerCase()} com sucesso.`);
+        if (isCurrentlyActive) {
+            await inativarMedico(id);
+            setSuccessMessage(`Médico inativado com sucesso.`);
+        } else {
+            await ativarMedico(id);
+            setSuccessMessage(`Médico ativado com sucesso.`);
+        }
         fetchMedicos(searchFilters, currentPage); 
       } catch (err: any) {
-        setError(err.response?.data?.mensagem || 'Erro ao alterar status do médico.');
+        setError(err.response?.data?.mensagem || `Erro ao ${actionText} o médico.`);
       } finally {
         setIsLoadingAction(false);
         setMedicoInAction(null);
@@ -251,8 +268,8 @@ const MedicoListPage: React.FC = () => {
 
   const statusOptions = [
     { value: '', label: 'Todos os Status' },
-    { value: StatusMedico.ATIVO, label: 'Ativo' },
-    { value: StatusMedico.INATIVO, label: 'Inativo' },
+    { value: 'ATIVO', label: 'Ativo' },
+    { value: 'INATIVO', label: 'Inativo' },
   ];
   
   const totalPages = resultadoBusca?.pageable.totalPages || 0;

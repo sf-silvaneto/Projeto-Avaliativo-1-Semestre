@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Adicione useCallback aqui
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, 
@@ -15,8 +15,8 @@ import {
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import { buscarMedicoPorId } from '../../services/medicoService';
-import { Medico, StatusMedico } from '../../types/medico';
+import { buscarMedicoPorId, ativarMedico, inativarMedico } from '../../services/medicoService';
+import { Medico } from '../../types/medico';
 import { Loader2 } from 'lucide-react';
 
 const MedicoDetailPage: React.FC = () => {
@@ -25,33 +25,38 @@ const MedicoDetailPage: React.FC = () => {
   const [medico, setMedico] = useState<Medico | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [updateStatusError, setUpdateStatusError] = useState<string | null>(null);
+  const [updateStatusSuccess, setUpdateStatusSuccess] = useState<string | null>(null);
+
+
+  const fetchMedico = useCallback(async () => {
+    if (!id || isNaN(Number(id))) {
+      setError("ID do médico inválido.");
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    setUpdateStatusError(null);
+    setUpdateStatusSuccess(null);
+    try {
+      const result = await buscarMedicoPorId(Number(id));
+      setMedico(result);
+    } catch (err: any) {
+      console.error('Erro ao buscar médico:', err);
+      setError(
+        err.response?.data?.mensagem || err.message || 'Erro ao buscar dados do médico.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    const fetchMedico = async () => {
-      if (!id || isNaN(Number(id))) {
-        setError("ID do médico inválido.");
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const result = await buscarMedicoPorId(Number(id));
-        setMedico(result);
-      } catch (err: any) {
-        console.error('Erro ao buscar médico:', err);
-        setError(
-          err.response?.data?.mensagem || err.message || 'Erro ao buscar dados do médico.'
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchMedico();
-  }, [id]);
+  }, [fetchMedico]);
 
   const formatDateTime = (dataString?: string | Date) => {
     if (!dataString) return '-';
@@ -74,9 +79,13 @@ const MedicoDetailPage: React.FC = () => {
     }
   };
   
-  const renderStatus = (status?: StatusMedico) => {
-    if (!status) return <span className="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral-100 text-neutral-800">Não informado</span>;
-    const isActive = status === StatusMedico.ATIVO;
+  const isMedicoAtivo = (medicoData: Medico): boolean => {
+    return medicoData.excludedAt === null || medicoData.excludedAt === undefined;
+  };
+
+  const renderStatus = (medicoData?: Medico) => {
+    if (!medicoData) return <span className="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral-100 text-neutral-800">Não informado</span>;
+    const isActive = isMedicoAtivo(medicoData);
     return (
       <span
         className={`px-2 py-1 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${
@@ -87,6 +96,40 @@ const MedicoDetailPage: React.FC = () => {
         {isActive ? 'Ativo' : 'Inativo'}
       </span>
     );
+  };
+
+  const handleToggleStatus = async () => {
+    if (!medico) return;
+    setIsUpdatingStatus(true);
+    setUpdateStatusError(null);
+    setUpdateStatusSuccess(null);
+    try {
+      let updatedMedico: Medico;
+      if (isMedicoAtivo(medico)) {
+        // Inativar
+        const confirmInactivate = window.confirm(`Tem certeza que deseja inativar o médico ${medico.nomeCompleto}? Ele não aparecerá mais nas listas de seleção.`);
+        if (!confirmInactivate) {
+            setIsUpdatingStatus(false);
+            return;
+        }
+        updatedMedico = await inativarMedico(medico.id);
+        setUpdateStatusSuccess(`Médico ${medico.nomeCompleto} inativado com sucesso.`);
+      } else {
+        // Ativar
+        const confirmActivate = window.confirm(`Tem certeza que deseja ativar o médico ${medico.nomeCompleto}? Ele voltará a aparecer nas listas de seleção.`);
+        if (!confirmActivate) {
+            setIsUpdatingStatus(false);
+            return;
+        }
+        updatedMedico = await ativarMedico(medico.id);
+        setUpdateStatusSuccess(`Médico ${medico.nomeCompleto} ativado com sucesso.`);
+      }
+      setMedico(updatedMedico); // Atualiza o estado local do médico
+    } catch (err: any) {
+      setUpdateStatusError(err.response?.data?.mensagem || err.message || 'Erro ao alterar status do médico.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
   
   const DetailItem: React.FC<{ icon?: React.ReactNode; label: string; value?: string | null | React.ReactNode }> = ({ icon, label, value }) => (
@@ -146,6 +189,8 @@ const MedicoDetailPage: React.FC = () => {
   
   return (
     <div className="container-medium py-8">
+      {updateStatusError && <Alert type="error" message={updateStatusError} className="mb-4" onClose={() => setUpdateStatusError(null)} />}
+      {updateStatusSuccess && <Alert type="success" message={updateStatusSuccess} className="mb-4" onClose={() => setUpdateStatusSuccess(null)} />}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <h1 className="text-2xl font-bold text-neutral-900">
           Detalhes do Médico
@@ -156,6 +201,16 @@ const MedicoDetailPage: React.FC = () => {
             </Button>
             <Button variant="primary" onClick={() => navigate(`/medicos/${id}/editar`)} leftIcon={<EditIcon className="h-4 w-4" />}>
                 Editar Médico
+            </Button>
+            {/* Botão de Ativar/Inativar */}
+            <Button
+                variant={isMedicoAtivo(medico) ? "warning" : "success"}
+                onClick={handleToggleStatus}
+                isLoading={isUpdatingStatus}
+                leftIcon={isMedicoAtivo(medico) ? <ToggleLeft className="h-4 w-4" /> : <ToggleRight className="h-4 w-4" />}
+                className="w-full sm:w-auto justify-center"
+            >
+                {isMedicoAtivo(medico) ? "Inativar" : "Ativar"}
             </Button>
         </div>
       </div>
@@ -174,7 +229,7 @@ const MedicoDetailPage: React.FC = () => {
                     value={medico.resumoEspecialidade ? <pre className="whitespace-pre-wrap text-sm font-medium">{medico.resumoEspecialidade}</pre> : "-"} 
                 />
             </div>
-             <DetailItem icon={<Info size={18}/>} label="Status" value={renderStatus(medico.status)} />
+             <DetailItem icon={<Info size={18}/>} label="Status" value={renderStatus(medico)} />
         </div>
       </Card>
 
@@ -183,6 +238,9 @@ const MedicoDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
             <DetailItem icon={<Clock size={18}/>} label="Data de Criação" value={formatDateTime(medico.createdAt)} />
             <DetailItem icon={<Clock size={18}/>} label="Última Atualização" value={formatDateTime(medico.updatedAt)} />
+            {medico.excludedAt && (
+                <DetailItem icon={<Clock size={18}/>} label="Data de Inativação" value={formatDateTime(medico.excludedAt)} />
+            )}
         </div>
       </Card>
     </div>
