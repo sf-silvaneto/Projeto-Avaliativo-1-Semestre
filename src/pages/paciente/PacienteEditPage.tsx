@@ -1,10 +1,11 @@
+// src/pages/paciente/PacienteEditPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import * as pacienteService from '../../services/pacienteService';
-import { Paciente, PacienteFormData } from '../../types/paciente';
+import { Paciente, PacienteFormData, PacienteUpdateDTO, Alergia, Comorbidade, MedicamentoContinuo } from '../../types/paciente'; // Importe os novos tipos
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const PacienteEditPage: React.FC = () => {
@@ -35,14 +36,10 @@ const PacienteEditPage: React.FC = () => {
   }, [id]);
 
   const mapPacienteToFormData = (p: Paciente): PacienteFormData => {
-    const temAlergias = p.alergiasDeclaradas !== null && p.alergiasDeclaradas !== undefined && p.alergiasDeclaradas !== "Não" ? 'sim' : 'nao';
-    const alergiasDeclaradas = temAlergias === 'sim' ? p.alergiasDeclaradas || '' : '';
-
-    const temComorbidades = p.comorbidadesDeclaradas !== null && p.comorbidadesDeclaradas !== undefined && p.comorbidadesDeclaradas !== "Não" ? 'sim' : 'nao';
-    const comorbidadesDeclaradas = temComorbidades === 'sim' ? p.comorbidadesDeclaradas || '' : '';
-    
-    const usaMedicamentos = p.medicamentosContinuos !== null && p.medicamentosContinuos !== undefined && p.medicamentosContinuos !== "Não" ? 'sim' : 'nao';
-    const medicamentosContinuos = usaMedicamentos === 'sim' ? p.medicamentosContinuos || '' : '';
+    // Agora os campos são arrays de objetos com 'descricao' e 'id'
+    const alergias: Alergia[] = p.alergias || [];
+    const comorbidades: Comorbidade[] = p.comorbidades || [];
+    const medicamentosContinuos: MedicamentoContinuo[] = p.medicamentosContinuos || [];
 
     return {
         nome: p.nome,
@@ -60,12 +57,9 @@ const PacienteEditPage: React.FC = () => {
         tipoSanguineo: p.tipoSanguineo || '',
         nacionalidade: p.nacionalidade || '',
         ocupacao: p.ocupacao || '',
-        temAlergias: temAlergias as 'sim' | 'nao',
-        alergiasDeclaradas: alergiasDeclaradas,
-        temComorbidades: temComorbidades as 'sim' | 'nao',
-        comorbidadesDeclaradas: comorbidadesDeclaradas,
-        usaMedicamentos: usaMedicamentos as 'sim' | 'nao',
-        medicamentosContinuos: medicamentosContinuos,
+        alergias: alergias.map(a => ({ id: a.id, descricao: a.descricao })),
+        comorbidades: comorbidades.map(c => ({ id: c.id, descricao: c.descricao })),
+        medicamentosContinuos: medicamentosContinuos.map(m => ({ id: m.id, descricao: m.descricao })),
         endereco: {
             logradouro: p.endereco.logradouro,
             numero: p.endereco.numero,
@@ -78,13 +72,20 @@ const PacienteEditPage: React.FC = () => {
     };
   };
 
-
   const handleUpdatePaciente = async (data: PacienteFormData) => {
     if (!id) return;
     setIsSaving(true);
     setError(null);
     try {
-      const pacienteAtualizado = await pacienteService.atualizarPaciente(id, data);
+      const updateData: PacienteUpdateDTO = {
+        ...data,
+        // Garanta que as listas enviadas sejam do tipo correto (Alergia[], Comorbidade[], MedicamentoContinuo[])
+        alergias: data.alergias.filter(a => a.descricao.trim() !== ''), // Filtra descrições vazias
+        comorbidades: data.comorbidades.filter(c => c.descricao.trim() !== ''),
+        medicamentosContinuos: data.medicamentosContinuos.filter(m => m.descricao.trim() !== ''),
+      };
+
+      const pacienteAtualizado = await pacienteService.atualizarPaciente(id, updateData);
       navigate('/pacientes', { 
         state: { 
           pacienteSuccess: true, 
@@ -109,7 +110,6 @@ const PacienteEditPage: React.FC = () => {
       Voltar
     </Button>
   );
-
 
   if (isLoading) {
     return (

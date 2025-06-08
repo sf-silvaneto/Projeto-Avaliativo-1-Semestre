@@ -1,10 +1,11 @@
+// src/pages/paciente/PacienteCreatePage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import * as pacienteService from '../../services/pacienteService';
-import { PacienteFormData } from '../../types/paciente';
+import { PacienteFormData, PacienteCreateDTO } from '../../types/paciente'; // Importe PacienteCreateDTO
 import { ArrowLeft } from 'lucide-react';
 
 const PacienteCreatePage: React.FC = () => {
@@ -16,7 +17,15 @@ const PacienteCreatePage: React.FC = () => {
     setIsSubmitting(true);
     setError(null);
     try {
-      const novoPaciente = await pacienteService.criarPaciente(data);
+      const createData: PacienteCreateDTO = {
+        ...data,
+        // Garanta que as listas enviadas sejam do tipo correto e filtre vazios
+        alergias: data.alergias.filter(a => a.descricao.trim() !== ''),
+        comorbidades: data.comorbidades.filter(c => c.descricao.trim() !== ''),
+        medicamentosContinuos: data.medicamentosContinuos.filter(m => m.descricao.trim() !== ''),
+      };
+
+      const novoPaciente = await pacienteService.criarPaciente(createData);
       navigate('/pacientes', { 
         state: { 
           pacienteSuccess: true, 

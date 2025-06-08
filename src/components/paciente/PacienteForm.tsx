@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import { useForm, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Input from '../../components/ui/Input';
@@ -12,17 +12,29 @@ import {
     User, Calendar, Mail, Phone, MapPin, CreditCard, Droplet, Users, Briefcase, Info, Search, Loader2, 
     Activity, 
     AlertTriangle, 
-    Pill 
+    Pill,
+    PlusCircle, Trash2
 } from 'lucide-react';
 
 const apenasLetrasEspacosAcentosHifenApostrofo = /^[a-zA-ZÀ-ú\s'-]+$/;
 const nomeMinLength = 3;
 const nomeMaePaiMinLength = 3;
 
-const simNaoOptions = [
-    { value: 'nao', label: 'Não' },
-    { value: 'sim', label: 'Sim' },
-];
+// Schemas para as novas listas
+const alergiaSchema = z.object({
+  id: z.number().optional(),
+  descricao: z.string().min(3, 'A descrição da alergia deve ter no mínimo 3 caracteres.').max(500, 'Descrição da alergia muito longa (máx. 500).'),
+});
+
+const comorbidadeSchema = z.object({
+  id: z.number().optional(),
+  descricao: z.string().min(3, 'A descrição da comorbidade deve ter no mínimo 3 caracteres.').max(500, 'Descrição da comorbidade muito longa (máx. 500).'),
+});
+
+const medicamentoContinuoSchema = z.object({
+  id: z.number().optional(),
+  descricao: z.string().min(3, 'A descrição do medicamento deve ter no mínimo 3 caracteres.').max(500, 'Descrição do medicamento muito longa (máx. 500).'),
+});
 
 const pacienteFormSchema = z.object({
   nome: z.string()
@@ -75,14 +87,9 @@ const pacienteFormSchema = z.object({
     .transform(val => (val === "" ? undefined : val))
     .refine(val => !val || apenasLetrasEspacosAcentosHifenApostrofo.test(val), 'Ocupação deve conter apenas letras, espaços, acentos, apóstrofos e hífens.'),
   
-  temAlergias: z.enum(['sim', 'nao']).default('nao'),
-  alergiasDeclaradas: z.string().optional().transform(val => (val === "" || val === undefined ? undefined : val.trim())),
-  
-  temComorbidades: z.enum(['sim', 'nao']).default('nao'),
-  comorbidadesDeclaradas: z.string().optional().transform(val => (val === "" || val === undefined ? undefined : val.trim())),
-  
-  usaMedicamentos: z.enum(['sim', 'nao']).default('nao'),
-  medicamentosContinuos: z.string().optional().transform(val => (val === "" || val === undefined ? undefined : val.trim())),
+  alergias: z.array(alergiaSchema).optional(),
+  comorbidades: z.array(comorbidadeSchema).optional(),
+  medicamentosContinuos: z.array(medicamentoContinuoSchema).optional(),
 
   endereco: z.object({
     cep: z.string()
@@ -98,40 +105,7 @@ const pacienteFormSchema = z.object({
     cidade: z.string().min(2, 'Cidade é obrigatória.'),
     estado: z.string().length(2, 'UF inválida.'),
   }),
-}).superRefine((data, ctx) => {
-    if (data.temAlergias === 'sim' && (!data.alergiasDeclaradas || data.alergiasDeclaradas.length < 3)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Descrição das alergias é obrigatória (mín. 3 caracteres).",
-            path: ['alergiasDeclaradas'],
-        });
-    }
-    if (data.temComorbidades === 'sim' && (!data.comorbidadesDeclaradas || data.comorbidadesDeclaradas.length < 3)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Descrição das comorbidades é obrigatória (mín. 3 caracteres).",
-            path: ['comorbidadesDeclaradas'],
-        });
-    }
-    if (data.usaMedicamentos === 'sim' && (!data.medicamentosContinuos || data.medicamentosContinuos.length < 3)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Descrição dos medicamentos é obrigatória (mín. 3 caracteres).",
-            path: ['medicamentosContinuos'],
-        });
-    }
-}).transform((data) => ({
-    ...data,
-    alergiasDeclaradas: data.temAlergias === 'sim' 
-        ? data.alergiasDeclaradas 
-        : (data.temAlergias === 'nao' ? 'Não' : undefined),
-    comorbidadesDeclaradas: data.temComorbidades === 'sim'
-        ? data.comorbidadesDeclaradas
-        : (data.temComorbidades === 'nao' ? 'Não' : undefined),
-    medicamentosContinuos: data.usaMedicamentos === 'sim'
-        ? data.medicamentosContinuos
-        : (data.usaMedicamentos === 'nao' ? 'Não' : undefined),
-}));
+});
 
 
 interface PacienteFormProps {
@@ -162,30 +136,20 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
     resolver: zodResolver(pacienteFormSchema),
   });
 
-  const watchTemAlergias = watch('temAlergias', initialData?.temAlergias || 'nao');
-  const watchTemComorbidades = watch('temComorbidades', initialData?.temComorbidades || 'nao');
-  const watchUsaMedicamentos = watch('usaMedicamentos', initialData?.usaMedicamentos || 'nao');
+  const { fields: alergiaFields, append: appendAlergia, remove: removeAlergia } = useFieldArray({
+    control,
+    name: "alergias"
+  });
 
-  useEffect(() => {
-    if (watchTemAlergias === 'nao') {
-      setValue('alergiasDeclaradas', '');
-      clearErrors('alergiasDeclaradas');
-    }
-  }, [watchTemAlergias, setValue, clearErrors]);
+  const { fields: comorbidadeFields, append: appendComorbidade, remove: removeComorbidade } = useFieldArray({
+    control,
+    name: "comorbidades"
+  });
 
-  useEffect(() => {
-    if (watchTemComorbidades === 'nao') {
-      setValue('comorbidadesDeclaradas', '');
-      clearErrors('comorbidadesDeclaradas');
-    }
-  }, [watchTemComorbidades, setValue, clearErrors]);
-
-  useEffect(() => {
-    if (watchUsaMedicamentos === 'nao') {
-      setValue('medicamentosContinuos', '');
-      clearErrors('medicamentosContinuos');
-    }
-  }, [watchUsaMedicamentos, setValue, clearErrors]);
+  const { fields: medicamentoFields, append: appendMedicamento, remove: removeMedicamento } = useFieldArray({
+    control,
+    name: "medicamentosContinuos"
+  });
 
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
@@ -228,9 +192,9 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
         telefone: '', email: '', nomeMae: '', nomePai: '',
         dataEntrada: new Date().toISOString().split('T')[0], cartaoSus: '',
         racaCor: '' as RacaCor | '', tipoSanguineo: '' as TipoSanguineo | '', nacionalidade: 'Brasileira', ocupacao: '',
-        temAlergias: 'nao', alergiasDeclaradas: '',
-        temComorbidades: 'nao', comorbidadesDeclaradas: '',
-        usaMedicamentos: 'nao', medicamentosContinuos: '',
+        alergias: [],
+        comorbidades: [],
+        medicamentosContinuos: [],
         endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' },
     };
 
@@ -240,12 +204,9 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
             ...initialData, 
             dataEntrada: initialData.dataEntrada ? initialData.dataEntrada.split('T')[0] : defaultFormValues.dataEntrada,
             dataNascimento: initialData.dataNascimento ? initialData.dataNascimento.split('T')[0] : '',
-            temAlergias: initialData.temAlergias || defaultFormValues.temAlergias,
-            temComorbidades: initialData.temComorbidades || defaultFormValues.temComorbidades,
-            usaMedicamentos: initialData.usaMedicamentos || defaultFormValues.usaMedicamentos,
-            alergiasDeclaradas: initialData.temAlergias === 'sim' ? (initialData.alergiasDeclaradas === 'Não' ? '' : initialData.alergiasDeclaradas || '') : '',
-            comorbidadesDeclaradas: initialData.temComorbidades === 'sim' ? (initialData.comorbidadesDeclaradas === 'Não' ? '' : initialData.comorbidadesDeclaradas || '') : '',
-            medicamentosContinuos: initialData.usaMedicamentos === 'sim' ? (initialData.medicamentosContinuos === 'Não' ? '' : initialData.medicamentosContinuos || '') : '',
+            alergias: initialData.alergias || [],
+            comorbidades: initialData.comorbidades || [],
+            medicamentosContinuos: initialData.medicamentosContinuos || [],
         };
         reset(dataToReset);
     } else {
@@ -262,8 +223,10 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
     const start = input.selectionStart;
     const end = input.selectionEnd;
     let value = input.value;
-    value = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, '');
+    
+    value = value.replace(/[^a-zA-ZÀ-ú\s'-]/g, ''); 
     input.value = value.toUpperCase();
+    
     if (start !== null && end !== null) {
       try { input.setSelectionRange(start, end); } catch (e) {}
     }
@@ -407,88 +370,86 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
       </div>
 
       <h3 className="text-lg font-medium text-neutral-900 border-b pb-2 pt-4">Histórico de Saúde</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6">
-        <div className="space-y-1">
-            <Controller
-                name="temAlergias"
-                control={control}
-                defaultValue="nao"
-                render={({ field }) => (
-                    <Select 
-                        label="Alergias Declaradas?" 
-                        options={simNaoOptions} 
-                        {...field} 
-                        error={errors.temAlergias?.message}
-                        leftAddon={<AlertTriangle className="h-4 w-4" />}
-                    />
-                )}
-            />
-            {watchTemAlergias === 'sim' && (
-                <Textarea
-                    label="Detalhes das Alergias"
-                    {...register('alergiasDeclaradas')}
-                    error={errors.alergiasDeclaradas?.message}
-                    placeholder="Ex: Dipirona, Frutos do Mar..."
-                    rows={3}
-                    className="mt-0"
-                />
-            )}
+      
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-neutral-700">Alergias</label>
+          <Button type="button" variant="secondary" size="sm" onClick={() => appendAlergia({ descricao: '' })} leftIcon={<PlusCircle className="h-4 w-4" />}>
+            Adicionar Alergia
+          </Button>
         </div>
-
-        <div className="space-y-1">
-            <Controller
-                name="temComorbidades"
-                control={control}
-                defaultValue="nao"
-                render={({ field }) => (
-                    <Select 
-                        label="Comorbidades Declaradas?" 
-                        options={simNaoOptions} 
-                        {...field} 
-                        error={errors.temComorbidades?.message}
-                        leftAddon={<Activity className="h-4 w-4" />}
-                    />
-                )}
+        {alergiaFields.length === 0 && (
+          <p className="text-sm text-neutral-500 italic">Nenhuma alergia cadastrada.</p>
+        )}
+        {alergiaFields.map((item, index) => (
+          <div key={item.id} className="flex items-end space-x-2">
+            <Input
+              label={`Descrição da Alergia ${index + 1}`}
+              placeholder="Ex: Dipirona, Pólen, Amendoim..."
+              {...register(`alergias.${index}.descricao` as const)}
+              error={errors.alergias?.[index]?.descricao?.message}
+              fullWidth
             />
-            {watchTemComorbidades === 'sim' && (
-                <Textarea
-                    label="Detalhes das Comorbidades"
-                    {...register('comorbidadesDeclaradas')}
-                    error={errors.comorbidadesDeclaradas?.message}
-                    placeholder="Ex: Hipertensão, Diabetes..."
-                    rows={3}
-                    className="mt-0"
-                />
-            )}
-        </div>
-
-        <div className="space-y-1">
-            <Controller
-                name="usaMedicamentos"
-                control={control}
-                defaultValue="nao"
-                render={({ field }) => (
-                    <Select 
-                        label="Usa Medicamentos Contínuos?" 
-                        options={simNaoOptions} 
-                        {...field} 
-                        error={errors.usaMedicamentos?.message}
-                        leftAddon={<Pill className="h-4 w-4" />}
-                    />
-                )}
-            />
-            {watchUsaMedicamentos === 'sim' && (
-                <Textarea
-                    label="Quais Medicamentos?"
-                    {...register('medicamentosContinuos')}
-                    error={errors.medicamentosContinuos?.message}
-                    placeholder="Ex: Losartana 50mg (1x dia)..."
-                    rows={3}
-                    className="mt-0"
-                />
-            )}
-        </div>
+            <Button type="button" variant="danger" size="md" onClick={() => removeAlergia(index)} leftIcon={<Trash2 className="h-4 w-4" />}>
+              Remover
+            </Button>
+          </div>
+        ))}
       </div>
+
+      <div className="space-y-4 mt-6">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-neutral-700">Comorbidades</label>
+          <Button type="button" variant="secondary" size="sm" onClick={() => appendComorbidade({ descricao: '' })} leftIcon={<PlusCircle className="h-4 w-4" />}>
+            Adicionar Comorbidade
+          </Button>
+        </div>
+        {comorbidadeFields.length === 0 && (
+          <p className="text-sm text-neutral-500 italic">Nenhuma comorbidade cadastrada.</p>
+        )}
+        {comorbidadeFields.map((item, index) => (
+          <div key={item.id} className="flex items-end space-x-2">
+            <Input
+              label={`Descrição da Comorbidade ${index + 1}`}
+              placeholder="Ex: Hipertensão, Diabetes Tipo 2..."
+              {...register(`comorbidades.${index}.descricao` as const)}
+              error={errors.comorbidades?.[index]?.descricao?.message}
+              fullWidth
+            />
+            <Button type="button" variant="danger" size="md" onClick={() => removeComorbidade(index)} leftIcon={<Trash2 className="h-4 w-4" />}>
+              Remover
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-4 mt-6">
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-neutral-700">Medicamentos Contínuos</label>
+          <Button type="button" variant="secondary" size="sm" onClick={() => appendMedicamento({ descricao: '' })} leftIcon={<PlusCircle className="h-4 w-4" />}>
+            Adicionar Medicamento
+          </Button>
+        </div>
+        {medicamentoFields.length === 0 && (
+          <p className="text-sm text-neutral-500 italic">Nenhum medicamento contínuo cadastrado.</p>
+        )}
+        {medicamentoFields.map((item, index) => (
+          <div key={item.id} className="flex items-end space-x-2">
+            <Input
+              label={`Descrição do Medicamento ${index + 1}`}
+              placeholder="Ex: Losartana 50mg, Insulina NPH..."
+              {...register(`medicamentosContinuos.${index}.descricao` as const)}
+              error={errors.medicamentosContinuos?.[index]?.descricao?.message}
+              fullWidth
+            />
+            <Button type="button" variant="danger" size="md" onClick={() => removeMedicamento(index)} leftIcon={<Trash2 className="h-4 w-4" />}>
+              Remover
+            </Button>
+          </div>
+        ))}
+      </div>
+
+
       <h3 className="text-lg font-medium text-neutral-900 border-b pb-2 pt-4">Endereço</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Input

@@ -1,3 +1,4 @@
+// src/pages/paciente/PacienteDetailPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -22,7 +23,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { buscarPacientePorId } from '../../services/pacienteService';
-import { Paciente, Genero, RacaCor, TipoSanguineo } from '../../types/paciente';
+import { Paciente, Genero, RacaCor, TipoSanguineo, Endereco, Alergia, Comorbidade, MedicamentoContinuo } from '../../types/paciente'; // Importe os novos tipos
 import { Loader2 } from 'lucide-react';
 
 const PacienteDetailPage: React.FC = () => {
@@ -101,7 +102,7 @@ const PacienteDetailPage: React.FC = () => {
             minute: '2-digit',
             timeZone: 'America/Sao_Paulo' 
         });
-    } catch (e) {
+    }catch (e) {
         return 'Data/Hora inválida';
     }
   };
@@ -141,6 +142,22 @@ const PacienteDetailPage: React.FC = () => {
       </div>
     </div>
   );
+
+  // Nova função para renderizar listas de alergias, comorbidades, etc.
+  const renderList = (items?: { descricao: string }[]) => {
+    if (!items || items.length === 0) {
+      return <span className="italic text-neutral-400">Não informado</span>;
+    }
+    return (
+      <ul className="list-disc list-inside space-y-1">
+        {items.map((item, index) => (
+          <li key={index} className="text-sm">
+            {item.descricao}
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -242,17 +259,17 @@ const PacienteDetailPage: React.FC = () => {
              <DetailItem 
                 icon={<AlertTriangle size={16}/>} 
                 label="Alergias Declaradas" 
-                value={paciente.alergiasDeclaradas && paciente.alergiasDeclaradas !== "Não" ? <pre className="whitespace-pre-wrap text-sm font-medium">{paciente.alergiasDeclaradas}</pre> : "Não"}
+                value={renderList(paciente.alergias)}
             />
              <DetailItem 
                 icon={<Activity size={16}/>} 
                 label="Comorbidades Declaradas" 
-                value={paciente.comorbidadesDeclaradas && paciente.comorbidadesDeclaradas !== "Não" ? <pre className="whitespace-pre-wrap text-sm font-medium">{paciente.comorbidadesDeclaradas}</pre> : "Não"}
+                value={renderList(paciente.comorbidades)}
             />
              <DetailItem 
                 icon={<Pill size={16}/>} 
                 label="Medicamentos em Uso Contínuo" 
-                value={paciente.medicamentosContinuos && paciente.medicamentosContinuos !== "Não" ? <pre className="whitespace-pre-wrap text-sm font-medium">{paciente.medicamentosContinuos}</pre> : "Não"}
+                value={renderList(paciente.medicamentosContinuos)}
             />
         </div>
       </Card>

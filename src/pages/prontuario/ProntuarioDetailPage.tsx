@@ -180,6 +180,23 @@ const ProntuarioDetailPage: React.FC = () => {
     fetchProntuario();
   }, [fetchProntuario]);
 
+  // Função para renderizar listas de alergias, comorbidades, etc. (copiada de PacienteDetailPage.tsx e ajustada)
+  const renderList = (items?: { descricao: string }[]) => {
+    if (!items || items.length === 0) {
+      return <span className="italic text-neutral-400">Não informado</span>;
+    }
+    return (
+      <ul className="list-disc list-inside space-y-1">
+        {items.map((item, index) => (
+          <li key={index} className="text-sm">
+            {item.descricao}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+
   const historicoUnificado = useMemo(() => {
     if (!prontuario) return [];
     const itens: HistoricoUnificadoItem[] = [];
@@ -196,9 +213,12 @@ const ProntuarioDetailPage: React.FC = () => {
     prontuario.encaminhamentosRegistrados?.forEach(enc => itens.push({
         id: `encaminhamento-${enc.id}`, tipo: 'ENCAMINHAMENTO', data: enc.dataEncaminhamento, dataOriginal: enc, titulo: `Encaminhamento para ${enc.especialidadeDestino || 'N/D'}`, icone: <Send className="h-5 w-5" />
     }));
-    prontuario.historicoGeral?.forEach(hg => itens.push({
-        id: `histgeral-${hg.id}`, tipo: 'HISTORICO_GERAL', data: hg.data, dataOriginal: hg, titulo: `Registro Geral: ${(hg.descricao || '').substring(0,30)}${(hg.descricao && hg.descricao.length > 30) ? '...' : ''}`, icone: <StickyNote className="h-5 w-5" />
-    }));
+    // Note: HistoricoGeral is not explicitly present in the Prontuario type anymore in the client,
+    // but if it were, it would be added similarly.
+    // prontuario.historicoGeral?.forEach(hg => itens.push({
+    //     id: `histgeral-${hg.id}`, tipo: 'HISTORICO_GERAL', data: hg.data, dataOriginal: hg, titulo: `Registro Geral: ${(hg.descricao || '').substring(0,30)}${(hg.descricao && hg.descricao.length > 30) ? '...' : ''}`, icone: <StickyNote className="h-5 w-5" />
+    // }));
+
 
     return itens.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
   }, [prontuario]);
@@ -263,11 +283,13 @@ const ProntuarioDetailPage: React.FC = () => {
             <div className="sm:col-span-2 lg:col-span-3">
                  <DetailItem icon={<MapPin size={16}/>} label="Endereço" value={enderecoFormatado} />
             </div>
-             <div className="lg:col-span-3 mt-2 space-y-3">
-                <DetailItem icon={<ShieldQuestion size={16}/>} label="Alergias Declaradas" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2.5 rounded-md border border-neutral-200">{p.alergiasDeclaradas || 'Não informado'}</pre>} />
-                <DetailItem icon={<Activity size={16}/>} label="Comorbidades Declaradas" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2.5 rounded-md border border-neutral-200">{p.comorbidadesDeclaradas || 'Não informado'}</pre>} />
-                <DetailItem icon={<Pill size={16}/>} label="Medicamentos em Uso Contínuo" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-50 p-2.5 rounded-md border border-neutral-200">{p.medicamentosContinuos || 'Não informado'}</pre>} />
+            {/* INÍCIO DA ALTERAÇÃO NECESSÁRIA PARA EXIBIR AS LISTAS */}
+            <div className="lg:col-span-3 mt-2 space-y-3">
+                <DetailItem icon={<ShieldQuestion size={16}/>} label="Alergias Declaradas" value={renderList(p.alergias)} />
+                <DetailItem icon={<Activity size={16}/>} label="Comorbidades Declaradas" value={renderList(p.comorbidades)} />
+                <DetailItem icon={<Pill size={16}/>} label="Medicamentos em Uso Contínuo" value={renderList(p.medicamentosContinuos)} />
             </div>
+            {/* FIM DA ALTERAÇÃO NECESSÁRIA */}
         </div>
     );
   }

@@ -1,3 +1,4 @@
+// src/types/paciente.ts
 export enum Genero {
   MASCULINO = 'MASCULINO',
   FEMININO = 'FEMININO',
@@ -32,6 +33,22 @@ export interface Endereco {
   cep: string;
 }
 
+// Novas interfaces para as coleções
+export interface Alergia {
+  id?: number; // Opcional para novos itens, para items existentes terá um ID do backend
+  descricao: string;
+}
+
+export interface Comorbidade {
+  id?: number; // Opcional para novos itens
+  descricao: string;
+}
+
+export interface MedicamentoContinuo {
+  id?: number; // Opcional para novos itens
+  descricao: string;
+}
+
 export interface Paciente {
   id: string;
   nome: string;
@@ -52,11 +69,18 @@ export interface Paciente {
   endereco: Endereco;
   createdAt: string;
   updatedAt: string;
-  alergiasDeclaradas?: string;
-  comorbidadesDeclaradas?: string;
-  medicamentosContinuos?: string;
+  // Remova os campos string individuais
+  // alergiasDeclaradas?: string;
+  // comorbidadesDeclaradas?: string;
+  // medicamentosContinuos?: string;
+
+  // Adicione as listas das novas interfaces
+  alergias?: Alergia[];
+  comorbidades?: Comorbidade[];
+  medicamentosContinuos?: MedicamentoContinuo[];
 }
 
+// Atualize PacienteFormData para refletir as novas listas no formulário
 export interface PacienteFormData {
   nome: string;
   dataNascimento: string;
@@ -73,12 +97,17 @@ export interface PacienteFormData {
   tipoSanguineo?: TipoSanguineo | '';
   nacionalidade?: string;
   ocupacao?: string;
-  temAlergias?: 'sim' | 'nao';
-  alergiasDeclaradas?: string;
-  temComorbidades?: 'sim' | 'nao';
-  comorbidadesDeclaradas?: string;
-  usaMedicamentos?: 'sim' | 'nao';
-  medicamentosContinuos?: string;
+  
+  // Remova as flags de 'sim'/'nao'
+  // temAlergias?: 'sim' | 'nao';
+  // temComorbidades?: 'sim' | 'nao';
+  // usaMedicamentos?: 'sim' | 'nao';
+
+  // Adicione as listas de DTOs para o formulário (campos do useFieldArray)
+  alergias: { id?: number; descricao: string; }[];
+  comorbidades: { id?: number; descricao: string; }[];
+  medicamentosContinuos: { id?: number; descricao: string; }[];
+
   endereco: {
     logradouro: string;
     numero: string;
@@ -91,7 +120,13 @@ export interface PacienteFormData {
 }
 
 export type PacienteCreateDTO = PacienteFormData;
-export type PacienteUpdateDTO = Partial<PacienteFormData>;
+export type PacienteUpdateDTO = Partial<Omit<PacienteFormData, 'alergias' | 'comorbidades' | 'medicamentosContinuos'>> & {
+  alergias?: Alergia[];
+  comorbidades?: Comorbidade[];
+  medicamentosContinuos?: MedicamentoContinuo[];
+};
+
+
 export interface ResultadoBuscaPacientes {
   content: Paciente[];
   pageable: {
