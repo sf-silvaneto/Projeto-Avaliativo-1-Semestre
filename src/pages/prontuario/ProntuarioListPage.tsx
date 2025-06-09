@@ -47,7 +47,6 @@ const ProntuarioListPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // console.log("Fetching prontuarios com params:", apiSearchParams); // Linha de log removida/comentada
       const result = await buscarProntuarios(apiSearchParams);
       setResultado(result);
     } catch (err: any) {
@@ -95,7 +94,7 @@ const ProntuarioListPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-neutral-900">Gerenciar Prontuários</h1>
       </div>
 
-      {successMessage && ( // Uso da variável successMessage
+      {successMessage && (
         <Alert type="success" message={successMessage} className="mb-4" onClose={() => setSuccessMessage(null)} />
       )}
       {error && <Alert type="error" message={error} className="mb-4" onClose={() => setError(null)} />}
@@ -116,7 +115,7 @@ const ProntuarioListPage: React.FC = () => {
         </Button>
         <Link to="/prontuarios/novo">
           <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-            Novo Prontuário
+            Novo Registro
           </Button>
         </Link>
       </div>

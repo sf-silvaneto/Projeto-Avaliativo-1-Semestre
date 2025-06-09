@@ -1,10 +1,3 @@
-// src/types/medico.ts
-// Remova o enum StatusMedico
-// export enum StatusMedico {
-//   ATIVO = 'ATIVO',
-//   INATIVO = 'INATIVO',
-// }
-
 export interface Medico {
   id: number;
   nomeCompleto: string;
@@ -12,9 +5,7 @@ export interface Medico {
   especialidade: string;
   resumoEspecialidade?: string;
   rqe?: string;
-  // Remova o campo status
-  // status: StatusMedico;
-  excludedAt?: string; // Novo campo: data e hora de inativação (se houver)
+  excludedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,15 +24,8 @@ export interface MedicoUpdateDTO {
   especialidade?: string;
   resumoEspecialidade?: string;
   rqe?: string;
-  // Remova o campo status
-  // status?: StatusMedico;
-  excludedAt?: string | null; // Pode ser null para reativar
+  excludedAt?: string | null;
 }
-
-// Este DTO não será mais usado, pois a ativação/inativação será por PATCH /ativar ou /inativar
-// export interface MedicoStatusUpdateDTO {
-//   status: StatusMedico;
-// }
 
 export interface ResultadoBuscaMedicos {
   content: Medico[];
@@ -59,7 +43,6 @@ export interface BuscaMedicoParams {
   nome?: string;
   crm?: string;
   especialidade?: string;
-  // O status aqui agora pode ser 'ATIVO', 'INATIVO' ou vazio
   status?: 'ATIVO' | 'INATIVO' | ''; 
   sort?: string;
 }

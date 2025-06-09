@@ -3,7 +3,6 @@ import {
   Medico,
   MedicoCreateDTO,
   MedicoUpdateDTO,
-  // MedicoStatusUpdateDTO, // Remova este import
   ResultadoBuscaMedicos,
   BuscaMedicoParams,
 } from '../types/medico';
@@ -48,8 +47,6 @@ export const atualizarMedico = async (id: number, data: MedicoUpdateDTO): Promis
   }
 };
 
-// Antigo: export const atualizarStatusMedico = async (id: number, data: MedicoStatusUpdateDTO): Promise<Medico> => {
-// NOVO: Funções para ativar/inativar
 export const ativarMedico = async (id: number): Promise<Medico> => {
   try {
     const response = await api.patch<Medico>(`/medicos/${id}/ativar`);

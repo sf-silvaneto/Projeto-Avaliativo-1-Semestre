@@ -21,8 +21,6 @@ import {
 
 interface WizardSubmitData extends ProntuarioWizardFormData {
   dadosEvento: any;
-  medicoExecutorId?: number;
-  medicoResponsavelExameId?: number;
 }
 
 
@@ -69,14 +67,14 @@ const ProntuarioCreatePage: React.FC = () => {
           console.log('ProntuarioCreatePage: CHAMANDO adicionarProcedimentoComNovoProntuario com:', pacienteId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarProcedimentoComNovoProntuario(
             pacienteId,
-            dadosEvento as NovaProcedimentoRequest
+            { ...dadosEvento as NovaProcedimentoRequest, medicoExecutorId: medicoId }
           );
           break;
         case 'ENCAMINHAMENTO':
           console.log('ProntuarioCreatePage: CHAMANDO adicionarEncaminhamentoComNovoProntuario com:', pacienteId, dadosEvento);
           prontuarioOuEventoCriado = await adicionarEncaminhamentoComNovoProntuario(
             pacienteId,
-            dadosEvento as NovaEncaminhamentoRequest
+            { ...dadosEvento as NovaEncaminhamentoRequest, medicoSolicitanteId: medicoId }
           );
           break;
         default:
@@ -88,17 +86,11 @@ const ProntuarioCreatePage: React.FC = () => {
       console.log('ProntuarioCreatePage: Resposta da API após criação:', prontuarioOuEventoCriado);
 
       let prontuarioIdParaNavegacao: string | undefined;
-      if (prontuarioOuEventoCriado && typeof prontuarioOuEventoCriado.prontuarioId === 'number') {
-        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuarioId.toString();
-      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && typeof prontuarioOuEventoCriado.prontuario.id === 'number') {
-        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuario.id.toString();
-      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario?.id && typeof prontuarioOuEventoCriado.prontuario.id === 'string') {
-        prontuarioIdParaNavegacao = prontuarioOuEventoCriado.prontuario.id;
-      }
-      else if (prontuarioOuEventoCriado && typeof (prontuarioOuEventoCriado as any).prontuario === 'object' && (prontuarioOuEventoCriado as any).prontuario?.id) {
-        prontuarioIdParaNavegacao = String((prontuarioOuEventoCriado as any).prontuario.id);
-      } else if (prontuarioOuEventoCriado && (prontuarioOuEventoCriado as any).prontuarioId) {
-        prontuarioIdParaNavegacao = String((prontuarioOuEventoCriado as any).prontuarioId);
+      // Ajuste na lógica para pegar o ID do prontuário
+      if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuarioId) {
+        prontuarioIdParaNavegacao = String(prontuarioOuEventoCriado.prontuarioId);
+      } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && prontuarioOuEventoCriado.prontuario.id) {
+        prontuarioIdParaNavegacao = String(prontuarioOuEventoCriado.prontuario.id);
       }
 
 
@@ -132,7 +124,7 @@ const ProntuarioCreatePage: React.FC = () => {
 
   return (
     <div className="container-medium py-8">
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Iniciar Novo Prontuário</h1>
+      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Novo Registro</h1>
       {error && (
         <Alert
           type="error"

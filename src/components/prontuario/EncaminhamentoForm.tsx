@@ -6,19 +6,27 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaEncaminhamentoRequest, AtualizarEncaminhamentoRequest } from '../../types/prontuarioRegistros';
-// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
-import { Medico } from '../../types/medico'; // Mantenha apenas Medico
+import { Medico } from '../../types/medico';
 import Select from '../ui/Select';
 import { Save, Calendar, Send as EncaminhamentoIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const encaminhamentoSchema = z.object({
-  dataEncaminhamento: z.string()
-    .min(1, "Data e hora do encaminhamento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
-    .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
-    .refine(val => new Date(val) <= new Date(), { message: "Data e hora do encaminhamento não podem ser no futuro." }),
+  dataEncaminhamento: z.string().optional().transform(e => e === "" ? undefined : e)
+    .refine((val) => {
+        if (!val) return true;
+        return datetimeLocalRegex.test(val);
+    }, { message: "Formato de data e hora inválido. Use o seletor ou formato YYYY-MM-DDTHH:MM." })
+    .refine((val) => {
+        if (!val) return true;
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+    }, { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
+    .refine((val) => {
+        if (!val) return true;
+        return new Date(val) <= new Date();
+    }, { message: "Data e hora do encaminhamento não podem ser no futuro." }),
   especialidadeDestino: z.string().min(3, { message: "Especialidade de destino é obrigatória (mín. 3 caracteres)." }).max(200, "Especialidade muito longa (máx. 200)."),
   motivoEncaminhamento: z.string().min(10, { message: "Motivo do encaminhamento é obrigatório (mín. 10 caracteres)." }).max(1000, "Motivo muito longo (máx. 1000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
@@ -34,25 +42,37 @@ interface EncaminhamentoFormProps {
   onSubmitEvento: (data: NovaEncaminhamentoRequest | AtualizarEncaminhamentoRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<EncaminhamentoFormData & { id?: string }>;
+  initialData?: Partial<EncaminhamentoFormData & { id?: string; createdAt?: string; updatedAt?: string; }>;
   isEditMode?: boolean;
   medicosDisponiveis?: Medico[];
 }
 
-const getLocalDateTimeString = (dateString?: string | Date): string => {
-    const date = dateString ? new Date(dateString) : new Date();
-    if (isNaN(date.getTime())) {
-        console.warn("getLocalDateTimeString recebeu data inválida:", dateString, "Usando data/hora atual.");
-        const now = new Date();
-        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+const getLocalDateTimeStringForInput = (dateString?: string | Date): string | undefined => {
+    if (!dateString) return undefined;
+
+    const dateCandidate = new Date(typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('-') ? dateString + 'Z' : dateString);
+
+    if (isNaN(dateCandidate.getTime())) {
+        console.warn("getLocalDateTimeStringForInput recebeu data inválida ou nula após parsing:", dateString);
+        return undefined;
     }
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    
+    const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23', // Garante formato 24h
+        timeZone: 'America/Sao_Paulo'
+    };
+
+    const formatter = new Intl.DateTimeFormat('sv-SE', options);
+    const formatted = formatter.format(dateCandidate);
+
+    return formatted.replace(' ', 'T');
 };
+
 
 const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
   onSubmitEvento,
@@ -66,8 +86,11 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
   const processedInitialData = useMemo(() => {
     const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
     if (isEditMode && initialData && Object.keys(initialData).length > 0) {
+      // Lógica: prefere updatedAt, se nulo, usa createdAt
+      const dateToPreFill = initialData.updatedAt || initialData.createdAt;
+
       return {
-        dataEncaminhamento: getLocalDateTimeString(initialData.dataEncaminhamento),
+        dataEncaminhamento: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined,
         especialidadeDestino: ensureStringOrEmpty(initialData.especialidadeDestino),
         motivoEncaminhamento: ensureStringOrEmpty(initialData.motivoEncaminhamento),
         observacoes: ensureStringOrEmpty(initialData.observacoes),
@@ -75,7 +98,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
       };
     }
     return {
-      dataEncaminhamento: getLocalDateTimeString(new Date()),
+      dataEncaminhamento: undefined,
       especialidadeDestino: '',
       motivoEncaminhamento: '',
       observacoes: '',
@@ -95,16 +118,24 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
   }, [processedInitialData, reset]);
 
   const handleLocalSubmit = (data: EncaminhamentoFormData) => {
-    const submissionData: NovaEncaminhamentoRequest | AktualizarEncaminhamentoRequest = {
-        ...data, 
+    const baseData = {
+        especialidadeDestino: data.especialidadeDestino,
+        motivoEncaminhamento: data.motivoEncaminhamento,
         observacoes: data.observacoes?.trim() || undefined,
     };
-    onSubmitEvento(submissionData);
+
+    if (isEditMode) {
+        const updateData = baseData as AtualizarEncaminhamentoRequest;
+        updateData.medicoSolicitanteId = data.medicoSolicitanteId;
+        updateData.dataEncaminhamento = data.dataEncaminhamento; // Envia a data editada
+        onSubmitEvento(updateData);
+    } else {
+        onSubmitEvento(baseData as NovaEncaminhamentoRequest);
+    }
   };
 
-  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -138,13 +169,15 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         />
       )}
 
-      <Input
-        label="Data e Hora do Encaminhamento*"
-        type="datetime-local"
-        leftAddon={<Calendar size={18} className="text-gray-500"/>}
-        {...register('dataEncaminhamento')}
-        error={errors.dataEncaminhamento?.message}
-      />
+      {isEditMode && (
+        <Input
+          label="Data e Hora do Encaminhamento"
+          type="datetime-local"
+          leftAddon={<Calendar size={18} className="text-gray-500"/>}
+          {...register('dataEncaminhamento')}
+          error={errors.dataEncaminhamento?.message}
+        />
+      )}
 
       <Input
         label="Especialidade de Destino*"

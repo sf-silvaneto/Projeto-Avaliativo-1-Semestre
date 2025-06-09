@@ -8,20 +8,18 @@ export interface AnexoDetalhado {
   urlVisualizacao?: string;
 }
 
-// Nova interface para Sinais Vitais
 export interface SinaisVitais {
   pressaoArterial?: string;
   temperatura?: string;
   frequenciaCardiaca?: string;
   saturacao?: string;
-  hgt?: string; // Novo campo
+  hgt?: string;
 }
 
 export interface NovaConsultaRequest {
-  dataHoraConsulta: string;
   motivoConsulta: string;
   queixasPrincipais: string;
-  sinaisVitais?: SinaisVitais; // Substitui os campos diretos
+  sinaisVitais?: SinaisVitais;
   exameFisico?: string;
   hipoteseDiagnostica?: string;
   condutaPlanoTerapeutico?: string;
@@ -31,10 +29,9 @@ export interface NovaConsultaRequest {
 
 export interface AtualizarConsultaRequest {
     id?: string;
-    dataHoraConsulta?: string;
     motivoConsulta?: string;
     queixasPrincipais?: string;
-    sinaisVitais?: SinaisVitais; // Substitui os campos diretos
+    sinaisVitais?: SinaisVitais;
     exameFisico?: string;
     hipoteseDiagnostica?: string;
     condutaPlanoTerapeutico?: string;
@@ -46,10 +43,9 @@ export interface AtualizarConsultaRequest {
 export interface ConsultaDetalhada {
   id: string;
   prontuarioId: string;
-  dataHoraConsulta: string;
   motivoConsulta?: string;
   queixasPrincipais?: string;
-  sinaisVitais?: SinaisVitais; // Substitui os campos diretos
+  sinaisVitais?: SinaisVitais;
   exameFisico?: string;
   hipoteseDiagnostica?: string;
   condutaPlanoTerapeutico?: string;
@@ -78,7 +74,6 @@ export interface ConsultaDetalhada {
 
 export interface AdicionarExameRequest {
   nome: string;
-  data: string;
   resultado: string;
   observacoes?: string;
   arquivo?: File;
@@ -87,7 +82,6 @@ export interface AdicionarExameRequest {
 export interface AtualizarExameRequest {
     id?: string;
     nome?: string;
-    data?: string;
     resultado?: string;
     observacoes?: string;
     medicoResponsavelExameId?: number | null;
@@ -101,7 +95,6 @@ export type ExameDetalhado = import('./prontuario').Exame & {
 };
 
 export interface NovaEncaminhamentoRequest {
-  dataEncaminhamento: string;
   especialidadeDestino: string;
   motivoEncaminhamento: string;
   medicoSolicitanteId: number;
@@ -110,7 +103,6 @@ export interface NovaEncaminhamentoRequest {
 
 export interface AtualizarEncaminhamentoRequest {
     id?: string;
-    dataEncaminhamento?: string;
     especialidadeDestino?: string;
     motivoEncaminhamento?: string;
     medicoSolicitanteId?: number | null;
@@ -127,7 +119,6 @@ export type EncaminhamentoDetalhado = import('./prontuario').Encaminhamento & {
 };
 
 export interface NovaProcedimentoRequest {
-  dataProcedimento: string;
   descricaoProcedimento: string;
   relatorioProcedimento?: string;
   medicoExecutorId: number;
@@ -135,7 +126,6 @@ export interface NovaProcedimentoRequest {
 
 export interface AtualizarProcedimentoRequest {
     id?: string;
-    dataProcedimento?: string;
     descricaoProcedimento?: string;
     relatorioProcedimento?: string;
     medicoExecutorId?: number | null;

@@ -1,11 +1,10 @@
-// src/pages/paciente/PacienteEditPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PacienteForm from '../../components/paciente/PacienteForm';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import * as pacienteService from '../../services/pacienteService';
-import { Paciente, PacienteFormData, PacienteUpdateDTO, Alergia, Comorbidade, MedicamentoContinuo } from '../../types/paciente'; // Importe os novos tipos
+import { Paciente, PacienteFormData, PacienteUpdateDTO, Alergia, Comorbidade, MedicamentoContinuo } from '../../types/paciente';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const PacienteEditPage: React.FC = () => {
@@ -36,7 +35,6 @@ const PacienteEditPage: React.FC = () => {
   }, [id]);
 
   const mapPacienteToFormData = (p: Paciente): PacienteFormData => {
-    // Agora os campos são arrays de objetos com 'descricao' e 'id'
     const alergias: Alergia[] = p.alergias || [];
     const comorbidades: Comorbidade[] = p.comorbidades || [];
     const medicamentosContinuos: MedicamentoContinuo[] = p.medicamentosContinuos || [];
@@ -51,7 +49,6 @@ const PacienteEditPage: React.FC = () => {
         email: p.email,
         nomeMae: p.nomeMae,
         nomePai: p.nomePai || '',
-        dataEntrada: p.dataEntrada,
         cartaoSus: p.cartaoSus || '',
         racaCor: p.racaCor || '',
         tipoSanguineo: p.tipoSanguineo || '',
@@ -77,12 +74,12 @@ const PacienteEditPage: React.FC = () => {
     setIsSaving(true);
     setError(null);
     try {
+      const { dataEntrada, ...restOfData } = data;
       const updateData: PacienteUpdateDTO = {
-        ...data,
-        // Garanta que as listas enviadas sejam do tipo correto (Alergia[], Comorbidade[], MedicamentoContinuo[])
-        alergias: data.alergias.filter(a => a.descricao.trim() !== ''), // Filtra descrições vazias
-        comorbidades: data.comorbidades.filter(c => c.descricao.trim() !== ''),
-        medicamentosContinuos: data.medicamentosContinuos.filter(m => m.descricao.trim() !== ''),
+        ...restOfData,
+        alergias: restOfData.alergias.filter(a => a.descricao.trim() !== ''),
+        comorbidades: restOfData.comorbidades.filter(c => c.descricao.trim() !== ''),
+        medicamentosContinuos: restOfData.medicamentosContinuos.filter(m => m.descricao.trim() !== ''),
       };
 
       const pacienteAtualizado = await pacienteService.atualizarPaciente(id, updateData);

@@ -20,7 +20,6 @@ const apenasLetrasEspacosAcentosHifenApostrofo = /^[a-zA-ZÀ-ú\s'-]+$/;
 const nomeMinLength = 3;
 const nomeMaePaiMinLength = 3;
 
-// Schemas para as novas listas
 const alergiaSchema = z.object({
   id: z.number().optional(),
   descricao: z.string().min(3, 'A descrição da alergia deve ter no mínimo 3 caracteres.').max(500, 'Descrição da alergia muito longa (máx. 500).'),
@@ -71,7 +70,6 @@ const pacienteFormSchema = z.object({
     .refine(val => !val || val.length === 0 || (val.length >= nomeMaePaiMinLength && apenasLetrasEspacosAcentosHifenApostrofo.test(val)), {
         message: `Nome do pai, se informado, deve ter no mínimo ${nomeMaePaiMinLength} caracteres e conter apenas letras, espaços, acentos, apóstrofos e hífens.`
     }),
-  dataEntrada: z.string().optional().refine(val => !val || (!isNaN(Date.parse(val)) && new Date(val) <= new Date()), { message: 'Data de entrada inválida ou futura.'}),
   cartaoSus: z.preprocess(
     (val) => String(val ?? '').replace(/\D/g, ''),
     z.string()
@@ -190,7 +188,7 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
     const defaultFormValues: PacienteFormData = {
         nome: '', dataNascimento: '', cpf: '', rg: '', genero: Genero.NAO_INFORMADO,
         telefone: '', email: '', nomeMae: '', nomePai: '',
-        dataEntrada: new Date().toISOString().split('T')[0], cartaoSus: '',
+        cartaoSus: '',
         racaCor: '' as RacaCor | '', tipoSanguineo: '' as TipoSanguineo | '', nacionalidade: 'Brasileira', ocupacao: '',
         alergias: [],
         comorbidades: [],
@@ -202,7 +200,6 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
         const dataToReset = {
             ...defaultFormValues, 
             ...initialData, 
-            dataEntrada: initialData.dataEntrada ? initialData.dataEntrada.split('T')[0] : defaultFormValues.dataEntrada,
             dataNascimento: initialData.dataNascimento ? initialData.dataNascimento.split('T')[0] : '',
             alergias: initialData.alergias || [],
             comorbidades: initialData.comorbidades || [],
@@ -342,7 +339,6 @@ const PacienteForm: React.FC<PacienteFormProps> = ({
 
       <h3 className="text-lg font-medium text-neutral-900 border-b pb-2 pt-4">Dados Adicionais</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6">
-        <Input label="Data de Entrada/Cadastro" type="date" {...register('dataEntrada')} error={errors.dataEntrada?.message} leftAddon={<Calendar className="h-4 w-4" />} />
         <Input 
           label="Cartão SUS" 
           {...register('cartaoSus')} 

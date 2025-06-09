@@ -5,7 +5,7 @@ import {
   FileText as FileTextIcon, Activity, Pill, Loader2,
   Microscope, Scissors, Users as UsersIcon, Stethoscope as StethoscopeIcon,
   ShieldCheck, Briefcase, Send, HeartPulse, Palette, ShieldQuestion, Building, StickyNote, CreditCard, ListFilter,
-  Droplet // Importar Droplet para HGT
+  Droplet
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -18,7 +18,7 @@ import {
     ExameDetalhado,
     ProcedimentoDetalhado,
     EncaminhamentoDetalhada,
-    SinaisVitais // Importar SinaisVitais
+    SinaisVitais
 } from '../../types/prontuarioRegistros';
 
 const especialidadeResumos: Record<string, string> = {
@@ -35,7 +35,7 @@ const especialidadeResumos: Record<string, string> = {
   NEUROLOGIA: "Diagnóstico e tratamento de doenças do sistema nervoso central e periférico.",
   OFTALMOLOGIA: "Cuidados com a saúde dos olhos e da visão, tratando doenças e realizando cirurgias.",
   ONCOLOGIA: "Diagnóstico e tratamento de câncer, utilizando quimioterapia, radioterapia e outras terapias.",
-  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).", // Linha corrigida: removido o '.' extra
+  ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).",
   OTORRINOLARINGOLOGIA: "Diagnóstico e tratamento de doenças do ouvido, nariz e garganta.",
   PEDIATRIA: "Cuidados com a saúde de crianças e adolescentes, desde o nascimento até a fase adulta inicial.",
   PNEUMOLOGIA: "Diagnóstico e tratamento de doenças do sistema respiratório, como asma e pneumonia.",
@@ -183,7 +183,6 @@ const ProntuarioDetailPage: React.FC = () => {
     fetchProntuario();
   }, [fetchProntuario]);
 
-  // Definição única da função formatEnum
   const formatEnum = (value?: string, enumType?: any) => {
     if (!value) return 'Não informado';
     if (enumType === PacienteGeneroEnum) {
@@ -217,8 +216,6 @@ const ProntuarioDetailPage: React.FC = () => {
     return telefone;
   };
 
-  // Função para renderizar listas de alergias, comorbidades, etc.
-  // Esta função é definida uma vez e usada em `renderPacienteCompleto` e outras listas.
   const renderList = (items?: { descricao: string }[]) => {
     if (!items || items.length === 0) {
       return <span className="italic text-neutral-400">Não informado</span>;
@@ -240,23 +237,17 @@ const ProntuarioDetailPage: React.FC = () => {
     const itens: HistoricoUnificadoItem[] = [];
 
     prontuario.consultas?.forEach(c => itens.push({
-        id: `consulta-${c.id}`, tipo: 'CONSULTA', data: c.dataHoraConsulta, dataOriginal: c, titulo: `Consulta`, icone: <Activity className="h-5 w-5" />
+        id: `consulta-${c.id}`, tipo: 'CONSULTA', data: c.updatedAt || c.createdAt, dataOriginal: c, titulo: `Consulta`, icone: <Activity className="h-5 w-5" />
     }));
     prontuario.examesRegistrados?.forEach(e => itens.push({
-        id: `exame-${e.id}`, tipo: 'EXAME', data: e.dataExame, dataOriginal: e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />
+        id: `exame-${e.id}`, tipo: 'EXAME', data: e.updatedAt || e.createdAt, dataOriginal: e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />
     }));
     prontuario.procedimentosRegistrados?.forEach(p => itens.push({
-        id: `procedimento-${p.id}`, tipo: 'PROCEDIMENTO', data: p.dataProcedimento, dataOriginal: p, titulo: `Procedimento: ${(p.descricaoProcedimento || '').substring(0,35)}${(p.descricaoProcedimento && p.descricaoProcedimento.length > 35) ? '...' : ''}`, icone: <Scissors className="h-5 w-5" />
+        id: `procedimento-${p.id}`, tipo: 'PROCEDIMENTO', data: p.updatedAt || p.createdAt, dataOriginal: p, titulo: `Procedimento: ${(p.descricaoProcedimento || '').substring(0,35)}${(p.descricaoProcedimento && p.descricaoProcedimento.length > 35) ? '...' : ''}`, icone: <Scissors className="h-5 w-5" />
     }));
     prontuario.encaminhamentosRegistrados?.forEach(enc => itens.push({
-        id: `encaminhamento-${enc.id}`, tipo: 'ENCAMINHAMENTO', data: enc.dataEncaminhamento, dataOriginal: enc, titulo: `Encaminhamento para ${enc.especialidadeDestino || 'N/D'}`, icone: <Send className="h-5 w-5" />
+        id: `encaminhamento-${enc.id}`, tipo: 'ENCAMINHAMENTO', data: enc.updatedAt || enc.createdAt, dataOriginal: enc, titulo: `Encaminhamento para ${enc.especialidadeDestino || 'N/D'}`, icone: <Send className="h-5 w-5" />
     }));
-    // Note: HistoricoGeral is not explicitly present in the Prontuario type anymore in the client,
-    // but if it were, it would be added similarly.
-    // prontuario.historicoGeral?.forEach(hg => itens.push({
-    //     id: `histgeral-${hg.id}`, tipo: 'HISTORICO_GERAL', data: hg.data, dataOriginal: hg, titulo: `Registro Geral: ${(hg.descricao || '').substring(0,30)}${(hg.descricao && hg.descricao.length > 30) ? '...' : ''}`, icone: <StickyNote className="h-5 w-5" />
-    // }));
-
 
     return itens.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
   }, [prontuario]);
@@ -279,7 +270,7 @@ const ProntuarioDetailPage: React.FC = () => {
             <DetailItem icon={<Mail size={16}/>} label="Email" value={p.email} />
             <DetailItem icon={<User size={16}/>} label="Nome da Mãe" value={p.nomeMae} />
             <DetailItem icon={<User size={16}/>} label="Nome do Pai" value={p.nomePai} />
-            <DetailItem icon={<Calendar size={16}/>} label="Data de Cadastro Inicial" value={formatDate(p.dataEntrada)} />
+            <DetailItem icon={<Calendar size={16}/>} label="Data de Cadastro Inicial" value={formatDate(p.createdAt)} />
             <DetailItem icon={<CreditCard size={16}/>} label="Cartão SUS" value={p.cartaoSus} />
             <DetailItem icon={<Palette size={16}/>} label="Raça/Cor" value={formatEnum(p.racaCor, RacaCor)} />
             <DetailItem icon={<HeartPulse size={16}/>} label="Tipo Sanguíneo" value={formatEnum(p.tipoSanguineo, TipoSanguineo)} />
@@ -288,13 +279,11 @@ const ProntuarioDetailPage: React.FC = () => {
             <div className="sm:col-span-2 lg:col-span-3">
                  <DetailItem icon={<MapPin size={16}/>} label="Endereço" value={enderecoFormatado} />
             </div>
-            {/* INÍCIO DA ALTERAÇÃO NECESSÁRIA PARA EXIBIR AS LISTAS */}
             <div className="lg:col-span-3 mt-2 space-y-3">
                 <DetailItem icon={<ShieldQuestion size={16}/>} label="Alergias Declaradas" value={renderList(p.alergias)} />
                 <DetailItem icon={<Activity size={16}/>} label="Comorbidades Declaradas" value={renderList(p.comorbidades)} />
                 <DetailItem icon={<Pill size={16}/>} label="Medicamentos em Uso Contínuo" value={renderList(p.medicamentosContinuos)} />
             </div>
-            {/* FIM DA ALTERAÇÃO NECESSÁRIA */}
         </div>
     );
   }
@@ -480,12 +469,12 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
                     {(c.sinaisVitais?.pressaoArterial || c.sinaisVitais?.temperatura || c.sinaisVitais?.frequenciaCardiaca || c.sinaisVitais?.saturacao || c.sinaisVitais?.hgt) && (
                         <>
                             <h5 className="text-sm font-semibold text-neutral-700 mt-3 mb-1">Sinais Vitais:</h5>
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2"> {/* Aumente as colunas */}
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2">
                                 {c.sinaisVitais?.pressaoArterial && <DetailItem label="P.A." value={c.sinaisVitais.pressaoArterial}/>}
                                 {c.sinaisVitais?.temperatura && <DetailItem label="Temp." value={`${c.sinaisVitais.temperatura}°C`}/>}
                                 {c.sinaisVitais?.frequenciaCardiaca && <DetailItem label="F.C." value={`${c.sinaisVitais.frequenciaCardiaca} bpm`}/>}
                                 {c.sinaisVitais?.saturacao && <DetailItem label="Sat O₂" value={`${c.sinaisVitais.saturacao}%`}/>}
-                                {c.sinaisVitais?.hgt && <DetailItem label="HGT" value={`${c.sinaisVitais.hgt} mg/dL`}/>} {/* Novo item HGT */}
+                                {c.sinaisVitais?.hgt && <DetailItem label="HGT" value={`${c.sinaisVitais.hgt} mg/dL`}/>}
                             </div>
                         </>
                     )}
@@ -602,25 +591,25 @@ const ListaHistoricoUnificado: React.FC<{itens: HistoricoUnificadoItem[], format
 
 const ListaDeConsultas: React.FC<{consultas: ConsultaDetalhada[], formatDateTime: Function, formatDate: Function}> = ({consultas, formatDateTime, formatDate}) => {
     if (!consultas || consultas.length === 0) return <Card className="text-center"><p className="text-neutral-500 italic py-10">Nenhuma consulta registrada.</p></Card>;
-    const itens: HistoricoUnificadoItem[] = consultas.map(c => ({id: `consulta-list-${c.id}`, tipo: 'CONSULTA', data: c.dataHoraConsulta, dataOriginal:c, titulo: 'Consulta', icone: <Activity className="h-5 w-5" />}));
+    const itens: HistoricoUnificadoItem[] = consultas.map(c => ({id: `consulta-list-${c.id}`, tipo: 'CONSULTA', data: c.updatedAt || c.createdAt, dataOriginal:c, titulo: 'Consulta', icone: <Activity className="h-5 w-5" />}));
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
 };
 
 const ListaDeExames: React.FC<{exames: ExameDetalhado[], formatDate: Function, formatDateTime: Function}> = ({exames, formatDate, formatDateTime}) => {
     if (!exames || exames.length === 0) return <Card className="text-center"><p className="text-neutral-500 italic py-10">Nenhum exame registrado.</p></Card>;
-    const itens: HistoricoUnificadoItem[] = exames.map(e => ({id: `exame-list-${e.id}`, tipo: 'EXAME', data: e.dataExame, dataOriginal:e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />}));
+    const itens: HistoricoUnificadoItem[] = exames.map(e => ({id: `exame-list-${e.id}`, tipo: 'EXAME', data: e.updatedAt || e.createdAt, dataOriginal:e, titulo: `Exame: ${e.nome || 'N/D'}`, icone: <Microscope className="h-5 w-5" />}));
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
 };
 
 const ListaDeProcedimentos: React.FC<{procedimentos: ProcedimentoDetalhado[], formatDateTime: Function, formatDate: Function}> = ({procedimentos, formatDateTime, formatDate}) => {
     if (!procedimentos || procedimentos.length === 0) return <Card className="text-center"><p className="text-neutral-500 italic py-10">Nenhum procedimento registrado.</p></Card>;
-    const itens: HistoricoUnificadoItem[] = procedimentos.map(p => ({id: `procedimento-list-${p.id}`, tipo: 'PROCEDIMENTO', data: p.dataProcedimento, dataOriginal:p, titulo: `Procedimento: ${(p.descricaoProcedimento || '').substring(0,35)}${(p.descricaoProcedimento && p.descricaoProcedimento.length > 35) ? '...' : ''}`, icone: <Scissors className="h-5 w-5" />}));
+    const itens: HistoricoUnificadoItem[] = procedimentos.map(p => ({id: `procedimento-list-${p.id}`, tipo: 'PROCEDIMENTO', data: p.updatedAt || p.createdAt, dataOriginal:p, titulo: `Procedimento: ${(p.descricaoProcedimento || '').substring(0,35)}${(p.descricaoProcedimento && p.descricaoProcedimento.length > 35) ? '...' : ''}`, icone: <Scissors className="h-5 w-5" />}));
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
 };
 
 const ListaDeEncaminhamentos: React.FC<{encaminhamentos: EncaminhamentoDetalhada[], formatDateTime: Function, formatDate: Function}> = ({encaminhamentos, formatDateTime, formatDate}) => {
     if (!encaminhamentos || encaminhamentos.length === 0) return <Card className="text-center"><p className="text-neutral-500 italic py-10">Nenhum encaminhamento registrado.</p></Card>;
-    const itens: HistoricoUnificadoItem[] = encaminhamentos.map(enc => ({id: `encaminhamento-list-${enc.id}`, tipo: 'ENCAMINHAMENTO', data: enc.dataEncaminhamento, dataOriginal:enc, titulo: `Encaminhamento para ${enc.especialidadeDestino || 'N/D'}`, icone: <Send className="h-5 w-5" />}));
+    const itens: HistoricoUnificadoItem[] = encaminhamentos.map(enc => ({id: `encaminhamento-list-${enc.id}`, tipo: 'ENCAMINHAMENTO', data: enc.updatedAt || enc.createdAt, dataOriginal:enc, titulo: `Encaminhamento para ${enc.especialidadeDestino || 'N/D'}`, icone: <Send className="h-5 w-5" />}));
     return <ListaHistoricoUnificado itens={itens} formatDateTime={formatDateTime} formatDate={formatDate} />;
 };
 

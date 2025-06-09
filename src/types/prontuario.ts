@@ -35,9 +35,27 @@ export interface HistoricoMedico {
 export interface Exame {
   id: string;
   nome: string;
-  dataExame: string;
   resultado: string;
   observacoes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Encaminhamento {
+  id: string;
+  especialidadeDestino: string;
+  motivoEncaminhamento: string;
+  medicoSolicitanteId?: number;
+  observacoes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Procedimento {
+  id: string;
+  descricaoProcedimento: string;
+  relatorioProcedimento?: string;
+  medicoExecutorId?: number;
   createdAt: string;
   updatedAt: string;
 }

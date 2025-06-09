@@ -30,17 +30,15 @@ const formatarTemperatura = (value: string): string => {
     if (parts.length > 2) { val = parts[0] + '.' + parts.slice(1).join(''); }
     const [inteiro, decimal] = val.split('.');
     let formattedVal = inteiro || '';
-    if (inteiro && inteiro.length > 2) { formattedVal = inteiro.substring(0, 2); } 
-    if (decimal !== undefined) { formattedVal += '.' + decimal.substring(0, 2); } 
+    if (inteiro && inteiro.length > 2) { formattedVal = inteiro.substring(0, 2); }
+    if (decimal !== undefined) { formattedVal += '.' + decimal.substring(0, 2); }
     return formattedVal;
 };
 
-// Nova função para filtrar apenas números inteiros
 const filterNumericInput = (value: string): string => {
     return value.replace(/\D/g, '');
 };
 
-// Esquema de validação para SinaisVitais
 const sinaisVitaisSchema = z.object({
     pressaoArterial: z.string().optional().or(z.literal(''))
         .refine(val => {
@@ -72,7 +70,7 @@ const sinaisVitaisSchema = z.object({
             const sat = parseInt(val, 10);
             return /^\d+$/.test(val) && !isNaN(sat) && sat >= 30 && sat <= 100;
         }, { message: "Sat O₂ inválida (inteiro entre 30-100%)" }),
-    hgt: z.string().optional().or(z.literal('')) // Novo campo HGT
+    hgt: z.string().optional().or(z.literal(''))
         .refine(val => {
             if (!val || val.trim() === '') return true;
             const hgtVal = parseInt(val, 10);
@@ -81,25 +79,30 @@ const sinaisVitaisSchema = z.object({
 });
 
 const consultaSchema = z.object({
-    dataHoraConsulta: z.string()
-        .min(1, "Data e hora da consulta são obrigatórias.")
-        .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format Vanden-MM-DDTHH:MM." })
-        .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora da consulta inválidas (não é uma data real)." })
-        .refine(val => {
+    dataHoraConsulta: z.string().optional().transform(e => e === "" ? undefined : e)
+        .refine((val) => {
+            if (!val) return true;
+            return datetimeLocalRegex.test(val);
+        }, { message: "Formato de data e hora inválido. Use o seletor ou formato YYYY-MM-DDTHH:MM." })
+        .refine((val) => {
+            if (!val) return true;
+            const date = new Date(val);
+            return !isNaN(date.getTime());
+        }, { message: "Data e hora da consulta inválidas (não é uma data real)." })
+        .refine((val) => {
+            if (!val) return true;
             const dataSelecionada = new Date(val);
             const agora = new Date();
-            const diffEmMinutos = (dataSelecionada.getTime() - agora.getTime()) / 60000;
-            return diffEmMinutos < (60 * 24 * 365 * 2); 
-        }, { message: "Data da consulta muito distante no futuro." })
-        .refine(val => {
-             const dataSelecionada = new Date(val);
-             const minDate = new Date();
-             minDate.setFullYear(minDate.getFullYear() - 120); 
-             return dataSelecionada > minDate;
-        }, {message: "Data da consulta muito antiga."}),
+            const maxFutureDate = new Date();
+            maxFutureDate.setFullYear(maxFutureDate.getFullYear() + 2);
+            const minPastDate = new Date();
+            minPastDate.setFullYear(minPastDate.getFullYear() - 120);
+
+            return dataSelecionada <= maxFutureDate && dataSelecionada >= minPastDate;
+        }, { message: "Data da consulta inválida. Não pode ser muito no futuro ou muito no passado." }),
     motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
     queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta (mín. 10 caracteres)." }).max(2000, "Queixas muito longas (máx. 2000)."),
-    sinaisVitais: sinaisVitaisSchema.optional(), // Usar o schema aninhado
+    sinaisVitais: sinaisVitaisSchema.optional(),
     exameFisico: z.string().max(5000, "Exame físico não pode exceder 5000 caracteres.").optional().or(z.literal('')),
     hipoteseDiagnostica: z.string().max(2000, "Hipótese diagnóstica não pode exceder 2000 caracteres.").optional().or(z.literal('')),
     condutaPlanoTerapeutico: z.string().max(5000, "Conduta/Plano terapêutico não pode exceder 5000 caracteres.").optional().or(z.literal('')),
@@ -117,27 +120,35 @@ interface ConsultaFormProps {
     onSubmitEvento: (data: NovaConsultaRequest | AtualizarConsultaRequest) => void;
     onCancel: () => void;
     isLoading?: boolean;
-    initialData?: Partial<ConsultaFormData & { id?: string; responsavelId?: number | string; responsavelMedico?: { id: number } }>;
+    initialData?: Partial<ConsultaFormData & { id?: string; responsavelId?: number | string; responsavelMedico?: { id: number }; createdAt?: string; updatedAt?: string; }>;
     isEditMode?: boolean;
     medicosDisponiveis?: Medico[];
 }
 
-const getLocalDateTimeString = (dateString?: string | Date): string => {
-    const dateCandidate = dateString ? new Date(dateString) : new Date(); 
+const getLocalDateTimeStringForInput = (dateString?: string | Date): string | undefined => {
+    if (!dateString) return undefined;
+
+    const dateCandidate = new Date(typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('-') ? dateString + 'Z' : dateString);
 
     if (isNaN(dateCandidate.getTime())) {
-        console.warn("getLocalDateTimeString recebeu data inválida ou nula:", dateString, "Usando data/hora atual como fallback.");
-        const now = new Date();
-        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        console.warn("getLocalDateTimeStringForInput recebeu data inválida ou nula após parsing:", dateString);
+        return undefined;
     }
-    
-    const date = dateCandidate;
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'America/Sao_Paulo'
+    };
+
+    const formatter = new Intl.DateTimeFormat('sv-SE', options);
+    const formatted = formatter.format(dateCandidate);
+
+    return formatted.replace(' ', 'T');
 };
 
 
@@ -145,7 +156,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
     onSubmitEvento,
     onCancel,
     isLoading = false,
-    initialData, 
+    initialData,
     isEditMode = false,
     medicosDisponiveis = []
 }) => {
@@ -155,16 +166,19 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         if (isEditMode && initialData && Object.keys(initialData).length > 0) {
             const medicoIdParaForm = initialData.responsavelMedico?.id ||
                                     (typeof initialData.responsavelId === 'number' ? initialData.responsavelId : initialData.medicoExecutorId || undefined);
+            
+            const dateToPreFill = initialData.updatedAt || initialData.createdAt;
+
             return {
-                dataHoraConsulta: getLocalDateTimeString(initialData.dataHoraConsulta),
+                dataHoraConsulta: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined,
                 motivoConsulta: ensureStringOrEmpty(initialData.motivoConsulta),
                 queixasPrincipais: ensureStringOrEmpty(initialData.queixasPrincipais),
-                sinaisVitais: { // Mapear sinais vitais aninhados
+                sinaisVitais: {
                     pressaoArterial: ensureStringOrEmpty(initialData.sinaisVitais?.pressaoArterial),
                     temperatura: ensureStringOrEmpty(initialData.sinaisVitais?.temperatura),
                     frequenciaCardiaca: ensureStringOrEmpty(initialData.sinaisVitais?.frequenciaCardiaca),
                     saturacao: ensureStringOrEmpty(initialData.sinaisVitais?.saturacao),
-                    hgt: ensureStringOrEmpty(initialData.sinaisVitais?.hgt), // Mapear HGT
+                    hgt: ensureStringOrEmpty(initialData.sinaisVitais?.hgt),
                 },
                 exameFisico: ensureStringOrEmpty(initialData.exameFisico),
                 hipoteseDiagnostica: ensureStringOrEmpty(initialData.hipoteseDiagnostica),
@@ -174,16 +188,16 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 medicoExecutorId: medicoIdParaForm,
             };
         }
-        return { 
-            dataHoraConsulta: getLocalDateTimeString(new Date()),
+        return {
+            dataHoraConsulta: undefined,
             motivoConsulta: '',
             queixasPrincipais: '',
-            sinaisVitais: { // Default para sinais vitais
+            sinaisVitais: {
                 pressaoArterial: '',
                 temperatura: '',
                 frequenciaCardiaca: '',
                 saturacao: '',
-                hgt: '', // Default para HGT
+                hgt: '',
             },
             exameFisico: '',
             hipoteseDiagnostica: '',
@@ -207,16 +221,15 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
 
 
     const handleLocalSubmit = (data: ConsultaFormData) => {
-        const submissionData: NovaConsultaRequest | AtualizarConsultaRequest = {
-            dataHoraConsulta: data.dataHoraConsulta,
+        const baseData: NovaConsultaRequest | AtualizarConsultaRequest = {
             motivoConsulta: data.motivoConsulta,
             queixasPrincipais: data.queixasPrincipais,
-            sinaisVitais: { // Mapear sinais vitais de volta para o formato de submissão
+            sinaisVitais: {
                 pressaoArterial: data.sinaisVitais?.pressaoArterial?.trim() || undefined,
                 temperatura: data.sinaisVitais?.temperatura?.trim() ? data.sinaisVitais.temperatura.trim().replace(',', '.') : undefined,
                 frequenciaCardiaca: data.sinaisVitais?.frequenciaCardiaca?.trim() || undefined,
                 saturacao: data.sinaisVitais?.saturacao?.trim() || undefined,
-                hgt: data.sinaisVitais?.hgt?.trim() || undefined, // Mapear HGT
+                hgt: data.sinaisVitais?.hgt?.trim() || undefined,
             },
             exameFisico: data.exameFisico?.trim() || undefined,
             hipoteseDiagnostica: data.hipoteseDiagnostica?.trim() || undefined,
@@ -226,14 +239,17 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         };
 
         if (isEditMode) {
-            (submissionData as AtualizarConsultaRequest).medicoExecutorId = data.medicoExecutorId;
+            const updateData = baseData as AtualizarConsultaRequest;
+            updateData.medicoExecutorId = data.medicoExecutorId;
+            updateData.dataHoraConsulta = data.dataHoraConsulta; 
+            onSubmitEvento(updateData);
+        } else {
+            onSubmitEvento(baseData as NovaConsultaRequest);
         }
-        onSubmitEvento(submissionData);
     };
 
-    // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
     const medicoOptions = medicosDisponiveis
-        .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
+        .filter(m => m.excludedAt === null || m.excludedAt === undefined)
         .map(m => ({
             value: m.id.toString(),
             label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -267,13 +283,16 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 />
             )}
 
-            <Input
-                label="Data e Hora da Consulta*"
-                type="datetime-local"
-                leftAddon={<Calendar size={18} className="text-gray-500" />}
-                {...register('dataHoraConsulta')}
-                error={errors.dataHoraConsulta?.message}
-            />
+            {isEditMode && (
+                <Input
+                    label="Data e Hora da Consulta"
+                    type="datetime-local"
+                    leftAddon={<Calendar size={18} className="text-gray-500" />}
+                    {...register('dataHoraConsulta')}
+                    error={errors.dataHoraConsulta?.message}
+                />
+            )}
+
              <Textarea
                 label="Motivo da Consulta/Queixa Principal (Resumido)*"
                 rows={3}
@@ -321,12 +340,12 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                                 onChange={(e) => field.onChange(formatarTemperatura(e.target.value))}
                                 error={errors.sinaisVitais?.temperatura?.message}
                                 leftAddon={<Thermometer size={18} className="text-gray-500" />}
-                                maxLength={5} 
+                                maxLength={5}
                                 inputMode="decimal"
                             />
                         )}
                     />
-                    <Controller // Usando Controller para F.C. para aplicar o filterNumericInput
+                    <Controller
                         name="sinaisVitais.frequenciaCardiaca"
                         control={control}
                         render={({ field }) => (
@@ -335,17 +354,17 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                                 placeholder="bpm"
                                 {...field}
                                 value={field.value || ''}
-                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))} // Adicionado filtro aqui
+                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))}
                                 error={errors.sinaisVitais?.frequenciaCardiaca?.message}
                                 leftAddon={<Heart size={18} className="text-gray-500" />}
-                                type="text" 
+                                type="text"
                                 inputMode="numeric"
-                                pattern="\d*" 
+                                pattern="\d*"
                                 maxLength={3}
                             />
                         )}
                     />
-                    <Controller // Usando Controller para Sat O₂ para aplicar o filterNumericInput
+                    <Controller
                         name="sinaisVitais.saturacao"
                         control={control}
                         render={({ field }) => (
@@ -354,31 +373,31 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                                 placeholder="%"
                                 {...field}
                                 value={field.value || ''}
-                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))} // Adicionado filtro aqui
+                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))}
                                 error={errors.sinaisVitais?.saturacao?.message}
                                 leftAddon={<Percent size={18} className="text-gray-500" />}
                                 type="text"
                                 inputMode="numeric"
-                                pattern="\d*" 
+                                pattern="\d*"
                                 maxLength={3}
                             />
                         )}
                     />
-                    <Controller // Usando Controller para HGT para aplicar o filterNumericInput
+                    <Controller
                         name="sinaisVitais.hgt"
                         control={control}
                         render={({ field }) => (
-                            <Input // Novo campo HGT
+                            <Input
                                 label="HGT"
                                 placeholder="mg/dL"
                                 {...field}
                                 value={field.value || ''}
-                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))} // Adicionado filtro aqui
+                                onChange={(e) => field.onChange(filterNumericInput(e.target.value))}
                                 error={errors.sinaisVitais?.hgt?.message}
                                 leftAddon={<Droplet size={18} className="text-gray-500" />}
                                 type="text"
                                 inputMode="numeric"
-                                pattern="\d*" 
+                                pattern="\d*"
                                 maxLength={4}
                             />
                         )}
@@ -427,7 +446,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 </Button>
                 <Button
                     type="button"
-                    onClick={handleSubmit(handleLocalSubmit)} 
+                    onClick={handleSubmit(handleLocalSubmit)}
                     variant="primary"
                     isLoading={isLoading}
                     leftIcon={<Save size={18} />}

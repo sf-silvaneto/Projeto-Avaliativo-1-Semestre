@@ -5,31 +5,26 @@ import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-// import { buscarMedicos, atualizarStatusMedico } from '../../services/medicoService'; // Antigo
-import { buscarMedicos, ativarMedico, inativarMedico } from '../../services/medicoService'; // Novo
-// import { Medico, BuscaMedicoParams, StatusMedico, ResultadoBuscaMedicos } from '../../types/medico'; // Remova StatusMedico
-import { Medico, BuscaMedicoParams, ResultadoBuscaMedicos } from '../../types/medico'; // Novo
+import { buscarMedicos, ativarMedico, inativarMedico } from '../../services/medicoService';
+import { Medico, BuscaMedicoParams, ResultadoBuscaMedicos } from '../../types/medico';
 import Card from '../../components/ui/Card';
 
 interface MedicoSearchFormData {
   nome?: string;
   crm?: string;
   especialidade?: string;
-  // status?: StatusMedico | ''; // Antigo
-  status?: 'ATIVO' | 'INATIVO' | ''; // Novo
+  status?: 'ATIVO' | 'INATIVO' | '';
 }
 
 const MedicoTableComponent: React.FC<{
   medicos: Medico[];
   onEdit: (id: number) => void;
   onViewDetails: (id: number) => void;
-  // onToggleStatus: (id: number, currentStatus: StatusMedico) => Promise<void>; // Antigo
-  onToggleStatus: (id: number, isCurrentlyActive: boolean) => Promise<void>; // Novo
+  onToggleStatus: (id: number, isCurrentlyActive: boolean) => Promise<void>;
   isLoadingToggleOrDelete: boolean;
   medicoInAction: number | null;
 }> = ({ medicos, onEdit, onViewDetails, onToggleStatus, isLoadingToggleOrDelete, medicoInAction }) => {
 
-  // Adaptação para o novo campo excludedAt
   const isMedicoAtivo = (medico: Medico): boolean => {
     return medico.excludedAt === null || medico.excludedAt === undefined;
   };
@@ -98,7 +93,6 @@ const MedicoTableComponent: React.FC<{
                     <Button
                         variant="link"
                         size="sm"
-                        // Passar o ID e o status atual (boolean)
                         onClick={() => onToggleStatus(medico.id, isMedicoAtivo(medico))}
                         title={isMedicoAtivo(medico) ? "Inativar Médico" : "Ativar Médico"}
                         className={`p-1 ${isMedicoAtivo(medico) ? 'text-warning-600 hover:text-warning-800' : 'text-success-600 hover:text-success-800'}`}
@@ -152,10 +146,7 @@ const MedicoListPage: React.FC = () => {
         nome: filters.nome || undefined,
         crm: filters.crm || undefined,
         especialidade: filters.especialidade || undefined,
-        // status: filters.status && Object.values(StatusMedico).includes(filters.status as StatusMedico) // Antigo
-        //         ? filters.status as StatusMedico // Antigo
-        //         : undefined, // Antigo
-        status: filters.status || undefined, // Novo
+        status: filters.status || undefined,
         sort: 'nomeCompleto,asc',
       };
       const result = await buscarMedicos(params);
@@ -239,7 +230,6 @@ const MedicoListPage: React.FC = () => {
     navigate(`/medicos/${id}`);
   };
 
-  // onToggleStatus agora recebe um boolean (isCurrentlyActive)
   const handleToggleStatus = async (id: number, isCurrentlyActive: boolean) => {
     const actionText = isCurrentlyActive ? 'inativar' : 'ativar';
     const confirmAction = window.confirm(`Tem certeza que deseja ${actionText} este médico?`);

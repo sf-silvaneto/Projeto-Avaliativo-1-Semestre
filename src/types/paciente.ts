@@ -33,19 +33,18 @@ export interface Endereco {
   cep: string;
 }
 
-// Novas interfaces para as coleções
 export interface Alergia {
-  id?: number; // Opcional para novos itens, para items existentes terá um ID do backend
+  id?: number;
   descricao: string;
 }
 
 export interface Comorbidade {
-  id?: number; // Opcional para novos itens
+  id?: number;
   descricao: string;
 }
 
 export interface MedicamentoContinuo {
-  id?: number; // Opcional para novos itens
+  id?: number;
   descricao: string;
 }
 
@@ -60,7 +59,7 @@ export interface Paciente {
   email: string;
   nomeMae: string;
   nomePai?: string;
-  dataEntrada: string;
+  // dataEntrada removido
   cartaoSus?: string;
   racaCor?: RacaCor;
   tipoSanguineo?: TipoSanguineo;
@@ -69,18 +68,11 @@ export interface Paciente {
   endereco: Endereco;
   createdAt: string;
   updatedAt: string;
-  // Remova os campos string individuais
-  // alergiasDeclaradas?: string;
-  // comorbidadesDeclaradas?: string;
-  // medicamentosContinuos?: string;
-
-  // Adicione as listas das novas interfaces
   alergias?: Alergia[];
   comorbidades?: Comorbidade[];
   medicamentosContinuos?: MedicamentoContinuo[];
 }
 
-// Atualize PacienteFormData para refletir as novas listas no formulário
 export interface PacienteFormData {
   nome: string;
   dataNascimento: string;
@@ -91,19 +83,12 @@ export interface PacienteFormData {
   email: string;
   nomeMae: string;
   nomePai?: string;
-  dataEntrada?: string;
   cartaoSus?: string;
   racaCor?: RacaCor | '';
   tipoSanguineo?: TipoSanguineo | '';
   nacionalidade?: string;
   ocupacao?: string;
   
-  // Remova as flags de 'sim'/'nao'
-  // temAlergias?: 'sim' | 'nao';
-  // temComorbidades?: 'sim' | 'nao';
-  // usaMedicamentos?: 'sim' | 'nao';
-
-  // Adicione as listas de DTOs para o formulário (campos do useFieldArray)
   alergias: { id?: number; descricao: string; }[];
   comorbidades: { id?: number; descricao: string; }[];
   medicamentosContinuos: { id?: number; descricao: string; }[];
@@ -120,7 +105,7 @@ export interface PacienteFormData {
 }
 
 export type PacienteCreateDTO = PacienteFormData;
-export type PacienteUpdateDTO = Partial<Omit<PacienteFormData, 'alergias' | 'comorbidades' | 'medicamentosContinuos'>> & {
+export type PacienteUpdateDTO = Partial<Omit<PacienteFormData, 'alergias' | 'comorbidades' | 'medicamentosContinuos' | 'dataEntrada'>> & {
   alergias?: Alergia[];
   comorbidades?: Comorbidade[];
   medicamentosContinuos?: MedicamentoContinuo[];

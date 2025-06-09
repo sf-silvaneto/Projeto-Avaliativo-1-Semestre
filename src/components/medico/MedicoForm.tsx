@@ -6,8 +6,7 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
-import { Medico } from '../../types/medico'; // Importação corrigida
+import { Medico } from '../../types/medico';
 import { User, Activity, Award, Edit3, Save, ToggleLeft, ToggleRight, MapPin } from 'lucide-react';
 import { especialidadesMedicas, nomesEspecialidades } from '../../data/especialidadesMedicas';
 import { ufsBrasil } from '../../data/ufsBrasil';
@@ -27,7 +26,6 @@ const nameSchema = z.string()
   .min(10, 'Nome completo deve ter no mínimo 10 caracteres')
   .regex(apenasLetrasEspacosAcentosHifenApostrofo, 'Nome deve conter apenas letras, espaços, acentos, apóstrofos e hífens');
 
-// Esquema de validação para o formulário
 const medicoSchema = z.object({
   nomeCompleto: nameSchema,
   crm: sixDigitNumberRequiredSchema.min(1, 'CRM é obrigatório'),
@@ -35,11 +33,8 @@ const medicoSchema = z.object({
   especialidade: z.string().min(1, 'Especialidade é obrigatória'),
   resumoEspecialidade: z.string().max(1000, 'Resumo não pode exceder 1000 caracteres').optional().or(z.literal('')),
   rqe: sixDigitNumberSchema.optional().or(z.literal('')),
-  // Remova o campo status do schema
-  // status: z.nativeEnum(StatusMedico).optional(),
-});
+  });
 
-// Tipo de dados do formulário (sem o status)
 export type MedicoFormData = z.infer<typeof medicoSchema>;
 
 interface MedicoFormProps {
@@ -96,8 +91,6 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         especialidade: initialData.especialidade,
         resumoEspecialidade: initialData.resumoEspecialidade || '',
         rqe: initialData.rqe || '',
-        // Remova o status do defaultValues
-        // status: initialData.status || StatusMedico.ATIVO,
     } : {
         nomeCompleto: '',
         crm: '',
@@ -105,8 +98,6 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         especialidade: '',
         resumoEspecialidade: '',
         rqe: '',
-        // Remova o status do defaultValues
-        // status: StatusMedico.ATIVO,
     },
   });
 
@@ -141,8 +132,6 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         especialidade: initialData.especialidade,
         resumoEspecialidade: initialData.resumoEspecialidade || '',
         rqe: initialData.rqe || '',
-        // Remova o status do reset
-        // status: initialData.status || StatusMedico.ATIVO,
       });
     }
   }, [initialData, reset]);
@@ -156,12 +145,6 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
     }
   }, [especialidadeSelecionada, setValue]);
 
-  // Remover statusOptions, pois não há mais select de status aqui
-  // const statusOptions = [
-  //   { value: StatusMedico.ATIVO, label: 'Ativo' },
-  //   { value: StatusMedico.INATIVO, label: 'Inativo' },
-  // ];
-  
   const handleNumericInput = (event: React.ChangeEvent<HTMLInputElement>, maxLength: number) => {
     const { value } = event.target;
     const numericValue = value.replace(/\D/g, '');
@@ -278,25 +261,6 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         error={errors.resumoEspecialidade?.message}
         readOnly 
       />
-
-      {/* Removido o campo de seleção de status do formulário de edição */}
-      {/* {isEditMode && (
-          <Controller
-          name="status"
-          control={control}
-          defaultValue={initialData?.status || StatusMedico.ATIVO}
-          render={({ field }) => (
-            <Select
-              label="Status do Médico"
-              options={statusOptions}
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value as StatusMedico)}
-              error={errors.status?.message}
-              leftAddon={field.value === StatusMedico.ATIVO ? <ToggleRight className="h-5 w-5 text-success-600" /> : <ToggleLeft className="h-5 w-5 text-neutral-500" />}
-            />
-          )}
-        />
-      )} */}
 
       <div className="pt-6 flex flex-wrap justify-end items-center gap-3">
         {customActions} 

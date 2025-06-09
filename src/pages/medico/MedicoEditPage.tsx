@@ -4,8 +4,7 @@ import MedicoForm, { MedicoFormData } from '../../components/medico/MedicoForm';
 import Alert from '../../components/ui/Alert';
 import Button from '../../components/ui/Button';
 import { buscarMedicoPorId, atualizarMedico } from '../../services/medicoService';
-// Remova a importação StatusMedico aqui
-import { Medico, MedicoUpdateDTO } from '../../types/medico'; // Mantenha apenas Medico, MedicoUpdateDTO
+import { Medico, MedicoUpdateDTO } from '../../types/medico';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const MedicoEditPage: React.FC = () => {
@@ -46,8 +45,6 @@ const MedicoEditPage: React.FC = () => {
         especialidade: data.especialidade,
         resumoEspecialidade: data.resumoEspecialidade,
         rqe: data.rqe,
-        // Remova o status daqui, ele não é mais enviado neste PUT
-        // status: data.status || medico?.status || StatusMedico.ATIVO,
       };
       
       const medicoAtualizado = await atualizarMedico(Number(id), updateData);
@@ -121,7 +118,6 @@ const MedicoEditPage: React.FC = () => {
     );
   }
 
-  // initialFormDataForForm não precisa mais de 'status'
   const initialFormDataForForm: Medico = { ...medico };
 
   return (

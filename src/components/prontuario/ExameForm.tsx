@@ -6,8 +6,7 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { AdicionarExameRequest, AtualizarExameRequest } from '../../types/prontuarioRegistros';
-// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
-import { Medico } from '../../types/medico'; // Mantenha apenas Medico
+import { Medico } from '../../types/medico';
 import Select from '../ui/Select';
 import { Save, Calendar, Microscope as MicroscopeIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
@@ -15,11 +14,20 @@ const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const exameSchema = z.object({
   nome: z.string().min(3, { message: "Nome do exame é obrigatório (mín. 3 caracteres)." }).max(200, "Nome do exame muito longo (máx. 200)."),
-  dataExame: z.string()
-    .min(1, "Data e hora do exame são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
-    .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do exame inválidas (não é uma data real)." })
-    .refine(val => new Date(val) <= new Date(), { message: "Data e hora do exame não podem ser no futuro." }),
+  dataExame: z.string().optional().transform(e => e === "" ? undefined : e)
+    .refine((val) => {
+        if (!val) return true;
+        return datetimeLocalRegex.test(val);
+    }, { message: "Formato de data e hora inválido. Use o seletor ou formato YYYY-MM-DDTHH:MM." })
+    .refine((val) => {
+        if (!val) return true;
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+    }, { message: "Data e hora do exame inválidas (não é uma data real)." })
+    .refine((val) => {
+        if (!val) return true;
+        return new Date(val) <= new Date();
+    }, { message: "Data e hora do exame não podem ser no futuro." }),
   resultado: z.string().min(5, { message: "Resultado do exame é obrigatório (mín. 5 caracteres)." }).max(5000, "Resultado muito longo (máx. 5000)."),
   observacoes: z.string().max(2000, "Observações não podem exceder 2000 caracteres.").optional().or(z.literal('')),
   medicoResponsavelExameId: z.preprocess(
@@ -31,30 +39,40 @@ const exameSchema = z.object({
 type ExameFormData = z.infer<typeof exameSchema>;
 
 interface ExameFormProps {
-  onSubmitEvento: (data: AdicionarExameRequest | AktualizarExameRequest) => void;
+  onSubmitEvento: (data: AdicionarExameRequest | AtualizarExameRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null; dataExame?: string; data?: string }>;
+  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null; createdAt?: string; updatedAt?: string; }>; // Adicionado updatedAt
   isEditMode?: boolean;
   medicosDisponiveis?: Medico[];
 }
 
-const getLocalDateTimeString = (dateString?: string | Date): string => {
-    const dateCandidate = dateString ? new Date(dateString) : new Date(); 
+const getLocalDateTimeStringForInput = (dateString?: string | Date): string | undefined => {
+    if (!dateString) return undefined;
+
+    const dateCandidate = new Date(typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('-') ? dateString + 'Z' : dateString);
+
     if (isNaN(dateCandidate.getTime())) {
-        console.warn("getLocalDateTimeString recebeu data inválida ou nula:", dateString, "Usando data/hora atual como fallback.");
-        const now = new Date();
-        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        console.warn("getLocalDateTimeStringForInput recebeu data inválida ou nula após parsing:", dateString);
+        return undefined;
     }
     
-    const date = dateCandidate;
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'America/Sao_Paulo'
+    };
+
+    const formatter = new Intl.DateTimeFormat('sv-SE', options);
+    const formatted = formatter.format(dateCandidate);
+
+    return formatted.replace(' ', 'T');
 };
+
 
 const ExameForm: React.FC<ExameFormProps> = ({
   onSubmitEvento,
@@ -68,17 +86,19 @@ const ExameForm: React.FC<ExameFormProps> = ({
   const processedInitialData = useMemo(() => {
     const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
     if (isEditMode && initialData && Object.keys(initialData).length > 0) {
+      const dateToPreFill = initialData.updatedAt || initialData.createdAt;
+
       return {
         nome: ensureStringOrEmpty(initialData.nome),
-        dataExame: getLocalDateTimeString(initialData.dataExame || initialData.data), 
+        dataExame: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined, // Preenche com a data convertida
         resultado: ensureStringOrEmpty(initialData.resultado),
         observacoes: ensureStringOrEmpty(initialData.observacoes),
         medicoResponsavelExameId: initialData.medicoResponsavelExameId === null ? undefined : initialData.medicoResponsavelExameId,
       };
     }
-    return { 
+    return {
       nome: '',
-      dataExame: getLocalDateTimeString(), 
+      dataExame: undefined,
       resultado: '',
       observacoes: '',
       medicoResponsavelExameId: undefined,
@@ -97,18 +117,24 @@ const ExameForm: React.FC<ExameFormProps> = ({
   }, [processedInitialData, reset]);
 
   const handleLocalSubmit = (data: ExameFormData) => {
-    const { dataExame, ...restOfData } = data;
-    const submissionData: AdicionarExameRequest | AktualizarExameRequest = {
-        ...restOfData,
-        data: dataExame,
+    const baseData = {
+        nome: data.nome,
+        resultado: data.resultado,
         observacoes: data.observacoes?.trim() || undefined,
     };
-    onSubmitEvento(submissionData);
+
+    if (isEditMode) {
+        const updateData = baseData as AtualizarExameRequest;
+        updateData.medicoResponsavelExameId = data.medicoResponsavelExameId;
+        updateData.data = data.dataExame;
+        onSubmitEvento(updateData);
+    } else {
+        onSubmitEvento(baseData as AdicionarExameRequest);
+    }
   };
 
-  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -120,7 +146,7 @@ const ExameForm: React.FC<ExameFormProps> = ({
         {isEditMode ? 'Editar Registro de Exame' : 'Registrar Novo Exame'}
       </h4>
 
-      {isEditMode && ( 
+      {isEditMode && (
          <Controller
             name="medicoResponsavelExameId"
             control={control}
@@ -142,21 +168,15 @@ const ExameForm: React.FC<ExameFormProps> = ({
         />
       )}
 
-      <Input
-        label="Nome do Exame*"
-        placeholder="Ex: Hemograma Completo"
-        leftAddon={<MicroscopeIcon size={18} className="text-gray-500"/>}
-        {...register('nome')}
-        error={errors.nome?.message}
-      />
-
-      <Input
-        label="Data e Hora do Exame*"
-        type="datetime-local"
-        leftAddon={<Calendar size={18} className="text-gray-500"/>}
-        {...register('dataExame')} 
-        error={errors.dataExame?.message} 
-      />
+      {isEditMode && (
+        <Input
+          label="Data e Hora do Exame"
+          type="datetime-local"
+          leftAddon={<Calendar size={18} className="text-gray-500"/>}
+          {...register('dataExame')}
+          error={errors.dataExame?.message}
+        />
+      )}
 
       <Textarea
         label="Resultado do Exame*"

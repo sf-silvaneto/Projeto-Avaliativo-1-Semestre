@@ -82,7 +82,7 @@ const ProntuarioTable: React.FC<ProntuarioTableProps> = ({
                     <div className="text-xs text-neutral-500">CPF: {prontuario.paciente.cpf}</div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
-                    {formatDate(prontuario.createdAt)} {/* ALTERADO DE prontuario.dataInicio */}
+                    {formatDate(prontuario.createdAt)} {}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-neutral-700">
                     {formatDateTime(prontuario.dataUltimaAtualizacao)}

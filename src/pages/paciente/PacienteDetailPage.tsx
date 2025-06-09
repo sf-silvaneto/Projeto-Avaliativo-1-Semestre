@@ -1,4 +1,3 @@
-// src/pages/paciente/PacienteDetailPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -23,7 +22,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import { buscarPacientePorId } from '../../services/pacienteService';
-import { Paciente, Genero, RacaCor, TipoSanguineo, Endereco, Alergia, Comorbidade, MedicamentoContinuo } from '../../types/paciente'; // Importe os novos tipos
+import { Paciente, Genero, RacaCor, TipoSanguineo, Endereco, Alergia, Comorbidade, MedicamentoContinuo } from '../../types/paciente';
 import { Loader2 } from 'lucide-react';
 
 const PacienteDetailPage: React.FC = () => {
@@ -143,7 +142,6 @@ const PacienteDetailPage: React.FC = () => {
     </div>
   );
 
-  // Nova função para renderizar listas de alergias, comorbidades, etc.
   const renderList = (items?: { descricao: string }[]) => {
     if (!items || items.length === 0) {
       return <span className="italic text-neutral-400">Não informado</span>;
@@ -250,7 +248,7 @@ const PacienteDetailPage: React.FC = () => {
       <Card className="mb-6">
         <h2 className="text-xl font-semibold text-neutral-800 mb-4 border-b pb-2">Dados Adicionais e de Saúde</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6">
-            <DetailItem icon={<CalendarIcon size={16}/>} label="Data de Cadastro Inicial" value={formatDateOnly(paciente.dataEntrada)} />
+            <DetailItem icon={<CalendarIcon size={16}/>} label="Data de Cadastro Inicial" value={formatDateOnly(paciente.createdAt)} /> {/* <-- ALTERADO ESTA LINHA */}
             <DetailItem icon={<CreditCard size={16}/>} label="Cartão SUS" value={paciente.cartaoSus} />
             <DetailItem icon={<UsersIcon size={16}/>} label="Raça/Cor" value={formatEnum(paciente.racaCor)} />
             <DetailItem icon={<Droplet size={16}/>} label="Tipo Sanguíneo" value={formatEnum(paciente.tipoSanguineo)} />

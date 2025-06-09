@@ -6,24 +6,32 @@ import Input from '../ui/Input';
 import Textarea from '../ui/Textarea';
 import Button from '../ui/Button';
 import { NovaProcedimentoRequest, AtualizarProcedimentoRequest } from '../../types/prontuarioRegistros';
-// import { Medico, StatusMedico } from '../../types/medico'; // Remova StatusMedico
-import { Medico } from '../../types/medico'; // Mantenha apenas Medico
+import { Medico } from '../../types/medico';
 import Select from '../ui/Select';
 import { Save, Calendar, ClipboardPlus as ProcedimentoIcon, ArrowLeft, Stethoscope } from 'lucide-react';
 
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const procedimentoSchema = z.object({
-  dataProcedimento: z.string()
-    .min(1, "Data e hora do procedimento são obrigatórias.")
-    .regex(datetimeLocalRegex, { message: "Formato de data e hora inválido. Use o seletor ou format yyyy-MM-DDTHH:MM." })
-    .refine(val => !isNaN(Date.parse(val)), { message: "Data e hora do procedimento inválidas (não é uma data real)." })
-    .refine(val => new Date(val) <= new Date(), { message: "Data e hora do procedimento não podem ser no futuro." }),
+  dataProcedimento: z.string().optional().transform(e => e === "" ? undefined : e)
+    .refine((val) => {
+        if (!val) return true;
+        return datetimeLocalRegex.test(val);
+    }, { message: "Formato de data e hora inválido. Use o seletor ou formato YYYY-MM-DDTHH:MM." })
+    .refine((val) => {
+        if (!val) return true;
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+    }, { message: "Data e hora do procedimento inválidas (não é uma data real)." })
+    .refine((val) => {
+        if (!val) return true;
+        return new Date(val) <= new Date();
+    }, { message: "Data e hora do procedimento não podem ser no futuro." }),
   descricaoProcedimento: z.string().min(10, { message: "Descrição do procedimento é obrigatória (mín. 10 caracteres)." }).max(1000, "Descrição muito longa (máx. 1000)."),
   relatorioProcedimento: z.string().max(10000, "Relatório não pode exceder 10000 caracteres.").optional().or(z.literal('')),
   medicoExecutorId: z.preprocess(
     (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
-    z.number().positive("Médico executor do procedimento é obrigatório.").optional().nullable() 
+    z.number().positive("Médico executor do procedimento é obrigatório.").optional().nullable()
   )
 });
 
@@ -33,49 +41,59 @@ interface ProcedimentoFormProps {
   onSubmitEvento: (data: NovaProcedimentoRequest | AtualizarProcedimentoRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<ProcedimentoFormData & { id?: string }>; 
+  initialData?: Partial<ProcedimentoFormData & { id?: string; createdAt?: string; updatedAt?: string; }>;
   isEditMode?: boolean;
   medicosDisponiveis?: Medico[];
 }
 
-const getLocalDateTimeString = (dateString?: string | Date): string => {
-    const dateCandidate = dateString ? new Date(dateString) : new Date(); 
+const getLocalDateTimeStringForInput = (dateString?: string | Date): string | undefined => {
+    if (!dateString) return undefined;
+
+    const dateCandidate = new Date(typeof dateString === 'string' && !dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('-') ? dateString + 'Z' : dateString);
 
     if (isNaN(dateCandidate.getTime())) {
-        console.warn("getLocalDateTimeString recebeu data inválida ou nula:", dateString, "Usando data/hora atual como fallback.");
-        const now = new Date();
-        return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        console.warn("getLocalDateTimeStringForInput recebeu data inválida ou nula após parsing:", dateString);
+        return undefined;
     }
     
-    const date = dateCandidate;
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23', // Garante formato 24h
+        timeZone: 'America/Sao_Paulo'
+    };
+
+    const formatter = new Intl.DateTimeFormat('sv-SE', options);
+    const formatted = formatter.format(dateCandidate);
+
+    return formatted.replace(' ', 'T');
 };
 
 const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
   onSubmitEvento,
   onCancel,
   isLoading = false,
-  initialData, 
+  initialData,
   isEditMode = false,
   medicosDisponiveis = []
 }) => {
 
   const processedInitialData = useMemo(() => {
     if (isEditMode && initialData && Object.keys(initialData).length > 0) {
+      const dateToPreFill = initialData.updatedAt || initialData.createdAt;
+
       return {
-        dataProcedimento: getLocalDateTimeString(initialData.dataProcedimento),
+        dataProcedimento: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined, // Preenche com a data convertida
         descricaoProcedimento: initialData.descricaoProcedimento || '',
         relatorioProcedimento: initialData.relatorioProcedimento || '',
         medicoExecutorId: initialData.medicoExecutorId || undefined,
       };
     }
-    return { 
-      dataProcedimento: getLocalDateTimeString(new Date()),
+    return {
+      dataProcedimento: undefined,
       descricaoProcedimento: '',
       relatorioProcedimento: '',
       medicoExecutorId: undefined,
@@ -84,9 +102,9 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ProcedimentoFormData>({
     resolver: zodResolver(procedimentoSchema),
-    mode: "onSubmit", 
-    reValidateMode: "onSubmit", 
-    defaultValues: processedInitialData, 
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
+    defaultValues: processedInitialData,
   });
 
   useEffect(() => {
@@ -94,16 +112,23 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
   }, [processedInitialData, reset]);
 
   const handleLocalSubmit = (data: ProcedimentoFormData) => {
-    const submissionData: NovaProcedimentoRequest | AtualizarProcedimentoRequest = {
-        ...data,
+    const baseData = {
+        descricaoProcedimento: data.descricaoProcedimento,
         relatorioProcedimento: data.relatorioProcedimento?.trim() || undefined,
     };
-    onSubmitEvento(submissionData);
+
+    if (isEditMode) {
+        const updateData = baseData as AtualizarProcedimentoRequest;
+        updateData.medicoExecutorId = data.medicoExecutorId;
+        updateData.dataProcedimento = data.dataProcedimento;
+        onSubmitEvento(updateData);
+    } else {
+        onSubmitEvento(baseData as NovaProcedimentoRequest);
+    }
   };
 
-  // Filtra médicos que não estão inativos (excludedAt é null ou undefined)
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined) // Filtra médicos ativos
+    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -114,7 +139,7 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
       <h4 className="text-lg font-medium text-neutral-800 mb-4">
         {isEditMode ? 'Editar Registro de Procedimento' : 'Registrar Novo Procedimento'}
       </h4>
-      {isEditMode && ( 
+      {isEditMode && (
          <Controller
             name="medicoExecutorId"
             control={control}
@@ -136,13 +161,15 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
         />
       )}
 
-      <Input
-        label="Data e Hora do Procedimento*"
-        type="datetime-local"
-        leftAddon={<Calendar size={18} className="text-gray-500"/>}
-        {...register('dataProcedimento')}
-        error={errors.dataProcedimento?.message}
-      />
+      {isEditMode && (
+        <Input
+          label="Data e Hora do Procedimento"
+          type="datetime-local"
+          leftAddon={<Calendar size={18} className="text-gray-500"/>}
+          {...register('dataProcedimento')}
+          error={errors.dataProcedimento?.message}
+        />
+      )}
 
       <Textarea
         label="Descrição do Procedimento*"
@@ -173,7 +200,7 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
         </Button>
         <Button
             type="button"
-            onClick={handleSubmit(handleLocalSubmit)} 
+            onClick={handleSubmit(handleLocalSubmit)}
             variant="primary"
             isLoading={isLoading}
             leftIcon={<Save size={18}/>}

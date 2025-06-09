@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Adicione useCallback aqui
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, 
@@ -115,7 +115,6 @@ const MedicoDetailPage: React.FC = () => {
         updatedMedico = await inativarMedico(medico.id);
         setUpdateStatusSuccess(`Médico ${medico.nomeCompleto} inativado com sucesso.`);
       } else {
-        // Ativar
         const confirmActivate = window.confirm(`Tem certeza que deseja ativar o médico ${medico.nomeCompleto}? Ele voltará a aparecer nas listas de seleção.`);
         if (!confirmActivate) {
             setIsUpdatingStatus(false);
@@ -124,7 +123,7 @@ const MedicoDetailPage: React.FC = () => {
         updatedMedico = await ativarMedico(medico.id);
         setUpdateStatusSuccess(`Médico ${medico.nomeCompleto} ativado com sucesso.`);
       }
-      setMedico(updatedMedico); // Atualiza o estado local do médico
+      setMedico(updatedMedico);
     } catch (err: any) {
       setUpdateStatusError(err.response?.data?.mensagem || err.message || 'Erro ao alterar status do médico.');
     } finally {
@@ -202,7 +201,6 @@ const MedicoDetailPage: React.FC = () => {
             <Button variant="primary" onClick={() => navigate(`/medicos/${id}/editar`)} leftIcon={<EditIcon className="h-4 w-4" />}>
                 Editar Médico
             </Button>
-            {/* Botão de Ativar/Inativar */}
             <Button
                 variant={isMedicoAtivo(medico) ? "warning" : "success"}
                 onClick={handleToggleStatus}

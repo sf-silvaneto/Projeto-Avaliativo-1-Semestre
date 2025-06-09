@@ -1,4 +1,3 @@
-// sf-silvaneto/clientehm/ClienteHM-cec72d0146ab088abd633688e5d76c66bc940402/cliente-hm-front-main/src/components/prontuario/ProntuarioSearchForm.tsx
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Search, X } from 'lucide-react';
@@ -28,16 +27,14 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
   });
 
   const termoValue = watch('termo');
-  const lastSearchedTermRef = useRef<string | undefined>(undefined); // Inicializado como undefined
+  const lastSearchedTermRef = useRef<string | undefined>(undefined);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const triggerSearch = useCallback((data: SearchFormData) => {
     const searchTerm = data.termo?.trim() ? data.termo.trim() : undefined;
     
-    // Condição para evitar a busca inicial com termo vazio
     if (searchTerm === undefined && lastSearchedTermRef.current === undefined) {
-      // console.log('Initial empty state, skipping onSearch.'); // Remover ou comentar esta linha
       return; 
     }
 
@@ -46,20 +43,10 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
     const wasPreviouslyFilled = lastSearchedTermRef.current !== undefined && lastSearchedTermRef.current !== '';
     const isNowEmpty = searchTerm === undefined || searchTerm === '';
 
-    // Remover ou comentar as linhas de console.log abaixo
-    // console.log('--- triggerSearch ---');
-    // console.log('searchTerm:', searchTerm);
-    // console.log('lastSearchedTermRef.current:', lastSearchedTermRef.current);
-    // console.log('hasEffectiveValueChanged:', hasEffectiveValueChanged);
-    // console.log('wasPreviouslyFilled:', wasPreviouslyFilled);
-    // console.log('isNowEmpty:', isNowEmpty);
-
     if (hasEffectiveValueChanged || (isNowEmpty && wasPreviouslyFilled)) {
-      // console.log('Calling onSearch with:', searchTerm); // Remover ou comentar esta linha
       onSearch({ termo: searchTerm });
       lastSearchedTermRef.current = searchTerm;
     } else {
-      // console.log('No effective change, skipping onSearch.'); // Remover ou comentar esta linha
     }
   }, [onSearch]);
 
@@ -80,13 +67,11 @@ const ProntuarioSearchForm: React.FC<ProntuarioSearchFormProps> = ({
   }, [isLoading, termoValue]); 
 
   const handleFormSubmit = (data: SearchFormData) => {
-    // console.log('handleFormSubmit called with:', data.termo); // Remover ou comentar esta linha
     triggerSearch(data);
     inputRef.current?.focus(); 
   };
 
   const handleReset = () => {
-    // console.log('handleReset called.'); // Remover ou comentar esta linha
     reset({ termo: '' });
     onSearch({ termo: undefined });
     lastSearchedTermRef.current = undefined;
