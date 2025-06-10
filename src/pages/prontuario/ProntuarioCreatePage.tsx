@@ -14,9 +14,9 @@ import {
     NovaProcedimentoRequest,
     NovaEncaminhamentoRequest,
     ConsultaDetalhada,
-    ExameDetalhado,
+    ExameDetalhada,
     ProcedimentoDetalhado,
-    EncaminhamentoDetalhado
+    EncaminhamentoDetalhada
 } from '../../types/prontuarioRegistros';
 
 interface WizardSubmitData extends ProntuarioWizardFormData {
@@ -44,15 +44,16 @@ const ProntuarioCreatePage: React.FC = () => {
         }
 
         try {
-            let prontuarioOuEventoCriado: ConsultaDetalhada | ExameDetalhado | ProcedimentoDetalhado | EncaminhamentoDetalhado | any;
+            let prontuarioOuEventoCriado: ConsultaDetalhada | ExameDetalhada | ProcedimentoDetalhado | EncaminhamentoDetalhada | any;
 
             switch (tipoPrimeiroRegistro) {
                 case 'CONSULTA':
                     console.log('ProntuarioCreatePage: CHAMANDO adicionarConsultaComNovoProntuario com:', pacienteId, medicoId, dadosEvento);
+                    // Agora medicoExecutorId é passado como parte de dadosEvento na NovaConsultaRequest
                     prontuarioOuEventoCriado = await adicionarConsultaComNovoProntuario(
                         pacienteId,
-                        medicoId,
-                        { ...dadosEvento as NovaConsultaRequest, dataConsulta: dadosEvento.dataConsulta } // Passando a nova data
+                        medicoId, // medicoId do prontuário é o executor inicial
+                        { ...dadosEvento as NovaConsultaRequest, dataConsulta: dadosEvento.dataConsulta, medicoExecutorId: medicoId } // Passa medicoExecutorId
                     );
                     break;
                 case 'EXAME':
@@ -60,21 +61,21 @@ const ProntuarioCreatePage: React.FC = () => {
                     prontuarioOuEventoCriado = await adicionarExameComNovoProntuario(
                         pacienteId,
                         medicoId,
-                        { ...dadosEvento as AdicionarExameRequest, dataExame: dadosEvento.dataExame } // Passando a nova data
+                        { ...dadosEvento as AdicionarExameRequest, dataExame: dadosEvento.dataExame }
                     );
                     break;
                 case 'PROCEDIMENTO':
                     console.log('ProntuarioCreatePage: CHAMANDO adicionarProcedimentoComNovoProntuario com:', pacienteId, dadosEvento);
                     prontuarioOuEventoCriado = await adicionarProcedimentoComNovoProntuario(
                         pacienteId,
-                        { ...dadosEvento as NovaProcedimentoRequest, medicoExecutorId: medicoId, dataProcedimento: dadosEvento.dataProcedimento } // Passando a nova data
+                        { ...dadosEvento as NovaProcedimentoRequest, medicoExecutorId: medicoId, dataProcedimento: dadosEvento.dataProcedimento }
                     );
                     break;
                 case 'ENCAMINHAMENTO':
                     console.log('ProntuarioCreatePage: CHAMANDO adicionarEncaminhamentoComNovoProntuario com:', pacienteId, dadosEvento);
                     prontuarioOuEventoCriado = await adicionarEncaminhamentoComNovoProntuario(
                         pacienteId,
-                        { ...dadosEvento as NovaEncaminhamentoRequest, medicoSolicitanteId: medicoId, dataEncaminhamento: dadosEvento.dataEncaminhamento } // Passando a nova data
+                        { ...dadosEvento as NovaEncaminhamentoRequest, medicoSolicitanteId: medicoId, dataEncaminhamento: dadosEvento.dataEncaminhamento }
                     );
                     break;
                 default:
@@ -86,7 +87,6 @@ const ProntuarioCreatePage: React.FC = () => {
             console.log('ProntuarioCreatePage: Resposta da API após criação:', prontuarioOuEventoCriado);
 
             let prontuarioIdParaNavegacao: string | undefined;
-            // Ajuste na lógica para pegar o ID do prontuário
             if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuarioId) {
                 prontuarioIdParaNavegacao = String(prontuarioOuEventoCriado.prontuarioId);
             } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && prontuarioOuEventoCriado.prontuario.id) {

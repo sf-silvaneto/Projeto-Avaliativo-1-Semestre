@@ -21,7 +21,7 @@ import ProcedimentoForm from '../../components/prontuario/ProcedimentoForm';
 import EncaminhamentoForm from '../../components/prontuario/EncaminhamentoForm';
 import {
   ConsultaDetalhada, AtualizarConsultaRequest,
-  ExameDetalhado, AtualizarExameRequest,
+  ExameDetalhada, AtualizarExameRequest,
   ProcedimentoDetalhado, AtualizarProcedimentoRequest,
   EncaminhamentoDetalhada, AtualizarEncaminhamentoRequest
 } from '../../types/prontuarioRegistros';
@@ -53,7 +53,7 @@ const ProntuarioEditPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('dadosGerais');
   const [consultaEmEdicao, setConsultaEmEdicao] = useState<ConsultaDetalhada | null>(null);
   const [showModalConsulta, setShowModalConsulta] = useState(false);
-  const [exameEmEdicao, setExameEmEdicao] = useState<ExameDetalhado | null>(null);
+  const [exameEmEdicao, setExameEmEdicao] = useState<ExameDetalhada | null>(null);
   const [showModalExame, setShowModalExame] = useState(false);
   const [procedimentoEmEdicao, setProcedimentoEmEdicao] = useState<ProcedimentoDetalhado | null>(null);
   const [showModalProcedimento, setShowModalProcedimento] = useState(false);
@@ -129,7 +129,11 @@ const ProntuarioEditPage: React.FC = () => {
     if (!consultaEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
-      const medicoIdFinal = dados.medicoExecutorId === null || dados.medicoExecutorId === undefined ? null : Number(dados.medicoExecutorId);
+      // O medicoExecutorId agora é obrigatório no request.
+      const medicoIdFinal = dados.medicoExecutorId === undefined ? null : Number(dados.medicoExecutorId);
+      if (medicoIdFinal === null) {
+        throw new Error("Médico executor é obrigatório para atualizar a consulta.");
+      }
       await atualizarConsultaNoProntuario(consultaEmEdicao.id, { ...dados, medicoExecutorId: medicoIdFinal });
       setSuccessMessage('Consulta atualizada com sucesso!');
       handleFecharModalEdicaoConsulta();
@@ -142,7 +146,7 @@ const ProntuarioEditPage: React.FC = () => {
     }
   };
 
-  const handleAbrirModalEdicaoExame = (exame: ExameDetalhado) => {
+  const handleAbrirModalEdicaoExame = (exame: ExameDetalhada) => {
     setExameEmEdicao(exame); setShowModalExame(true); setError(null); setSuccessMessage(null);
   };
   const handleFecharModalEdicaoExame = () => {
@@ -152,7 +156,7 @@ const ProntuarioEditPage: React.FC = () => {
     if (!exameEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
-      const medicoIdFinal = dados.medicoResponsavelExameId === null || dados.medicoResponsavelExameId === undefined ? null : Number(dados.medicoResponsavelExameId);
+      const medicoIdFinal = dados.medicoResponsavelExameId === null || dados.medicoResponsavelExameId === undefined ? undefined : Number(dados.medicoResponsavelExameId);
       await atualizarExameNoProntuario(exameEmEdicao.id.toString(), { ...dados, medicoResponsavelExameId: medicoIdFinal });
       setSuccessMessage('Exame atualizado com sucesso!');
       handleFecharModalEdicaoExame();
@@ -175,7 +179,10 @@ const ProntuarioEditPage: React.FC = () => {
     if (!procedimentoEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
-      const medicoIdFinal = dados.medicoExecutorId === null || dados.medicoExecutorId === undefined ? null : Number(dados.medicoExecutorId);
+      const medicoIdFinal = dados.medicoExecutorId === null || dados.medicoExecutorId === undefined ? undefined : Number(dados.medicoExecutorId);
+      if (medicoIdFinal === undefined) { // Adicionado validação para obrigatório
+        throw new Error("Médico executor é obrigatório para atualizar o procedimento.");
+      }
       await atualizarProcedimentoNoProntuario(procedimentoEmEdicao.id.toString(), { ...dados, medicoExecutorId: medicoIdFinal });
       setSuccessMessage('Procedimento atualizado com sucesso!');
       handleFecharModalEdicaoProcedimento();
@@ -198,7 +205,10 @@ const ProntuarioEditPage: React.FC = () => {
     if (!encaminhamentoEmEdicao?.id) return;
     setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
     try {
-      const medicoIdFinal = dados.medicoSolicitanteId === null || dados.medicoSolicitanteId === undefined ? null : Number(dados.medicoSolicitanteId);
+      const medicoIdFinal = dados.medicoSolicitanteId === null || dados.medicoSolicitanteId === undefined ? undefined : Number(dados.medicoSolicitanteId);
+      if (medicoIdFinal === undefined) { // Adicionado validação para obrigatório
+        throw new Error("Médico solicitante é obrigatório para atualizar o encaminhamento.");
+      }
       await atualizarEncaminhamentoNoProntuario(encaminhamentoEmEdicao.id.toString(), { ...dados, medicoSolicitanteId: medicoIdFinal });
       setSuccessMessage('Encaminhamento atualizado com sucesso!');
       handleFecharModalEncaminhamento();
@@ -340,7 +350,6 @@ const ProntuarioEditPage: React.FC = () => {
                         <li key={consulta.id} className="p-4 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                             <div className='flex-grow mb-2 sm:mb-0'>
-                              {/* Usando a nova dataConsulta */}
                               <p className="font-medium text-neutral-800">Data: {new Date(consulta.dataConsulta).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
                               <p className="text-sm text-neutral-600">Motivo: {consulta.motivoConsulta || 'N/A'}</p>
                               <p className="text-sm text-neutral-600">Médico: {consulta.responsavelNomeCompleto || 'N/A'} {consulta.responsavelCRM ? `(CRM: ${consulta.responsavelCRM})` : ''}</p>
@@ -364,7 +373,6 @@ const ProntuarioEditPage: React.FC = () => {
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                             <div className='flex-grow mb-2 sm:mb-0'>
                               <p className="font-medium text-neutral-800">Exame: {exame.nome}</p>
-                              {/* Usando a nova dataExame */}
                               <p className="text-sm text-neutral-600">Data: {new Date(exame.dataExame).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
                               <p className="text-sm text-neutral-600">Médico: {exame.medicoResponsavelExameNome || 'N/A'}</p>
                             </div>
@@ -387,7 +395,6 @@ const ProntuarioEditPage: React.FC = () => {
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                             <div className='flex-grow mb-2 sm:mb-0'>
                               <p className="font-medium text-neutral-800">Procedimento: {(proc.descricaoProcedimento || '').substring(0,50)}{proc.descricaoProcedimento && proc.descricaoProcedimento.length > 50 ? '...' : ''}</p>
-                              {/* Usando a nova dataProcedimento */}
                               <p className="text-sm text-neutral-600">Data: {new Date(proc.dataProcedimento).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
                               <p className="text-sm text-neutral-600">Médico: {proc.medicoExecutorNome || 'N/A'}</p>
                             </div>
@@ -410,7 +417,6 @@ const ProntuarioEditPage: React.FC = () => {
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                             <div className='flex-grow mb-2 sm:mb-0'>
                               <p className="font-medium text-neutral-800">Encaminhamento para: {enc.especialidadeDestino}</p>
-                              {/* Usando a nova dataEncaminhamento */}
                               <p className="text-sm text-neutral-600">Data: {new Date(enc.dataEncaminhamento).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
                               <p className="text-sm text-neutral-600">Médico: {enc.medicoSolicitanteNome || 'N/A'} {enc.medicoSolicitanteCRM ? `(CRM: ${enc.medicoSolicitanteCRM})` : ''}</p>
                             </div>
@@ -431,9 +437,8 @@ const ProntuarioEditPage: React.FC = () => {
                   <ConsultaForm onSubmitEvento={handleSalvarEdicaoConsulta} onCancel={handleFecharModalEdicaoConsulta}
                                 initialData={{
                                   ...consultaEmEdicao,
-                                  // Passando a nova dataConsulta para o formulário de edição
                                   dataConsulta: consultaEmEdicao.dataConsulta,
-                                  medicoExecutorId: consultaEmEdicao.responsavelMedico?.id || (typeof consultaEmEdicao.responsavelId === 'number' ? consultaEmEdicao.responsavelId : undefined)
+                                  medicoExecutorId: Number(consultaEmEdicao.responsavelId) // Atribui o ID do médico executor
                                 }}
                                 isEditMode={true} isLoading={isSavingRegistro} medicosDisponiveis={medicos} />
                 </div>
@@ -447,7 +452,6 @@ const ProntuarioEditPage: React.FC = () => {
                   <ExameForm onSubmitEvento={handleSalvarEdicaoExame} onCancel={handleFecharModalEdicaoExame}
                              initialData={{
                                ...exameEmEdicao,
-                               // Passando a nova dataExame para o formulário de edição
                                dataExame: exameEmEdicao.dataExame,
                                medicoResponsavelExameId: exameEmEdicao.medicoResponsavelExameId || undefined
                              }}
@@ -463,7 +467,6 @@ const ProntuarioEditPage: React.FC = () => {
                   <ProcedimentoForm onSubmitEvento={handleSalvarEdicaoProcedimento} onCancel={handleFecharModalEdicaoProcedimento}
                                     initialData={{
                                       ...procedimentoEmEdicao,
-                                      // Passando a nova dataProcedimento para o formulário de edição
                                       dataProcedimento: procedimentoEmEdicao.dataProcedimento,
                                       medicoExecutorId: procedimentoEmEdicao.medicoExecutorId || undefined
                                     }}
@@ -479,7 +482,6 @@ const ProntuarioEditPage: React.FC = () => {
                   <EncaminhamentoForm onSubmitEvento={handleSalvarEdicaoEncaminhamento} onCancel={handleFecharModalEdicaoEncaminhamento}
                                       initialData={{
                                         ...encaminhamentoEmEdicao,
-                                        // Passando a nova dataEncaminhamento para o formulário de edição
                                         dataEncaminhamento: encaminhamentoEmEdicao.dataEncaminhamento,
                                         medicoSolicitanteId: encaminhamentoEmEdicao.medicoSolicitanteId || undefined
                                       }}

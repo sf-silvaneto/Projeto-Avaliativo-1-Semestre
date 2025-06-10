@@ -1,8 +1,8 @@
 import api from './api';
 import {
-  BuscaProntuarioParams,
-  Prontuario,
-  ResultadoBuscaProntuarios,
+    BuscaProntuarioParams,
+    Prontuario,
+    ResultadoBuscaProntuarios,
 } from '../types/prontuario';
 
 import {
@@ -11,44 +11,44 @@ import {
     ConsultaDetalhada,
     AdicionarExameRequest,
     AtualizarExameRequest,
-    ExameDetalhado,
+    ExameDetalhada,
     NovaProcedimentoRequest,
     AtualizarProcedimentoRequest,
     ProcedimentoDetalhado,
     NovaEncaminhamentoRequest,
     AtualizarEncaminhamentoRequest,
-    EncaminhamentoDetalhado
+    EncaminhamentoDetalhada
 } from '../types/prontuarioRegistros';
 
 export const buscarProntuarios = async (params: BuscaProntuarioParams): Promise<ResultadoBuscaProntuarios> => {
-  try {
-    const response = await api.get('/prontuarios', { params });
-    return response.data;
-  } catch (error) {
-    console.error("Erro em buscarProntuarios:", error);
-    throw error;
-  }
+    try {
+        const response = await api.get('/prontuarios', { params });
+        return response.data;
+    } catch (error) {
+        console.error("Erro em buscarProntuarios:", error);
+        throw error;
+    }
 };
 
 export const buscarProntuarioPorId = async (id: string): Promise<Prontuario> => {
-  try {
-    const response = await api.get(`/prontuarios/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Erro em buscarProntuarioPorId ${id}:`, error);
-    throw error;
-  }
+    try {
+        const response = await api.get(`/prontuarios/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Erro em buscarProntuarioPorId ${id}:`, error);
+        throw error;
+    }
 };
 
 export const adicionarConsultaComNovoProntuario = async (
     pacienteId: string,
-    medicoExecutorId: number,
+    medicoExecutorId: number, // Passar o ID do médico executor diretamente para o serviço
     dadosConsulta: NovaConsultaRequest
 ): Promise<ConsultaDetalhada> => {
     try {
         const endpoint = `/prontuarios/consultas`;
         const response = await api.post(endpoint, dadosConsulta, {
-            params: { pacienteId, medicoExecutorId }
+            params: { pacienteId, medicoExecutorId } // Enviar como query param
         });
         return response.data;
     } catch (error) {
@@ -61,7 +61,7 @@ export const adicionarExameComNovoProntuario = async (
     pacienteId: string,
     medicoResponsavelExameId: number,
     dadosExame: AdicionarExameRequest
-): Promise<ExameDetalhado> => {
+): Promise<ExameDetalhada> => {
     try {
         const endpoint = `/prontuarios/exames`;
         const response = await api.post(endpoint, dadosExame, {
@@ -93,7 +93,7 @@ export const adicionarProcedimentoComNovoProntuario = async (
 export const adicionarEncaminhamentoComNovoProntuario = async (
     pacienteId: string,
     dadosEncaminhamento: NovaEncaminhamentoRequest
-): Promise<EncaminhamentoDetalhado> => {
+): Promise<EncaminhamentoDetalhada> => {
     try {
         const endpoint = `/prontuarios/encaminhamentos`;
         const response = await api.post(endpoint, dadosEncaminhamento, {
@@ -122,9 +122,9 @@ export const atualizarConsultaNoProntuario = async (
 export const atualizarExameNoProntuario = async (
     exameId: string,
     dadosAtualizacao: AtualizarExameRequest
-): Promise<ExameDetalhado> => {
+): Promise<ExameDetalhada> => {
     try {
-        const response = await api.put<ExameDetalhado>(`/prontuarios/exames/${exameId}`, dadosAtualizacao);
+        const response = await api.put<ExameDetalhada>(`/prontuarios/exames/${exameId}`, dadosAtualizacao);
         return response.data;
     } catch (error) {
         console.error(`Erro ao atualizar exame ${exameId}:`, error);
@@ -148,9 +148,9 @@ export const atualizarProcedimentoNoProntuario = async (
 export const atualizarEncaminhamentoNoProntuario = async (
     encaminhamentoId: string,
     dadosAtualizacao: AtualizarEncaminhamentoRequest
-): Promise<EncaminhamentoDetalhado> => {
+): Promise<EncaminhamentoDetalhada> => {
     try {
-        const response = await api.put<EncaminhamentoDetalhado>(`/prontuarios/encaminhamentos/${encaminhamentoId}`, dadosAtualizacao);
+        const response = await api.put<EncaminhamentoDetalhada>(`/prontuarios/encaminhamentos/${encaminhamentoId}`, dadosAtualizacao);
         return response.data;
     } catch (error) {
         console.error(`Erro ao atualizar encaminhamento ${encaminhamentoId}:`, error);
@@ -160,15 +160,15 @@ export const atualizarEncaminhamentoNoProntuario = async (
 
 
 export const atualizarDadosBasicosProntuario = async (id: string, dados: { medicoResponsavelId?: number }) : Promise<Prontuario> => {
-  try {
-    const payload: any = {};
-    if (dados.medicoResponsavelId) {
-        payload.medicoResponsavelId = dados.medicoResponsavelId;
+    try {
+        const payload: any = {};
+        if (dados.medicoResponsavelId) {
+            payload.medicoResponsavelId = dados.medicoResponsavelId;
+        }
+        const response = await api.put(`/prontuarios/${id}/dados-basicos`, payload);
+        return response.data;
+    } catch (error) {
+        console.error(`Erro em atualizarDadosBasicosProntuario ${id}:`, error);
+        throw error;
     }
-    const response = await api.put(`/prontuarios/${id}/dados-basicos`, payload);
-    return response.data;
-  } catch (error) {
-    console.error(`Erro em atualizarDadosBasicosProntuario ${id}:`, error);
-    throw error;
-  }
 };
