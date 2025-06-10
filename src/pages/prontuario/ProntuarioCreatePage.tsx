@@ -87,12 +87,10 @@ const ProntuarioCreatePage: React.FC = () => {
             console.log('ProntuarioCreatePage: Resposta da API após criação:', prontuarioOuEventoCriado);
 
             let prontuarioIdParaNavegacao: string | undefined;
+            // Simplifique a lógica aqui, agora que prontuarioId deve vir diretamente no objeto retornado
             if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuarioId) {
                 prontuarioIdParaNavegacao = String(prontuarioOuEventoCriado.prontuarioId);
-            } else if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuario && prontuarioOuEventoCriado.prontuario.id) {
-                prontuarioIdParaNavegacao = String(prontuarioOuEventoCriado.prontuario.id);
             }
-
 
             if (prontuarioIdParaNavegacao) {
                 console.log('ProntuarioCreatePage: Navegando para /prontuarios/' + prontuarioIdParaNavegacao);

@@ -47,7 +47,7 @@ export interface AtualizarConsultaRequest {
 
 export interface ConsultaDetalhada {
     id: string;
-    prontuarioId: string;
+    prontuarioId: string; // Adicione esta linha
     dataConsulta: string;
     motivoConsulta?: string;
     queixasPrincipais?: string;
