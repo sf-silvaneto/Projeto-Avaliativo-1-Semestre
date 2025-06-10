@@ -79,7 +79,9 @@ const sinaisVitaisSchema = z.object({
 });
 
 const consultaSchema = z.object({
-    dataHoraConsulta: z.string().optional().transform(e => e === "" ? undefined : e)
+    // Novo campo de data para a consulta
+    dataConsulta: z.string()
+        .refine(val => !!val, { message: "Data e hora da consulta são obrigatórias." }) // Tornar obrigatório
         .refine((val) => {
             if (!val) return true;
             return datetimeLocalRegex.test(val);
@@ -98,8 +100,8 @@ const consultaSchema = z.object({
             const minPastDate = new Date();
             minPastDate.setFullYear(minPastDate.getFullYear() - 120);
 
-            return dataSelecionada <= maxFutureDate && dataSelecionada >= minPastDate;
-        }, { message: "Data da consulta inválida. Não pode ser muito no futuro ou muito no passado." }),
+            return dataSelecionada <= agora && dataSelecionada >= minPastDate; // Não pode ser no futuro (apenas datas passadas ou presentes)
+        }, { message: "Data da consulta não pode ser no futuro ou muito no passado." }),
     motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
     queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta (mín. 10 caracteres)." }).max(2000, "Queixas muito longas (máx. 2000)."),
     sinaisVitais: sinaisVitaisSchema.optional(),
@@ -153,58 +155,50 @@ const getLocalDateTimeStringForInput = (dateString?: string | Date): string | un
 
 
 const ConsultaForm: React.FC<ConsultaFormProps> = ({
-    onSubmitEvento,
-    onCancel,
-    isLoading = false,
-    initialData,
-    isEditMode = false,
-    medicosDisponiveis = []
-}) => {
+                                                       onSubmitEvento,
+                                                       onCancel,
+                                                       isLoading = false,
+                                                       initialData,
+                                                       isEditMode = false,
+                                                       medicosDisponiveis = []
+                                                   }) => {
 
     const processedInitialData = useMemo(() => {
         const ensureStringOrEmpty = (value: string | undefined | null): string => value || '';
-        if (isEditMode && initialData && Object.keys(initialData).length > 0) {
-            const medicoIdParaForm = initialData.responsavelMedico?.id ||
-                                    (typeof initialData.responsavelId === 'number' ? initialData.responsavelId : initialData.medicoExecutorId || undefined);
-            
-            const dateToPreFill = initialData.updatedAt || initialData.createdAt;
+        const medicoIdParaForm = initialData?.responsavelMedico?.id ||
+            (typeof initialData?.responsavelId === 'number' ? initialData.responsavelId : initialData?.medicoExecutorId || undefined);
 
-            return {
-                dataHoraConsulta: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined,
-                motivoConsulta: ensureStringOrEmpty(initialData.motivoConsulta),
-                queixasPrincipais: ensureStringOrEmpty(initialData.queixasPrincipais),
-                sinaisVitais: {
-                    pressaoArterial: ensureStringOrEmpty(initialData.sinaisVitais?.pressaoArterial),
-                    temperatura: ensureStringOrEmpty(initialData.sinaisVitais?.temperatura),
-                    frequenciaCardiaca: ensureStringOrEmpty(initialData.sinaisVitais?.frequenciaCardiaca),
-                    saturacao: ensureStringOrEmpty(initialData.sinaisVitais?.saturacao),
-                    hgt: ensureStringOrEmpty(initialData.sinaisVitais?.hgt),
-                },
-                exameFisico: ensureStringOrEmpty(initialData.exameFisico),
-                hipoteseDiagnostica: ensureStringOrEmpty(initialData.hipoteseDiagnostica),
-                condutaPlanoTerapeutico: ensureStringOrEmpty(initialData.condutaPlanoTerapeutico),
-                detalhesConsulta: ensureStringOrEmpty(initialData.detalhesConsulta),
-                observacoesConsulta: ensureStringOrEmpty(initialData.observacoesConsulta),
-                medicoExecutorId: medicoIdParaForm,
-            };
+        let dataToPreFill: string | undefined = undefined;
+
+        if (isEditMode) {
+            dataToPreFill = initialData?.dataConsulta ? getLocalDateTimeStringForInput(initialData.dataConsulta) : undefined;
+            // Fallback para createdAt/updatedAt se dataConsulta não existir na edição (para dados antigos)
+            if (!dataToPreFill && (initialData?.updatedAt || initialData?.createdAt)) {
+                dataToPreFill = getLocalDateTimeStringForInput(initialData.updatedAt || initialData.createdAt);
+            }
+        } else {
+            // Para novos registros, preenche com a data/hora atual por padrão
+            dataToPreFill = getLocalDateTimeStringForInput(new Date());
         }
+
+
         return {
-            dataHoraConsulta: undefined,
-            motivoConsulta: '',
-            queixasPrincipais: '',
+            dataConsulta: dataToPreFill,
+            motivoConsulta: ensureStringOrEmpty(initialData?.motivoConsulta),
+            queixasPrincipais: ensureStringOrEmpty(initialData?.queixasPrincipais),
             sinaisVitais: {
-                pressaoArterial: '',
-                temperatura: '',
-                frequenciaCardiaca: '',
-                saturacao: '',
-                hgt: '',
+                pressaoArterial: ensureStringOrEmpty(initialData?.sinaisVitais?.pressaoArterial),
+                temperatura: ensureStringOrEmpty(initialData?.sinaisVitais?.temperatura),
+                frequenciaCardiaca: ensureStringOrEmpty(initialData?.sinaisVitais?.frequenciaCardiaca),
+                saturacao: ensureStringOrEmpty(initialData?.sinaisVitais?.saturacao),
+                hgt: ensureStringOrEmpty(initialData?.sinaisVitais?.hgt),
             },
-            exameFisico: '',
-            hipoteseDiagnostica: '',
-            condutaPlanoTerapeutico: '',
-            detalhesConsulta: '',
-            observacoesConsulta: '',
-            medicoExecutorId: undefined,
+            exameFisico: ensureStringOrEmpty(initialData?.exameFisico),
+            hipoteseDiagnostica: ensureStringOrEmpty(initialData?.hipoteseDiagnostica),
+            condutaPlanoTerapeutico: ensureStringOrEmpty(initialData?.condutaPlanoTerapeutico),
+            detalhesConsulta: ensureStringOrEmpty(initialData?.detalhesConsulta),
+            observacoesConsulta: ensureStringOrEmpty(initialData?.observacoesConsulta),
+            medicoExecutorId: medicoIdParaForm,
         };
     }, [initialData, isEditMode]);
 
@@ -222,6 +216,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
 
     const handleLocalSubmit = (data: ConsultaFormData) => {
         const baseData: NovaConsultaRequest | AtualizarConsultaRequest = {
+            dataConsulta: data.dataConsulta, // Inclui a nova data
             motivoConsulta: data.motivoConsulta,
             queixasPrincipais: data.queixasPrincipais,
             sinaisVitais: {
@@ -241,7 +236,6 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         if (isEditMode) {
             const updateData = baseData as AtualizarConsultaRequest;
             updateData.medicoExecutorId = data.medicoExecutorId;
-            (updateData as any).dataHoraConsulta = data.dataHoraConsulta; // Adiciona a data ao DTO de atualização
             onSubmitEvento(updateData);
         } else {
             onSubmitEvento(baseData as NovaConsultaRequest);
@@ -249,7 +243,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
     };
 
     const medicoOptions = medicosDisponiveis
-        .filter(m => m.deletedAt === null || m.deletedAt === undefined) // Alterado de excludedAt para deletedAt
+        .filter(m => m.deletedAt === null || m.deletedAt === undefined)
         .map(m => ({
             value: m.id.toString(),
             label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -261,6 +255,16 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 {isEditMode ? 'Editar Registro de Consulta' : 'Registrar Nova Consulta'}
             </h4>
 
+            {/* Sempre exibe o campo de data e hora para criação e edição */}
+            <Input
+                label="Data e Hora da Consulta*"
+                type="datetime-local"
+                leftAddon={<Calendar size={18} className="text-gray-500" />}
+                {...register('dataConsulta')}
+                error={errors.dataConsulta?.message}
+            />
+
+            {/* Campo "Médico Executor da Consulta" só é editável em modo de edição (ou se for o primeiro registro) */}
             {isEditMode && (
                 <Controller
                     name="medicoExecutorId"
@@ -283,24 +287,14 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 />
             )}
 
-            {isEditMode && (
-                <Input
-                    label="Data e Hora da Consulta"
-                    type="datetime-local"
-                    leftAddon={<Calendar size={18} className="text-gray-500" />}
-                    {...register('dataHoraConsulta')}
-                    error={errors.dataHoraConsulta?.message}
-                />
-            )}
-
-             <Textarea
+            <Textarea
                 label="Motivo da Consulta/Queixa Principal (Resumido)*"
                 rows={3}
                 placeholder="Ex: Dor de cabeça há 3 dias..."
                 {...register('motivoConsulta')}
                 error={errors.motivoConsulta?.message}
             />
-             <Textarea
+            <Textarea
                 label="História da Doença Atual / Queixas Detalhadas*"
                 rows={5}
                 placeholder="Detalhar início, características, fatores de melhora/pihora, sintomas associados..."
