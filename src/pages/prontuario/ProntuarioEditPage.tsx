@@ -96,7 +96,7 @@ const ProntuarioEditPage: React.FC = () => {
   }, [fetchProntuarioEListas]);
 
   const medicoOptions = medicos
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+    .filter(m => m.deletedAt === null || m.deletedAt === undefined) // Alterado de excludedAt para deletedAt
     .map(medico => ({
         value: medico.id.toString(),
         label: `${medico.nomeCompleto} | ${medico.especialidade} | CRM: ${medico.crm}`
@@ -332,7 +332,7 @@ const ProntuarioEditPage: React.FC = () => {
                         <div className='flex-grow mb-2 sm:mb-0'>
                         <p className="font-medium text-neutral-800">Exame: {exame.nome}</p>
                         <p className="text-sm text-neutral-600">Data: {new Date(exame.updatedAt || exame.createdAt).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
-                        <p className="text-sm text-neutral-600">Médico Resp.: {exame.medicoResponsavelExameNome || exame.nomeResponsavelDisplay || 'N/A'}</p>
+                        <p className="text-sm text-neutral-600">Médico: {exame.medicoResponsavelExameNome || 'N/A'}</p> {/* nomeResponsavelDisplay removido */}
                         </div>
                         <Button variant="secondary" size="sm" onClick={() => handleAbrirModalEdicaoExame(exame)} leftIcon={<EditIcon className="h-4 w-4"/>} className="w-full sm:w-auto">Editar Exame</Button>
                     </div>
@@ -354,7 +354,7 @@ const ProntuarioEditPage: React.FC = () => {
                         <div className='flex-grow mb-2 sm:mb-0'>
                         <p className="font-medium text-neutral-800">Procedimento: {(proc.descricaoProcedimento || '').substring(0,50)}{proc.descricaoProcedimento && proc.descricaoProcedimento.length > 50 ? '...' : ''}</p>
                         <p className="text-sm text-neutral-600">Data: {new Date(proc.updatedAt || proc.createdAt).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
-                         <p className="text-sm text-neutral-600">Médico Exec.: {proc.medicoExecutorNome || (proc as any).nomeResponsavelDisplay || 'N/A'}</p>
+                         <p className="text-sm text-neutral-600">Médico: {proc.medicoExecutorNome || 'N/A'}</p> {/* nomeResponsavelDisplay removido */}
                         </div>
                         <Button variant="secondary" size="sm" onClick={() => handleAbrirModalEdicaoProcedimento(proc)} leftIcon={<EditIcon className="h-4 w-4"/>} className="w-full sm:w-auto">Editar Procedimento</Button>
                     </div>
@@ -376,7 +376,7 @@ const ProntuarioEditPage: React.FC = () => {
                         <div className='flex-grow mb-2 sm:mb-0'>
                         <p className="font-medium text-neutral-800">Encaminhamento para: {enc.especialidadeDestino}</p>
                         <p className="text-sm text-neutral-600">Data: {new Date(enc.updatedAt || enc.createdAt).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</p>
-                         <p className="text-sm text-neutral-600">Médico Sol.: {enc.medicoSolicitanteNome || (enc as any).nomeResponsavelDisplay || 'N/A'} {enc.medicoSolicitanteCRM ? `(CRM: ${enc.medicoSolicitanteCRM})` : ''}</p>
+                         <p className="text-sm text-neutral-600">Médico: {enc.medicoSolicitanteNome || 'N/A'} {enc.medicoSolicitanteCRM ? `(CRM: ${enc.medicoSolicitanteCRM})` : ''}</p> {/* nomeResponsavelDisplay removido */}
                         </div>
                         <Button variant="secondary" size="sm" onClick={() => handleAbrirModalEdicaoEncaminhamento(enc)} leftIcon={<EditIcon className="h-4 w-4"/>} className="w-full sm:w-auto">Editar Encaminhamento</Button>
                     </div>

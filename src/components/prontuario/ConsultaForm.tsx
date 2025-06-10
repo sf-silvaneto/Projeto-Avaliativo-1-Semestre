@@ -241,7 +241,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
         if (isEditMode) {
             const updateData = baseData as AtualizarConsultaRequest;
             updateData.medicoExecutorId = data.medicoExecutorId;
-            updateData.dataHoraConsulta = data.dataHoraConsulta; 
+            (updateData as any).dataHoraConsulta = data.dataHoraConsulta; // Adiciona a data ao DTO de atualização
             onSubmitEvento(updateData);
         } else {
             onSubmitEvento(baseData as NovaConsultaRequest);
@@ -249,7 +249,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
     };
 
     const medicoOptions = medicosDisponiveis
-        .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+        .filter(m => m.deletedAt === null || m.deletedAt === undefined) // Alterado de excludedAt para deletedAt
         .map(m => ({
             value: m.id.toString(),
             label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`

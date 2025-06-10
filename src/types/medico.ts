@@ -5,7 +5,7 @@ export interface Medico {
   especialidade: string;
   resumoEspecialidade?: string;
   rqe?: string;
-  excludedAt?: string;
+  deletedAt?: string; // Renomeado de excludedAt
   createdAt: string;
   updatedAt: string;
 }
@@ -24,7 +24,7 @@ export interface MedicoUpdateDTO {
   especialidade?: string;
   resumoEspecialidade?: string;
   rqe?: string;
-  excludedAt?: string | null;
+  deletedAt?: string | null; // Renomeado de excludedAt
 }
 
 export interface ResultadoBuscaMedicos {

@@ -120,7 +120,7 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
     if (isEditMode) {
         const updateData = baseData as AtualizarProcedimentoRequest;
         updateData.medicoExecutorId = data.medicoExecutorId;
-        updateData.dataProcedimento = data.dataProcedimento;
+        (updateData as any).dataProcedimento = data.dataProcedimento; // Adiciona a data ao DTO de atualização
         onSubmitEvento(updateData);
     } else {
         onSubmitEvento(baseData as NovaProcedimentoRequest);
@@ -128,7 +128,7 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
   };
 
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+    .filter(m => m.deletedAt === null || m.deletedAt === undefined) // Alterado de excludedAt para deletedAt
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`

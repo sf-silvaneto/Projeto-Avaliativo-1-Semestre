@@ -1,3 +1,5 @@
+// filename: sf-silvaneto/clientehm/ClienteHM-6a1521d7c1550a92b879e103ac7f5c0dc5ff8d33/cliente-hm-front-main/src/types/prontuarioRegistros.ts
+
 export interface AnexoDetalhado {
   id: string;
   nomeOriginalArquivo: string;
@@ -66,7 +68,6 @@ export interface ConsultaDetalhada {
     id: number;
     nome: string;
   };
-  nomeResponsavelDisplay?: string;
   anexos?: AnexoDetalhado[];
   createdAt: string;
   updatedAt: string;
@@ -77,6 +78,7 @@ export interface AdicionarExameRequest {
   resultado: string;
   observacoes?: string;
   arquivo?: File;
+  dataExame?: string; // Adicionado
 }
 
 export interface AtualizarExameRequest {
@@ -91,7 +93,6 @@ export type ExameDetalhado = import('./prontuario').Exame & {
     prontuarioId: string;
     medicoResponsavelExameId?: number;
     medicoResponsavelExameNome?: string;
-    nomeResponsavelDisplay?: string;
 };
 
 export interface NovaEncaminhamentoRequest {
@@ -115,7 +116,6 @@ export type EncaminhamentoDetalhado = import('./prontuario').Encaminhamento & {
     medicoSolicitanteNome?: string;
     medicoSolicitanteCRM?: string;
     medicoSolicitanteEspecialidade?: string;
-    nomeResponsavelDisplay?: string;
 };
 
 export interface NovaProcedimentoRequest {
@@ -136,7 +136,6 @@ export type ProcedimentoDetalhado = import('./prontuario').Procedimento & {
     medicoExecutorId?: number;
     medicoExecutorNome?: string;
     medicoExecutorEspecialidade?: string;
-    nomeResponsavelDisplay?: string;
 };
 
 

@@ -257,7 +257,7 @@ const ProntuarioDetailPage: React.FC = () => {
     const p = pacienteData;
     const e = p.endereco || {} as PacienteEndereco;
 
-    const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || ''}, ${e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`;
+    const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || '', e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`;
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
@@ -495,7 +495,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             return (
                 <div className="space-y-3">
                     {medicoExameInfo && <DetailItem label="Médico do Exame" value={medicoExameInfo} />}
-                    {!medicoExameInfo && (ex as any).nomeResponsavelDisplay && <DetailItem label="Registrado por" value={(ex as any).nomeResponsavelDisplay} />}
                     <DetailItem label="Resultado" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{ex.resultado}</pre>} />
                     {ex.observacoes && <DetailItem label="Observações" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{ex.observacoes}</pre>} />}
                 </div>
@@ -510,7 +509,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             return (
                 <div className="space-y-3">
                     {medicoProcedimentoInfo ? <DetailItem label="Médico Executor" value={medicoProcedimentoInfo} /> : <DetailItem label="Médico Executor" value="Não informado" />}
-                    {!medicoProcedimentoInfo && (proc as any).nomeResponsavelDisplay && <DetailItem label="Registrado por" value={(proc as any).nomeResponsavelDisplay} />}
                     <DetailItem label="Descrição" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{proc.descricaoProcedimento}</pre>} />
                     {proc.relatorioProcedimento && <DetailItem label="Relatório" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{proc.relatorioProcedimento}</pre>} />}
                 </div>
@@ -522,9 +520,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
 
             if (enc.medicoSolicitanteNome) {
                 valorMedicoEnc = renderMedicoInfo(enc.medicoSolicitanteNome, enc.medicoSolicitanteEspecialidade, enc.medicoSolicitanteCRM);
-            } else if ((enc as any).nomeResponsavelDisplay) {
-                labelMedicoEnc = "Registrado por";
-                valorMedicoEnc = (enc as any).nomeResponsavelDisplay;
             } else {
                 valorMedicoEnc = "Não informado";
             }

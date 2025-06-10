@@ -91,6 +91,7 @@ const MedicoForm: React.FC<MedicoFormProps> = ({
         especialidade: initialData.especialidade,
         resumoEspecialidade: initialData.resumoEspecialidade || '',
         rqe: initialData.rqe || '',
+        // deletedAt: initialData.deletedAt, // Considerar se é necessário aqui, já que o formulário não edita explicitamente o status
     } : {
         nomeCompleto: '',
         crm: '',

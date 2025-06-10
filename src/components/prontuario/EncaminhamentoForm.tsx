@@ -127,7 +127,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
     if (isEditMode) {
         const updateData = baseData as AtualizarEncaminhamentoRequest;
         updateData.medicoSolicitanteId = data.medicoSolicitanteId;
-        updateData.dataEncaminhamento = data.dataEncaminhamento; // Envia a data editada
+        (updateData as any).dataEncaminhamento = data.dataEncaminhamento; // Envia a data editada
         onSubmitEvento(updateData);
     } else {
         onSubmitEvento(baseData as NovaEncaminhamentoRequest);
@@ -135,7 +135,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
   };
 
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+    .filter(m => m.deletedAt === null || m.deletedAt === undefined) // Alterado de excludedAt para deletedAt
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`

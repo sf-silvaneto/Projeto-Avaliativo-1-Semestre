@@ -5,6 +5,7 @@ export interface User {
   role: 'ADMIN' | 'USER';
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string; // Adicionado
 }
 
 export interface AuthState {

@@ -1,3 +1,5 @@
+// filename: sf-silvaneto/clientehm/ClienteHM-6a1521d7c1550a92b879e103ac7f5c0dc5ff8d33/cliente-hm-front-main/src/components/prontuario/ExameForm.tsx
+
 import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +44,7 @@ interface ExameFormProps {
   onSubmitEvento: (data: AdicionarExameRequest | AtualizarExameRequest) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null; createdAt?: string; updatedAt?: string; }>; // Adicionado updatedAt
+  initialData?: Partial<ExameFormData & { id?: string; medicoResponsavelExameId?: number | null; createdAt?: string; updatedAt?: string; }>;
   isEditMode?: boolean;
   medicosDisponiveis?: Medico[];
 }
@@ -90,15 +92,17 @@ const ExameForm: React.FC<ExameFormProps> = ({
 
       return {
         nome: ensureStringOrEmpty(initialData.nome),
-        dataExame: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined, // Preenche com a data convertida
+        dataExame: dateToPreFill ? getLocalDateTimeStringForInput(dateToPreFill) : undefined,
         resultado: ensureStringOrEmpty(initialData.resultado),
         observacoes: ensureStringOrEmpty(initialData.observacoes),
         medicoResponsavelExameId: initialData.medicoResponsavelExameId === null ? undefined : initialData.medicoResponsavelExameId,
       };
     }
+    // Set default dataExame to current time if in creation mode, only if isEditMode is false.
+    // However, for new records, the date will be set by the backend. So, we don't need to pre-fill it here.
     return {
       nome: '',
-      dataExame: undefined,
+      dataExame: undefined, // Removido o preenchimento automático para criação, pois o backend cuida disso.
       resultado: '',
       observacoes: '',
       medicoResponsavelExameId: undefined,
@@ -126,15 +130,20 @@ const ExameForm: React.FC<ExameFormProps> = ({
     if (isEditMode) {
         const updateData = baseData as AtualizarExameRequest;
         updateData.medicoResponsavelExameId = data.medicoResponsavelExameId;
-        updateData.data = data.dataExame;
+        (updateData as any).data = data.dataExame;
         onSubmitEvento(updateData);
     } else {
+        // CORREÇÃO: Adicionar dataExame ao objeto para criação
+        // Se o backend define createdAt automaticamente, dataExame pode ser omitido aqui para novos registros.
+        // Se ele PRECISA do dataExame mesmo para novos, então ele deve ser um campo obrigatório
+        // no zod schema e sempre coletado.
+        // Assumindo que para CRIAÇÃO o backend define createdAt automaticamente e não precisa de dataExame no payload:
         onSubmitEvento(baseData as AdicionarExameRequest);
     }
   };
 
   const medicoOptions = medicosDisponiveis
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+    .filter(m => m.deletedAt === null || m.deletedAt === undefined)
     .map(m => ({
         value: m.id.toString(),
         label: `${m.nomeCompleto} (CRM: ${m.crm || 'N/A'})`
@@ -146,6 +155,7 @@ const ExameForm: React.FC<ExameFormProps> = ({
         {isEditMode ? 'Editar Registro de Exame' : 'Registrar Novo Exame'}
       </h4>
 
+      {/* Campo "Médico Responsável pelo Exame" só é editável em modo de edição */}
       {isEditMode && (
          <Controller
             name="medicoResponsavelExameId"
@@ -168,6 +178,7 @@ const ExameForm: React.FC<ExameFormProps> = ({
         />
       )}
 
+      {/* Campo "Data e Hora do Exame" só é editável em modo de edição */}
       {isEditMode && (
         <Input
           label="Data e Hora do Exame"
@@ -177,6 +188,18 @@ const ExameForm: React.FC<ExameFormProps> = ({
           error={errors.dataExame?.message}
         />
       )}
+        {/* Removido o campo de Data e Hora para criação. O backend gerencia a data de criação automaticamente. */}
+        {/* Caso a API exija explicitamente dataExame para criação, este campo deve ser reintroduzido */}
+        {/* e o 'processedInitialData' deve preenchê-lo com a data atual. */}
+        {/* Ex: !isEditMode && ( <Input ... /> ) */}
+
+      <Input
+        label="Nome do Exame*"
+        rows={1}
+        placeholder="Ex: Hemograma Completo, Glicemia, Raio-X de Tórax..."
+        {...register('nome')}
+        error={errors.nome?.message}
+      />
 
       <Textarea
         label="Resultado do Exame*"

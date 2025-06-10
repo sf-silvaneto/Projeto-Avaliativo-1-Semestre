@@ -35,8 +35,7 @@ const selecaoEntidadeSchema = z.object({
   medicoId: z.preprocess(
     (val) => (val === "" || val === undefined || val === null || Number.isNaN(Number(val)) ? undefined : Number(val)),
     z.number({ required_error: "Selecione um médico responsável inicial para o prontuário." }).positive("Médico responsável pelo prontuário é obrigatório.")
-  ),
-  pacienteNomeFormatado: z.string().optional(),
+  )
 });
 type SelecaoEntidadeFormData = z.infer<typeof selecaoEntidadeSchema>;
 
@@ -152,7 +151,7 @@ const SelecaoEntidadesStep: React.FC<{onError?: (message: string | null) => void
   }, [searchTermPaciente, performSearch, nomePacienteFormatadoAtual, pacienteIdAtual, setValue, getValues, trigger]);
 
   const medicoOptions = medicos
-    .filter(m => m.excludedAt === null || m.excludedAt === undefined)
+    .filter(m => m.deletedAt === null || m.deletedAt === undefined) // Alterado de excludedAt para deletedAt
     .map(medico => ({
         value: medico.id.toString(),
         label: `${medico.nomeCompleto} | ${medico.especialidade} | CRM: ${medico.crm}`
