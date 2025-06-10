@@ -1,3 +1,4 @@
+// src/types/prontuario.ts
 import {
   ConsultaDetalhada,
   ExameDetalhado,
@@ -75,14 +76,14 @@ export interface Prontuario {
   paciente: PacienteCompleto;
   medicoResponsavel?: Medico;
   administradorCriador?: { id: string; nome: string; email: string; };
-  dataUltimaAtualizacao: string;
+  // dataUltimaAtualizacao: string; // REMOVER ESTA LINHA
+  createdAt: string;
+  updatedAt: string; // MANTER ESTA LINHA E USÁ-LA PARA A ÚLTIMA ATUALIZAÇÃO
   historicoGeral?: HistoricoMedico[];
   consultas?: ConsultaDetalhada[];
   examesRegistrados?: ExameDetalhado[];
   procedimentosRegistrados?: ProcedimentoDetalhado[];
   encaminhamentosRegistrados?: EncaminhamentoDetalhado[];
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface BuscaProntuarioParams {
@@ -103,10 +104,10 @@ export interface ResultadoBuscaProntuarios {
 }
 
 export interface IniciarProntuarioRequest {
-    pacienteId: string;
-    medicoId: number;
+  pacienteId: string;
+  medicoId: number;
 }
 
 export interface AdicionarHistoricoGeralRequest {
-    descricao: string;
+  descricao: string;
 }

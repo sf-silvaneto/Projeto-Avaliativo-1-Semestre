@@ -1,3 +1,4 @@
+// src/pages/prontuario/ProntuarioDetailPage.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -257,7 +258,7 @@ const ProntuarioDetailPage: React.FC = () => {
         const p = pacienteData;
         const e = p.endereco || {} as PacienteEndereco;
 
-        const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || '', e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`;
+        const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || ''}, ${e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`; // LINHA CORRIGIDA
 
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
@@ -385,7 +386,7 @@ const ProntuarioDetailPage: React.FC = () => {
                         />
                         <DetailItem icon={<User size={18}/>} label="Criado por (Admin)" value={prontuario.administradorCriador?.nome || 'N/A'} />
                         <DetailItem icon={<Calendar size={18}/>} label="Data de Criação do Prontuário" value={formatDate(prontuario.createdAt)} />
-                        <DetailItem icon={<Calendar size={18}/>} label="Última Atualização" value={formatDateTime(prontuario.dataUltimaAtualizacao)} />
+                        <DetailItem icon={<Calendar size={18}/>} label="Última Atualização" value={formatDateTime(prontuario.updatedAt)} />
                     </div>
                 </Card>
             </div>
