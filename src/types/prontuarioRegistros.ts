@@ -1,5 +1,3 @@
-// filename: sf-silvaneto/clientehm/ClienteHM-6a1521d7c1550a92b879e103ac7f5c0dc5ff8d33/cliente-hm-front-main/src/types/prontuarioRegistros.ts
-
 export interface AnexoDetalhado {
     id: string;
     nomeOriginalArquivo: string;
@@ -28,7 +26,7 @@ export interface NovaConsultaRequest {
     condutaPlanoTerapeutico?: string;
     detalhesConsulta?: string;
     observacoesConsulta?: string;
-    medicoExecutorId: number; // TORNADO OBRIGATÓRIO NA CRIAÇÃO
+    medicoExecutorId: number;
 }
 
 export interface AtualizarConsultaRequest {
@@ -42,12 +40,12 @@ export interface AtualizarConsultaRequest {
     condutaPlanoTerapeutico?: string;
     detalhesConsulta?: string;
     observacoesConsulta?: string;
-    medicoExecutorId: number; // TORNADO OBRIGATÓRIO NA ATUALIZAÇÃO
+    medicoExecutorId: number;
 }
 
 export interface ConsultaDetalhada {
     id: string;
-    prontuarioId: string; // Adicione esta linha
+    prontuarioId: string;
     dataConsulta: string;
     motivoConsulta?: string;
     queixasPrincipais?: string;
@@ -57,21 +55,10 @@ export interface ConsultaDetalhada {
     condutaPlanoTerapeutico?: string;
     detalhesConsulta?: string;
     observacoesConsulta?: string;
-    // REMOVIDO: tipoResponsavel?: "MEDICO" | "ADMINISTRADOR" | string;
-    responsavelId?: string | number; // Será sempre o ID do médico
-    responsavelNomeCompleto?: string; // Será sempre o nome do médico
-    responsavelEspecialidade?: string; // Será sempre a especialidade do médico
-    responsavelCRM?: string; // Será sempre o CRM do médico
-    // REMOVIDO: responsavelMedico?: { // Agora 'responsavelMedico' é a única forma de responsável
-    //     id: number;
-    //     nomeCompleto: string;
-    //     especialidade?: string;
-    //     crm?: string;
-    // };
-    // REMOVIDO: responsavelAdmin?: {
-    //     id: number;
-    //     nome: string;
-    // };
+    responsavelId?: string | number;
+    responsavelNomeCompleto?: string;
+    responsavelEspecialidade?: string;
+    responsavelCRM?: string;
     anexos?: AnexoDetalhado[];
     createdAt: string;
     updatedAt: string;
@@ -99,6 +86,8 @@ export type ExameDetalhado = import('./prontuario').Exame & {
     dataExame: string;
     medicoResponsavelExameId?: number;
     medicoResponsavelExameNome?: string;
+    medicoResponsavelExameEspecialidade?: string;
+    medicoResponsavelExameCRM?: string;
 };
 
 export interface NovaEncaminhamentoRequest {
@@ -148,6 +137,7 @@ export type ProcedimentoDetalhado = import('./prontuario').Procedimento & {
     medicoExecutorId?: number;
     medicoExecutorNome?: string;
     medicoExecutorEspecialidade?: string;
+    medicoExecutorCRM?: string;
 };
 
 

@@ -351,7 +351,6 @@ const ProntuarioForm: React.FC<ProntuarioFormProps> = ({
         };
 
         if (wizardData.tipoPrimeiroRegistro === 'CONSULTA') {
-            // Agora, o medicoExecutorId é parte da estrutura da NovaConsultaRequest e deve ser passado para o serviço
             (dadosCompletosParaEnvio.dadosEvento as NovaConsultaRequest).medicoExecutorId = medicoIdParaEvento;
         } else if (wizardData.tipoPrimeiroRegistro === 'EXAME') {
             dadosCompletosParaEnvio.medicoResponsavelExameId = medicoIdParaEvento;

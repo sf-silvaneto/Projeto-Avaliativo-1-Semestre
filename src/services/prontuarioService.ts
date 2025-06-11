@@ -42,13 +42,13 @@ export const buscarProntuarioPorId = async (id: string): Promise<Prontuario> => 
 
 export const adicionarConsultaComNovoProntuario = async (
     pacienteId: string,
-    medicoExecutorId: number, // Passar o ID do médico executor diretamente para o serviço
+    medicoExecutorId: number,
     dadosConsulta: NovaConsultaRequest
 ): Promise<ConsultaDetalhada> => {
     try {
         const endpoint = `/prontuarios/consultas`;
         const response = await api.post(endpoint, dadosConsulta, {
-            params: { pacienteId, medicoExecutorId } // Enviar como query param
+            params: { pacienteId, medicoExecutorId }
         });
         return response.data;
     } catch (error) {

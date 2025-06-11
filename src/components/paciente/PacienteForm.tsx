@@ -5,7 +5,6 @@ import { z } from 'zod';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
-import Textarea from '../../components/ui/Textarea';
 import { PacienteFormData, Genero, RacaCor, TipoSanguineo } from '../../types/paciente';
 import { ufsBrasil } from '../../data/ufsBrasil';
 import { 

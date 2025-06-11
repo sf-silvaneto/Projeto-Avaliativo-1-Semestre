@@ -119,17 +119,31 @@ const ProntuarioEditPage: React.FC = () => {
     }
   };
 
+  const handleFecharModalEdicaoConsulta = useCallback(() => {
+    setShowModalConsulta(false); setConsultaEmEdicao(null);
+  }, []);
+
+  const handleFecharModalEdicaoExame = useCallback(() => {
+    setShowModalExame(false); setExameEmEdicao(null);
+  }, []);
+
+  const handleFecharModalEdicaoProcedimento = useCallback(() => {
+    setShowModalProcedimento(false); setProcedimentoEmEdicao(null);
+  }, []);
+
+  const handleFecharModalEdicaoEncaminhamento = useCallback(() => {
+    setShowModalEncaminhamento(false); setEncaminhamentoEmEdicao(null);
+  }, []);
+
+
   const handleAbrirModalEdicaoConsulta = (consulta: ConsultaDetalhada) => {
     setConsultaEmEdicao(consulta); setShowModalConsulta(true); setError(null); setSuccessMessage(null);
   };
-  const handleFecharModalEdicaoConsulta = () => {
-    setShowModalConsulta(false); setConsultaEmEdicao(null);
-  };
-  const handleSalvarEdicaoConsulta = async (dados: Omit<AtualizarConsultaRequest, 'id'>) => {
+  const handleSalvarEdicaoConsulta = useCallback(async (dados: Omit<AtualizarConsultaRequest, 'id'>) => {
     if (!consultaEmEdicao?.id) return;
-    setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
+    setIsSavingRegistro(true);
+    setError(null); setSuccessMessage(null);
     try {
-      // O medicoExecutorId agora é obrigatório no request.
       const medicoIdFinal = dados.medicoExecutorId === undefined ? null : Number(dados.medicoExecutorId);
       if (medicoIdFinal === null) {
         throw new Error("Médico executor é obrigatório para atualizar a consulta.");
@@ -144,17 +158,15 @@ const ProntuarioEditPage: React.FC = () => {
     } finally {
       setIsSavingRegistro(false);
     }
-  };
+  }, [consultaEmEdicao, fetchProntuarioEListas, handleFecharModalEdicaoConsulta, setIsSavingRegistro, setError, setSuccessMessage]);
 
   const handleAbrirModalEdicaoExame = (exame: ExameDetalhada) => {
     setExameEmEdicao(exame); setShowModalExame(true); setError(null); setSuccessMessage(null);
   };
-  const handleFecharModalEdicaoExame = () => {
-    setShowModalExame(false); setExameEmEdicao(null);
-  };
-  const handleSalvarEdicaoExame = async (dados: Omit<AtualizarExameRequest, 'id'>) => {
+  const handleSalvarEdicaoExame = useCallback(async (dados: Omit<AtualizarExameRequest, 'id'>) => {
     if (!exameEmEdicao?.id) return;
-    setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
+    setIsSavingRegistro(true);
+    setError(null); setSuccessMessage(null);
     try {
       const medicoIdFinal = dados.medicoResponsavelExameId === null || dados.medicoResponsavelExameId === undefined ? undefined : Number(dados.medicoResponsavelExameId);
       await atualizarExameNoProntuario(exameEmEdicao.id.toString(), { ...dados, medicoResponsavelExameId: medicoIdFinal });
@@ -167,20 +179,18 @@ const ProntuarioEditPage: React.FC = () => {
     } finally {
       setIsSavingRegistro(false);
     }
-  };
+  }, [exameEmEdicao, fetchProntuarioEListas, handleFecharModalEdicaoExame, setIsSavingRegistro, setError, setSuccessMessage]);
 
   const handleAbrirModalEdicaoProcedimento = (procedimento: ProcedimentoDetalhado) => {
     setProcedimentoEmEdicao(procedimento); setShowModalProcedimento(true); setError(null); setSuccessMessage(null);
   };
-  const handleFecharModalEdicaoProcedimento = () => {
-    setShowModalProcedimento(false); setProcedimentoEmEdicao(null);
-  };
-  const handleSalvarEdicaoProcedimento = async (dados: Omit<AtualizarProcedimentoRequest, 'id'>) => {
+  const handleSalvarEdicaoProcedimento = useCallback(async (dados: Omit<AtualizarProcedimentoRequest, 'id'>) => {
     if (!procedimentoEmEdicao?.id) return;
-    setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
+    setIsSavingRegistro(true);
+    setError(null); setSuccessMessage(null);
     try {
       const medicoIdFinal = dados.medicoExecutorId === null || dados.medicoExecutorId === undefined ? undefined : Number(dados.medicoExecutorId);
-      if (medicoIdFinal === undefined) { // Adicionado validação para obrigatório
+      if (medicoIdFinal === undefined) {
         throw new Error("Médico executor é obrigatório para atualizar o procedimento.");
       }
       await atualizarProcedimentoNoProntuario(procedimentoEmEdicao.id.toString(), { ...dados, medicoExecutorId: medicoIdFinal });
@@ -193,25 +203,23 @@ const ProntuarioEditPage: React.FC = () => {
     } finally {
       setIsSavingRegistro(false);
     }
-  };
+  }, [procedimentoEmEdicao, fetchProntuarioEListas, handleFecharModalEdicaoProcedimento, setIsSavingRegistro, setError, setSuccessMessage]);
 
   const handleAbrirModalEdicaoEncaminhamento = (encaminhamento: EncaminhamentoDetalhada) => {
     setEncaminhamentoEmEdicao(encaminhamento); setShowModalEncaminhamento(true); setError(null); setSuccessMessage(null);
   };
-  const handleFecharModalEdicaoEncaminhamento = () => {
-    setShowModalEncaminhamento(false); setEncaminhamentoEmEdicao(null);
-  };
-  const handleSalvarEdicaoEncaminhamento = async (dados: Omit<AtualizarEncaminhamentoRequest, 'id'>) => {
+  const handleSalvarEdicaoEncaminhamento = useCallback(async (dados: Omit<AtualizarEncaminhamentoRequest, 'id'>) => {
     if (!encaminhamentoEmEdicao?.id) return;
-    setIsSavingRegistro(true); setError(null); setSuccessMessage(null);
+    setIsSavingRegistro(true);
+    setError(null); setSuccessMessage(null);
     try {
       const medicoIdFinal = dados.medicoSolicitanteId === null || dados.medicoSolicitanteId === undefined ? undefined : Number(dados.medicoSolicitanteId);
-      if (medicoIdFinal === undefined) { // Adicionado validação para obrigatório
+      if (medicoIdFinal === undefined) {
         throw new Error("Médico solicitante é obrigatório para atualizar o encaminhamento.");
       }
       await atualizarEncaminhamentoNoProntuario(encaminhamentoEmEdicao.id.toString(), { ...dados, medicoSolicitanteId: medicoIdFinal });
       setSuccessMessage('Encaminhamento atualizado com sucesso!');
-      handleFecharModalEncaminhamento();
+      handleFecharModalEdicaoEncaminhamento();
       fetchProntuarioEListas();
     } catch (err: any) {
       logger.error(`Erro ao atualizar encaminhamento ${encaminhamentoEmEdicao.id}:`, err);
@@ -219,7 +227,7 @@ const ProntuarioEditPage: React.FC = () => {
     } finally {
       setIsSavingRegistro(false);
     }
-  };
+  }, [encaminhamentoEmEdicao, fetchProntuarioEListas, handleFecharModalEdicaoEncaminhamento, setIsSavingRegistro, setError, setSuccessMessage]);
 
   if (isLoading) {
     return (
@@ -428,8 +436,6 @@ const ProntuarioEditPage: React.FC = () => {
               ) : <p className="text-neutral-600 py-6 text-center italic">Nenhum encaminhamento registrado.</p>}
             </Card>
         )}
-
-        {/* --- MODAIS --- */}
         {showModalConsulta && consultaEmEdicao && (
             <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-70 flex items-center justify-center p-4" onClick={handleFecharModalEdicaoConsulta}>
               <Card className="relative w-full max-w-2xl lg:max-w-3xl shadow-xl rounded-lg bg-white max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
@@ -438,7 +444,7 @@ const ProntuarioEditPage: React.FC = () => {
                                 initialData={{
                                   ...consultaEmEdicao,
                                   dataConsulta: consultaEmEdicao.dataConsulta,
-                                  medicoExecutorId: Number(consultaEmEdicao.responsavelId) // Atribui o ID do médico executor
+                                  medicoExecutorId: Number(consultaEmEdicao.responsavelId)
                                 }}
                                 isEditMode={true} isLoading={isSavingRegistro} medicosDisponiveis={medicos} />
                 </div>

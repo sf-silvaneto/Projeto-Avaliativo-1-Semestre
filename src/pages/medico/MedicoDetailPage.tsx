@@ -80,7 +80,7 @@ const MedicoDetailPage: React.FC = () => {
   };
   
   const isMedicoAtivo = (medicoData: Medico): boolean => {
-    return medicoData.deletedAt === null || medicoData.deletedAt === undefined; // Alterado de excludedAt para deletedAt
+    return medicoData.deletedAt === null || medicoData.deletedAt === undefined;
   };
 
   const renderStatus = (medicoData?: Medico) => {
@@ -237,7 +237,7 @@ const MedicoDetailPage: React.FC = () => {
             <DetailItem icon={<Clock size={18}/>} label="Data de Criação" value={formatDateTime(medico.createdAt)} />
             <DetailItem icon={<Clock size={18}/>} label="Última Atualização" value={formatDateTime(medico.updatedAt)} />
             {medico.deletedAt && ( // Alterado de excludedAt para deletedAt
-                <DetailItem icon={<Clock size={18}/>} label="Data de Inativação" value={formatDateTime(medico.deletedAt)} /> // Alterado de excludedAt para deletedAt
+                <DetailItem icon={<Clock size={18}/>} label="Data de Inativação" value={formatDateTime(medico.deletedAt)} />
             )}
         </div>
       </Card>

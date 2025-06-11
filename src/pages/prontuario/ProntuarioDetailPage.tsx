@@ -1,4 +1,3 @@
-// src/pages/prontuario/ProntuarioDetailPage.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -36,7 +35,7 @@ const especialidadeResumos: Record<string, string> = {
     NEUROLOGIA: "Diagnóstico e tratamento de doenças do sistema nervoso central e periférico.",
     OFTALMOLOGIA: "Cuidados com a saúde dos olhos e da visão, tratando doenças e realizando cirurgias.",
     ONCOLOGIA: "Diagnóstico e tratamento de câncer, utilizando quimioterapia, radioterapia e outras terapias.",
-    ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações).",
+    ORTOPEDIA_E_TRAUMATOLOGIA: "Tratamento de lesões e doenças do sistema locomotor (ossos, músculos, articulações)." ,
     OTORRINOLARINGOLOGIA: "Diagnóstico e tratamento de doenças do ouvido, nariz e garganta.",
     PEDIATRIA: "Cuidados com a saúde de crianças e adolescentes, desde o nascimento até a fase adulta inicial.",
     PNEUMOLOGIA: "Diagnóstico e tratamento de doenças do sistema respiratório, como asma e pneumonia.",
@@ -258,7 +257,7 @@ const ProntuarioDetailPage: React.FC = () => {
         const p = pacienteData;
         const e = p.endereco || {} as PacienteEndereco;
 
-        const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || ''}, ${e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`; // LINHA CORRIGIDA
+        const enderecoFormatado = `${e.logradouro || ''}, ${e.numero || ''}${e.complemento ? `, ${e.complemento}` : ''} - ${e.bairro || '', e.cidade || ''}/${e.estado || ''} (CEP: ${e.cep || ''})`;
 
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
@@ -460,7 +459,7 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
     switch (item.tipo) {
         case 'CONSULTA':
             const c = item.dataOriginal as ConsultaDetalhada;
-            const medicoConsulta = renderMedicoInfo(c.responsavelNomeCompleto, (c as any).responsavelEspecialidade, c.responsavelCRM);
+            const medicoConsulta = renderMedicoInfo(c.responsavelNomeCompleto, c.responsavelEspecialidade, c.responsavelCRM);
             return (
                 <div className="space-y-3">
                     <DetailItem label="Responsável" value={medicoConsulta} />
@@ -488,11 +487,7 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
         case 'EXAME':
             const ex = item.dataOriginal as ExameDetalhado;
-            const medicoExameNome = (ex as any).medicoResponsavelExameNome;
-            const medicoExameEspecialidade = (ex as any).medicoResponsavelExameEspecialidade;
-            const medicoExameCRM = (ex as any).medicoResponsavelExameCRM;
-            const medicoExameInfo = medicoExameNome ? renderMedicoInfo(medicoExameNome, medicoExameEspecialidade, medicoExameCRM) : null;
-
+            const medicoExameInfo = renderMedicoInfo(ex.medicoResponsavelExameNome, ex.medicoResponsavelExameEspecialidade, ex.medicoResponsavelExameCRM); // Use os novos campos
             return (
                 <div className="space-y-3">
                     {medicoExameInfo && <DetailItem label="Médico do Exame" value={medicoExameInfo} />}
@@ -502,11 +497,7 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
         case 'PROCEDIMENTO':
             const proc = item.dataOriginal as ProcedimentoDetalhado;
-            const medicoProcedimentoNome = proc.medicoExecutorNome;
-            const medicoProcedimentoEspecialidade = (proc as any).medicoExecutorEspecialidade;
-            const medicoProcedimentoCRM = (proc as any).medicoExecutorCRM;
-            const medicoProcedimentoInfo = medicoProcedimentoNome ? renderMedicoInfo(medicoProcedimentoNome, medicoProcedimentoEspecialidade, medicoProcedimentoCRM) : null;
-
+            const medicoProcedimentoInfo = renderMedicoInfo(proc.medicoExecutorNome, proc.medicoExecutorEspecialidade, proc.medicoExecutorCRM); // Use os novos campos
             return (
                 <div className="space-y-3">
                     {medicoProcedimentoInfo ? <DetailItem label="Médico Executor" value={medicoProcedimentoInfo} /> : <DetailItem label="Médico Executor" value="Não informado" />}
@@ -516,7 +507,6 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             );
         case 'ENCAMINHAMENTO':
             const enc = item.dataOriginal as EncaminhamentoDetalhada;
-            let labelMedicoEnc = "Médico Solicitante";
             let valorMedicoEnc;
 
             if (enc.medicoSolicitanteNome) {
@@ -526,7 +516,7 @@ const RenderHistoricoItem: React.FC<{item: HistoricoUnificadoItem, formatDateTim
             }
             return (
                 <div className="space-y-3">
-                    <DetailItem label={labelMedicoEnc} value={valorMedicoEnc} />
+                    <DetailItem label="Médico Solicitante" value={valorMedicoEnc} />
                     <DetailItem label="Especialidade de Destino" value={enc.especialidadeDestino} />
                     <DetailItem label="Motivo" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{enc.motivoEncaminhamento}</pre>} />
                     {enc.observacoes && <DetailItem label="Observações" value={<pre className="text-sm whitespace-pre-wrap font-sans bg-neutral-100 p-3 rounded-md border border-neutral-200">{enc.observacoes}</pre>} />}

@@ -13,9 +13,8 @@ import { Save, Calendar, ClipboardPlus as ProcedimentoIcon, ArrowLeft, Stethosco
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const procedimentoSchema = z.object({
-    // Novo campo de data para o procedimento
     dataProcedimento: z.string()
-        .refine(val => !!val, { message: "Data e hora do procedimento são obrigatórias." }) // Tornar obrigatório
+        .refine(val => !!val, { message: "Data e hora do procedimento são obrigatórias." })
         .transform(e => e === "" ? undefined : e)
         .refine((val) => {
             if (!val) return true;
@@ -28,7 +27,7 @@ const procedimentoSchema = z.object({
         }, { message: "Data e hora do procedimento inválidas (não é uma data real)." })
         .refine((val) => {
             if (!val) return true;
-            return new Date(val) <= new Date(); // Não pode ser no futuro
+            return new Date(val) <= new Date();
         }, { message: "Data e hora do procedimento não podem ser no futuro." }),
     descricaoProcedimento: z.string().min(10, { message: "Descrição do procedimento é obrigatória (mín. 10 caracteres)." }).max(1000, "Descrição muito longa (máx. 1000)."),
     relatorioProcedimento: z.string().max(10000, "Relatório não pode exceder 10000 caracteres.").optional().or(z.literal('')),
@@ -65,7 +64,7 @@ const getLocalDateTimeStringForInput = (dateString?: string | Date): string | un
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hourCycle: 'h23', // Garante formato 24h
+        hourCycle: 'h23',
         timeZone: 'America/Sao_Paulo'
     };
 
@@ -88,7 +87,6 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
         if (isEditMode && initialData && Object.keys(initialData).length > 0) {
             let dateToPreFill: string | undefined = undefined;
             dateToPreFill = initialData?.dataProcedimento ? getLocalDateTimeStringForInput(initialData.dataProcedimento) : undefined;
-            // Fallback para createdAt/updatedAt se dataProcedimento não existir na edição (para dados antigos)
             if (!dateToPreFill && (initialData?.updatedAt || initialData?.createdAt)) {
                 dateToPreFill = getLocalDateTimeStringForInput(initialData.updatedAt || initialData.createdAt);
             }
@@ -101,7 +99,7 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
             };
         }
         return {
-            dataProcedimento: getLocalDateTimeStringForInput(new Date()), // Para novos registros, preenche com a data/hora atual por padrão
+            dataProcedimento: getLocalDateTimeStringForInput(new Date()),
             descricaoProcedimento: '',
             relatorioProcedimento: '',
             medicoExecutorId: undefined,
@@ -123,7 +121,7 @@ const ProcedimentoForm: React.FC<ProcedimentoFormProps> = ({
         const baseData = {
             descricaoProcedimento: data.descricaoProcedimento,
             relatorioProcedimento: data.relatorioProcedimento?.trim() || undefined,
-            dataProcedimento: data.dataProcedimento, // Inclui a nova data
+            dataProcedimento: data.dataProcedimento,
         };
 
         if (isEditMode) {

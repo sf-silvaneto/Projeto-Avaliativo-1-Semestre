@@ -1,5 +1,3 @@
-// filename: sf-silvaneto/clientehm/ClienteHM-6a1521d7c1550a92b879e103ac7f5c0dc5ff8d33/cliente-hm-front-main/src/components/prontuario/ExameForm.tsx
-
 import React, { useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -94,12 +92,10 @@ const ExameForm: React.FC<ExameFormProps> = ({
         let dateToPreFill: string | undefined = undefined;
         if (isEditMode) {
             dateToPreFill = initialData?.dataExame ? getLocalDateTimeStringForInput(initialData.dataExame) : undefined;
-            // Fallback para createdAt/updatedAt se dataExame não existir na edição (para dados antigos)
             if (!dateToPreFill && (initialData?.updatedAt || initialData?.createdAt)) {
                 dateToPreFill = getLocalDateTimeStringForInput(initialData.updatedAt || initialData.createdAt);
             }
         } else {
-            // Para novos registros, preenche com a data/hora atual por padrão
             dateToPreFill = getLocalDateTimeStringForInput(new Date());
         }
 
@@ -153,7 +149,6 @@ const ExameForm: React.FC<ExameFormProps> = ({
                 {isEditMode ? 'Editar Registro de Exame' : 'Registrar Novo Exame'}
             </h4>
 
-            {/* Campo "Médico Responsável pelo Exame" só é editável em modo de edição ou no Wizard de criação */}
             {isEditMode && (
                 <Controller
                     name="medicoResponsavelExameId"
@@ -176,7 +171,6 @@ const ExameForm: React.FC<ExameFormProps> = ({
                 />
             )}
 
-            {/* Campo "Data e Hora do Exame" */}
             <Input
                 label="Data e Hora do Exame*"
                 type="datetime-local"

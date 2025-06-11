@@ -79,7 +79,6 @@ const sinaisVitaisSchema = z.object({
 });
 
 const consultaSchema = z.object({
-    // Novo campo de data para a consulta
     dataConsulta: z.string()
         .refine(val => !!val, { message: "Data e hora da consulta são obrigatórias." }) // Tornar obrigatório
         .refine((val) => {
@@ -100,7 +99,7 @@ const consultaSchema = z.object({
             const minPastDate = new Date();
             minPastDate.setFullYear(minPastDate.getFullYear() - 120);
 
-            return dataSelecionada <= agora && dataSelecionada >= minPastDate; // Não pode ser no futuro (apenas datas passadas ou presentes)
+            return dataSelecionada <= agora && dataSelecionada >= minPastDate;
         }, { message: "Data da consulta não pode ser no futuro ou muito no passado." }),
     motivoConsulta: z.string().min(5, { message: "Motivo da consulta é muito curto (mín. 5 caracteres)." }).max(500, "Motivo muito longo (máx. 500)."),
     queixasPrincipais: z.string().min(10, { message: "Queixa principal é muito curta (mín. 10 caracteres)." }).max(2000, "Queixas muito longas (máx. 2000)."),
@@ -172,12 +171,10 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
 
         if (isEditMode) {
             dataToPreFill = initialData?.dataConsulta ? getLocalDateTimeStringForInput(initialData.dataConsulta) : undefined;
-            // Fallback para createdAt/updatedAt se dataConsulta não existir na edição (para dados antigos)
             if (!dataToPreFill && (initialData?.updatedAt || initialData?.createdAt)) {
                 dataToPreFill = getLocalDateTimeStringForInput(initialData.updatedAt || initialData.createdAt);
             }
         } else {
-            // Para novos registros, preenche com a data/hora atual por padrão
             dataToPreFill = getLocalDateTimeStringForInput(new Date());
         }
 
@@ -216,7 +213,7 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
 
     const handleLocalSubmit = (data: ConsultaFormData) => {
         const baseData: NovaConsultaRequest | AtualizarConsultaRequest = {
-            dataConsulta: data.dataConsulta, // Inclui a nova data
+            dataConsulta: data.dataConsulta,
             motivoConsulta: data.motivoConsulta,
             queixasPrincipais: data.queixasPrincipais,
             sinaisVitais: {
@@ -255,7 +252,6 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 {isEditMode ? 'Editar Registro de Consulta' : 'Registrar Nova Consulta'}
             </h4>
 
-            {/* Sempre exibe o campo de data e hora para criação e edição */}
             <Input
                 label="Data e Hora da Consulta*"
                 type="datetime-local"
@@ -264,7 +260,6 @@ const ConsultaForm: React.FC<ConsultaFormProps> = ({
                 error={errors.dataConsulta?.message}
             />
 
-            {/* Campo "Médico Executor da Consulta" só é editável em modo de edição (ou se for o primeiro registro) */}
             {isEditMode && (
                 <Controller
                     name="medicoExecutorId"

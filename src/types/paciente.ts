@@ -1,4 +1,3 @@
-// src/types/paciente.ts
 export enum Genero {
   MASCULINO = 'MASCULINO',
   FEMININO = 'FEMININO',
@@ -59,7 +58,6 @@ export interface Paciente {
   email: string;
   nomeMae: string;
   nomePai?: string;
-  // dataEntrada removido
   cartaoSus?: string;
   racaCor?: RacaCor;
   tipoSanguineo?: TipoSanguineo;

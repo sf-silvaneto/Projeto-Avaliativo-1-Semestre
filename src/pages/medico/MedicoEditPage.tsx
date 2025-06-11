@@ -45,7 +45,6 @@ const MedicoEditPage: React.FC = () => {
         especialidade: data.especialidade,
         resumoEspecialidade: data.resumoEpecialidade,
         rqe: data.rqe,
-        // deletedAt: medico?.deletedAt // Manter o status de exclusão atual se não for alterado por outra ação
       };
       
       const medicoAtualizado = await atualizarMedico(Number(id), updateData);

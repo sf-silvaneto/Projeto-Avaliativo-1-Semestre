@@ -13,9 +13,8 @@ import { Save, Calendar, Send as EncaminhamentoIcon, ArrowLeft, Stethoscope } fr
 const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 const encaminhamentoSchema = z.object({
-    // Novo campo de data para o encaminhamento
     dataEncaminhamento: z.string()
-        .refine(val => !!val, { message: "Data e hora do encaminhamento são obrigatórias." }) // Tornar obrigatório
+        .refine(val => !!val, { message: "Data e hora do encaminhamento são obrigatórias." })
         .transform(e => e === "" ? undefined : e)
         .refine((val) => {
             if (!val) return true;
@@ -28,7 +27,7 @@ const encaminhamentoSchema = z.object({
         }, { message: "Data e hora do encaminhamento inválidas (não é uma data real)." })
         .refine((val) => {
             if (!val) return true;
-            return new Date(val) <= new Date(); // Não pode ser no futuro
+            return new Date(val) <= new Date();
         }, { message: "Data e hora do encaminhamento não podem ser no futuro." }),
     especialidadeDestino: z.string().min(3, { message: "Especialidade de destino é obrigatória (mín. 3 caracteres)." }).max(200, "Especialidade muito longa (máx. 200)."),
     motivoEncaminhamento: z.string().min(10, { message: "Motivo do encaminhamento é obrigatório (mín. 10 caracteres)." }).max(1000, "Motivo muito longo (máx. 1000)."),
@@ -66,7 +65,7 @@ const getLocalDateTimeStringForInput = (dateString?: string | Date): string | un
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hourCycle: 'h23', // Garante formato 24h
+        hourCycle: 'h23',
         timeZone: 'America/Sao_Paulo'
     };
 
@@ -92,12 +91,10 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
         let dateToPreFill: string | undefined = undefined;
         if (isEditMode) {
             dateToPreFill = initialData?.dataEncaminhamento ? getLocalDateTimeStringForInput(initialData.dataEncaminhamento) : undefined;
-            // Fallback para createdAt/updatedAt se dataEncaminhamento não existir na edição (para dados antigos)
             if (!dateToPreFill && (initialData?.updatedAt || initialData?.createdAt)) {
                 dateToPreFill = getLocalDateTimeStringForInput(initialData.updatedAt || initialData.createdAt);
             }
         } else {
-            // Para novos registros, preenche com a data/hora atual por padrão
             dateToPreFill = getLocalDateTimeStringForInput(new Date());
         }
 
@@ -126,7 +123,7 @@ const EncaminhamentoForm: React.FC<EncaminhamentoFormProps> = ({
             especialidadeDestino: data.especialidadeDestino,
             motivoEncaminhamento: data.motivoEncaminhamento,
             observacoes: data.observacoes?.trim() || undefined,
-            dataEncaminhamento: data.dataEncaminhamento, // Inclui a nova data
+            dataEncaminhamento: data.dataEncaminhamento,
         };
 
         if (isEditMode) {

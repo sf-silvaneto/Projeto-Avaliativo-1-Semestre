@@ -26,7 +26,7 @@ const MedicoTableComponent: React.FC<{
 }> = ({ medicos, onEdit, onViewDetails, onToggleStatus, isLoadingToggleOrDelete, medicoInAction }) => {
 
   const isMedicoAtivo = (medico: Medico): boolean => {
-    return medico.deletedAt === null || medico.deletedAt === undefined; // Alterado de excludedAt para deletedAt
+    return medico.deletedAt === null || medico.deletedAt === undefined;
   };
 
   const renderStatusBadge = (medico: Medico) => {

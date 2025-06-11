@@ -1,4 +1,3 @@
-// src/pages/prontuario/ProntuarioListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Plus, ArrowLeft } from 'lucide-react';
@@ -21,7 +20,7 @@ const ProntuarioListPage: React.FC = () => {
   const [apiSearchParams, setApiSearchParams] = useState<BuscaProntuarioParams>({
     pagina: 0,
     tamanho: 10,
-    sort: 'updatedAt,desc', // ALTERADO AQUI: de 'dataUltimaAtualizacao,desc' para 'updatedAt,desc'
+    sort: 'updatedAt,desc',
     termo: undefined,
   });
 

@@ -49,11 +49,10 @@ const ProntuarioCreatePage: React.FC = () => {
             switch (tipoPrimeiroRegistro) {
                 case 'CONSULTA':
                     console.log('ProntuarioCreatePage: CHAMANDO adicionarConsultaComNovoProntuario com:', pacienteId, medicoId, dadosEvento);
-                    // Agora medicoExecutorId é passado como parte de dadosEvento na NovaConsultaRequest
                     prontuarioOuEventoCriado = await adicionarConsultaComNovoProntuario(
                         pacienteId,
-                        medicoId, // medicoId do prontuário é o executor inicial
-                        { ...dadosEvento as NovaConsultaRequest, dataConsulta: dadosEvento.dataConsulta, medicoExecutorId: medicoId } // Passa medicoExecutorId
+                        medicoId,
+                        { ...dadosEvento as NovaConsultaRequest, dataConsulta: dadosEvento.dataConsulta, medicoExecutorId: medicoId }
                     );
                     break;
                 case 'EXAME':
@@ -87,7 +86,6 @@ const ProntuarioCreatePage: React.FC = () => {
             console.log('ProntuarioCreatePage: Resposta da API após criação:', prontuarioOuEventoCriado);
 
             let prontuarioIdParaNavegacao: string | undefined;
-            // Simplifique a lógica aqui, agora que prontuarioId deve vir diretamente no objeto retornado
             if (prontuarioOuEventoCriado && prontuarioOuEventoCriado.prontuarioId) {
                 prontuarioIdParaNavegacao = String(prontuarioOuEventoCriado.prontuarioId);
             }
